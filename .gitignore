@@ -3,3 +3,4 @@ _old
 compiler.DSYM
 *.o
 regex_test.cpp
+compiler
