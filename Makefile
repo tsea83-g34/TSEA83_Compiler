@@ -12,4 +12,4 @@ lexer.o: include/lexer.h src/lexer.cpp
 	$(CCX) $(CCXFLAGS) src/lexer.cpp
 
 clean:
-	rm lexer.o main.o compiler
+	rm compiler main.o lexer.o
