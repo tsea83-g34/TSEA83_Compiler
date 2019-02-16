@@ -8,7 +8,7 @@
 
 lexer::lexer(std::string filename) {
 
-    reserved_words = std::unordered_map<std::string, keyword_token>();
+    reserved_words = std::unordered_map<std::string, keyword_token*>();
     line = 0;
 
     identifier_regex    = std::regex("([A-Z]|[a-z]|_)(([A-Z]|[a-z]|_)|[0-9])*");
@@ -22,18 +22,18 @@ lexer::lexer(std::string filename) {
     file.read(buffer, BUFFER_SIZE);
 
     // Reserve keywords
-    reserved_words.insert(std::make_pair("if", keyword_token(tag_t::IF)));
+    reserved_words.insert({"if", new keyword_token(tag_t::IF)});
 }
 
 int lexer::char_to_digit(char c) {
     return c - '0';
 }
 
-token lexer::get_next_token() {
+token* lexer::get_next_token() {
 
     char next;
 
-    if (file.eof()) return token(tag_t::eof);
+    if (file.eof()) return new token(tag_t::eof);
 
     for (;; next = file.get()) {
 
@@ -54,7 +54,7 @@ token lexer::get_next_token() {
                 next = file.get();
                 if (next == '\n') line++;
             } while (next != '*' || file.peek() != '/');
-        } else if (next == -1) return token(tag_t::eof);
+        } else if (next == -1) return new token(tag_t::eof);
         
         // Check for integer literal
         if (isdigit(next)) {
@@ -62,7 +62,7 @@ token lexer::get_next_token() {
             do {
                 v = 10 * v + char_to_digit(next);
             } while (isdigit(next));
-            return int_literal_token(v);
+            return new int_literal_token(v);
         }
 
         // Check for string literal
@@ -73,7 +73,7 @@ token lexer::get_next_token() {
                 next = file.get();
             } while (next != '\"');
             buffer << next; // Append second quotation
-            return str_literal_token(buffer.str());
+            return new str_literal_token(buffer.str());
         }
 
         // Check for identifier or keyword
@@ -88,7 +88,7 @@ token lexer::get_next_token() {
             if (reserved_words.count(word)) return reserved_words[word];
 
             // identifier
-            return id_token(std::move(word));
+            return new id_token(std::move(word));
         }
 
         std::cout << "Error, unidentified token!" << std::endl;
