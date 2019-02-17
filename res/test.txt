@@ -1,4 +1,2 @@
 
-int main(int argc, char const *argv[]) {
-    return 0;
-}
+if hello "wow" 32 
