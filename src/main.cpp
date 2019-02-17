@@ -9,6 +9,8 @@
     #define get_current_dir getcwd
 #endif
 
+#include "../include/lexer.h"
+
 using namespace std;
 
 
@@ -33,5 +35,32 @@ int main(int argc, char const *argv[]) {
         string filename = path + '/' + relative_path;
     #endif
     cout << "total: " << filename << endl;
+
+    lexer lex(filename);
+
+    token* t = lex.get_next_token();
+    while (t->tag != tag_t::eof) {
+
+        switch(t->tag) {
+            case tag_t::IF:
+                cout << "If found" << endl;
+                break;
+            case tag_t::ID:
+                cout << "Identifier found: " << ((id_token*) t)->lexeme << endl;
+                delete t;
+                break;
+            case tag_t::INT_LITERAL:
+                cout << "Int literal found: " << ((int_literal_token*) t)->value << endl;
+                delete t;
+                break;
+            case tag_t::STRING_LITERAL:
+                cout << "String literal found: " << ((str_literal_token*) t)->value << endl;
+                delete t;
+                break;
+        }
+
+        t = lex.get_next_token();
+    }
+
     return 0;
 }
