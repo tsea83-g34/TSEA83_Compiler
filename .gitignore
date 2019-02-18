@@ -4,3 +4,4 @@ compiler.DSYM
 *.o
 regex_test.cpp
 compiler
+case_gen.cpp
