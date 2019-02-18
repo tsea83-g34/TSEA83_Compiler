@@ -11,6 +11,8 @@
 #define BUFFER_SIZE 4096
 #define READ_SIZE BUFFER_SIZE - 1
 
+#define MAX_TOKEN_SIZE 64
+
 class lexer {
 private:
 
@@ -20,13 +22,15 @@ private:
     // Input stream and double buffer
     std::ifstream file;
     char *buffer_1;
-    char *buffer_2;
+    const char* buffer_1_end;
 
+    char *buffer_2;
+    const char* buffer_2_end;
     // True if currently on buffer 1, false if on buffer 2
     bool buffer_switch;
 
     // Pointers for reading
-    char *lexemeBegin;
+    char *lexeme_start;
     char *forward;
 
     // Current line
@@ -41,7 +45,16 @@ private:
     // Converts an ASCII digit character to its corresponding integer digit
     int char_to_digit(char c);
     
-    void switch_buffer();
+    // Reads from the file into the non-current buffer and switches to it
+    char* switch_buffer();
+
+    // Handles tokens that are split between two buffers
+    void handle_split(std::regex r, std::string& result, unsigned int size);
+
+    // Returns a pointer to the current buffer being read from
+    char* get_current_buffer();
+
+    const char* get_current_buffer_end();
 
 public:
     lexer(std::string filename);

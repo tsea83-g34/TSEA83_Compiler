@@ -5,6 +5,9 @@
 #include <cctype>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
+#include <cstdlib>
+#include <cstring>
 
 lexer::lexer(std::string filename) {
 
@@ -14,22 +17,25 @@ lexer::lexer(std::string filename) {
     identifier_regex    = std::regex("([A-Z]|[a-z]|_)(([A-Z]|[a-z]|_)|[0-9])*");
     int_literal_regex   = std::regex("[1-9][0-9]*");
     str_literal_regex   = std::regex("\"([^\"]*)\"");
-    whitespace_regex    = std::regex("[\t\n\ ]*");
+    whitespace_regex    = std::regex("[\t\n\ ]+");
 
     // Open file, allocate buffer memory and read BUFFER_SIZE characters
     file = std::ifstream(filename);
-    buffer_1 = new char[BUFFER_SIZE];
-    buffer_2 = new char[BUFFER_SIZE];
+    buffer_1 = (char*) calloc(BUFFER_SIZE, sizeof(char));
+    buffer_1_end = buffer_1 + BUFFER_SIZE - 1;
 
-    buffer_1[READ_SIZE] = '\0';
-    buffer_2[READ_SIZE] = '\0';
+    buffer_2 = (char*) calloc(BUFFER_SIZE, sizeof(char));
+    buffer_2_end = buffer_2 + BUFFER_SIZE - 1;
+
+    //buffer_1[READ_SIZE] = '\0';
+    //buffer_2[READ_SIZE] = '\0';
 
     // Read to buffer_1 and set bufferswitch
     file.read(buffer_1, READ_SIZE);
     buffer_switch = true;
 
     // Set pointers
-    lexemeBegin = buffer_1;
+    lexeme_start = buffer_1;
     forward = buffer_1;
 
     // Reserve keywords
@@ -40,70 +46,110 @@ int lexer::char_to_digit(char c) {
     return c - '0';
 }
 
-void lexer::switch_buffer() {
+char* lexer::get_current_buffer() {
+    return (buffer_switch) ? buffer_1 : buffer_2;
+}
+
+const char* lexer::get_current_buffer_end() {
+    return (buffer_switch) ? buffer_1_end : buffer_2_end;
+}
+
+char* lexer::switch_buffer() {
     // Overwrite the non-current buffer and switch to it
     char* other_buffer = (buffer_switch) ? buffer_2 : buffer_1;
     file.read(other_buffer, READ_SIZE);
     buffer_switch = !buffer_switch;
 
     // Set pointers
-    lexemeBegin = other_buffer;
+    lexeme_start = other_buffer;
     forward = other_buffer;
+    return other_buffer;
+}
+
+void lexer::handle_split(std::regex r, std::string& result, unsigned int size) {
+    // Allocate a local buffer that will be returned
+    char *local_buffer = (char*) calloc(MAX_TOKEN_SIZE, sizeof(char));
+
+    // Copy the beginning of the lexeme from the old buffer into the local one
+    std::strcpy(local_buffer, lexeme_start);
+
+    // Read from file, switch buffer and read the beginning of the new buffer into the local one
+    char *new_buffer = switch_buffer();
+    std::memcpy(local_buffer+size, new_buffer, MAX_TOKEN_SIZE - size - 1);
+    
+    // Find the complete token
+    std::cmatch cm;
+    std::regex_search(local_buffer, cm, r);
+
+    // Move the lexeme pointer to the appropriate index
+    lexeme_start += cm[0].length() - size;
+    
+    // Update the result and free the buffer
+    result = cm[0].str();
+    free(local_buffer);
 }
 
 token* lexer::get_next_token() {
 
-    // Derive which buffer is currently being read
-    char* current_buffer = (buffer_switch) ? buffer_1 : buffer_2;
+    // TODO: Handle cases where tokens are split between buffers
 
-    // If eof return eof token
-    if (*lexemeBegin == '\0' && file.eof() || *lexemeBegin == EOF) {
-        return new token(tag_t::eof);
+    while (true) {
+        // If eof return eof token
+        if (*lexeme_start == '\0' && file.eof() || *lexeme_start == EOF) {
+            return new token(tag_t::eof);
+        // If lexeme_start reached end of buffer, switch buffer
+        } else if (*lexeme_start == '\0') {
+            // Time to switch buffer
+            switch_buffer();
+        }
 
-    // If forward reached end of buffer, switch buffer
-    } else if (*lexemeBegin == '\0') {
-        // Time to switch buffer
-        switch_buffer();
+        std::cmatch cm;
+        // Look for whitespace
+        if(std::regex_search(lexeme_start, cm, whitespace_regex) && cm.prefix().length() == 0) {
+            lexeme_start += cm[0].length();
+            std::string spaces = cm[0].str();
+            line += std::count(spaces.begin(), spaces.end(), '\n');
+            continue; // Try again in case of buffer switch
+        }
+        
+        // Check for identifiers
+        if (std::regex_search(lexeme_start, cm, identifier_regex) && cm.prefix().length() == 0) {
+
+            std::string word = cm[0].str();
+            // If the token could potentially overflow to the next buffer
+            if (lexeme_start + word.length() == get_current_buffer_end()) {
+                
+                handle_split(identifier_regex, word, word.length());
+                
+            // Otherwise just offset the pointer with the word length
+            } else lexeme_start += word.length();
+                
+            // If found word is keyword, return the already created token
+            if (reserved_words.count(word)) return reserved_words[word];
+
+            // Otherwise create a new identifier token
+            return new id_token(std::move(word));
+        }
+
+        // Check for integer literals
+        if (std::regex_search(lexeme_start, cm, int_literal_regex) && cm.prefix().length() == 0) {
+            std::string literal = cm[0].str();
+            lexeme_start += literal.length();
+
+            int value = std::stoi(literal);
+            return new int_literal_token(value);
+        }
+
+        // Check for string literals
+        if (std::regex_search(lexeme_start, cm, str_literal_regex) && cm.prefix().length() == 0) {
+            std::string literal = cm[0].str();
+            lexeme_start += literal.length();
+
+            return new str_literal_token(std::move(literal));
+        }
+
+        return new token(tag_t::UNKNOWN);
     }
-
-    std::cmatch cm;
-    // Look for whitespace
-    if(std::regex_search(lexemeBegin, cm, whitespace_regex) && cm.prefix().length() == 0) {
-        lexemeBegin += cm[0].length();
-    }
-    //cm = std::cmatch();
-
-    // Check for string literals
-    if (std::regex_search(lexemeBegin, cm, str_literal_regex) && cm.prefix().length() == 0) {
-        std::string literal = cm[0];
-        lexemeBegin += literal.length();
-
-        return new str_literal_token(std::move(literal));
-    }
-    //cm = std::cmatch();
-    
-    // Check for identifiers
-    if (std::regex_search(lexemeBegin, cm, identifier_regex) && cm.prefix().length() == 0) {
-        std::string word = cm[0];
-        lexemeBegin += word.length();
-            
-        // If found word is keyword, return the already created token
-        if (reserved_words.count(word)) return reserved_words[word];
-
-        // Otherwise create a new identifier token
-        return new id_token(std::move(word));
-    }
-    //cm = std::cmatch();
-
-    // Check for integer literals
-    if (std::regex_search(lexemeBegin, cm, int_literal_regex) && cm.prefix().length() == 0) {
-        std::string literal = cm[0];
-        lexemeBegin += literal.length();
-
-        int value = std::stoi(literal);
-        return new int_literal_token(value);
-    }
-    //cm = std::cmatch();
 }
 
 #if 0
