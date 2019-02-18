@@ -1,5 +1,5 @@
 CCX=g++-7
-CCXFLAGS = -std=c++17 -c
+CCXFLAGS = -std=c++17 -c -g
 LDFLAGS = -g -o compiler -std=c++17 
 
 compiler: main.o lexer.o
