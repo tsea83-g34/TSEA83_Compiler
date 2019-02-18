@@ -19,7 +19,8 @@ enum class tag_t : int {
     OPEN_BRACKET,
     CLOSED_BRACKET,
     
-    eof
+    eof,
+    UNKNOWN
 };
 
 struct token {
