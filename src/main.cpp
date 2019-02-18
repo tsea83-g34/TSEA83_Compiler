@@ -57,6 +57,8 @@ int main(int argc, char const *argv[]) {
                 cout << "String literal found: " << ((str_literal_token*) t)->value << endl;
                 delete t;
                 break;
+            case tag_t::UNKNOWN:
+                cout << "UNKNOWN token found!" << endl;
         }
 
         t = lex.get_next_token();
