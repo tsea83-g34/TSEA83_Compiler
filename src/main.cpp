@@ -15,6 +15,8 @@ using namespace std;
 
 
 int main(int argc, char const *argv[]) {
+
+    std::ios_base::sync_with_stdio(false);
     
     // Get current directory
     char current_path[100];
@@ -37,10 +39,11 @@ int main(int argc, char const *argv[]) {
     cout << "total: " << filename << endl;
 
     lexer lex(filename);
-
+    int token_count = 1;
     token* t = lex.get_next_token();
     while (t->tag != tag_t::eof) {
-
+        
+        cout << "Token " << token_count++ << ": ";
         switch(t->tag) {
             case tag_t::IF:
                 cout << "If found" << endl;
