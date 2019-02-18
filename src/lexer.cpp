@@ -57,33 +57,33 @@ token* lexer::get_next_token() {
     char* current_buffer = (buffer_switch) ? buffer_1 : buffer_2;
 
     // If eof return eof token
-    if (*forward == '\0' && file.eof() || *forward == EOF) {
+    if (*lexemeBegin == '\0' && file.eof() || *lexemeBegin == EOF) {
         return new token(tag_t::eof);
 
     // If forward reached end of buffer, switch buffer
-    } else if (*forward == '\0') {
+    } else if (*lexemeBegin == '\0') {
         // Time to switch buffer
         switch_buffer();
     }
 
     std::cmatch cm;
     // Look for whitespace
-    if(std::regex_search(lexemeBegin, cm, whitespace_regex)) {
+    if(std::regex_search(lexemeBegin, cm, whitespace_regex) && cm.prefix().length() == 0) {
         lexemeBegin += cm[0].length();
     }
-    cm = std::cmatch();
+    //cm = std::cmatch();
 
     // Check for string literals
-    if (std::regex_search(lexemeBegin, cm, str_literal_regex)) {
+    if (std::regex_search(lexemeBegin, cm, str_literal_regex) && cm.prefix().length() == 0) {
         std::string literal = cm[0];
         lexemeBegin += literal.length();
 
         return new str_literal_token(std::move(literal));
     }
-    cm = std::cmatch();
+    //cm = std::cmatch();
     
     // Check for identifiers
-    if (std::regex_search(lexemeBegin, cm, identifier_regex)) {
+    if (std::regex_search(lexemeBegin, cm, identifier_regex) && cm.prefix().length() == 0) {
         std::string word = cm[0];
         lexemeBegin += word.length();
             
@@ -93,17 +93,17 @@ token* lexer::get_next_token() {
         // Otherwise create a new identifier token
         return new id_token(std::move(word));
     }
-    cm = std::cmatch();
+    //cm = std::cmatch();
 
     // Check for integer literals
-    if (std::regex_search(lexemeBegin, cm, int_literal_regex)) {
+    if (std::regex_search(lexemeBegin, cm, int_literal_regex) && cm.prefix().length() == 0) {
         std::string literal = cm[0];
         lexemeBegin += literal.length();
 
         int value = std::stoi(literal);
         return new int_literal_token(value);
     }
-    cm = std::cmatch();
+    //cm = std::cmatch();
 }
 
 #if 0
