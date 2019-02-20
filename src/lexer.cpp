@@ -14,10 +14,11 @@ lexer::lexer(std::string filename) {
     reserved_words = std::unordered_map<std::string, keyword_token*>();
     line = 0;
 
-    identifier_regex    = std::regex("([A-Z]|[a-z]|_)(([A-Z]|[a-z]|_)|[0-9])*");
-    int_literal_regex   = std::regex("[1-9][0-9]*");
-    str_literal_regex   = std::regex("\"([^\"]*)\"");
-    whitespace_regex    = std::regex("[\t\n\ ]+");
+    identifier_regex        = std::regex("([A-Z]|[a-z]|_)(([A-Z]|[a-z]|_)|[0-9])*");
+    int_literal_regex       = std::regex("[1-9][0-9]*");
+    str_literal_regex       = std::regex("\"([^\"]*)\"");
+    whitespace_regex        = std::regex("[\t\n\ ]+");
+    half_str_literal_regex  = std::regex("\"([^\"]*)");
 
     // Open file, allocate buffer memory and read BUFFER_SIZE characters
     file = std::ifstream(filename);
@@ -91,8 +92,6 @@ void lexer::handle_split(std::regex r, std::string& result, unsigned int size) {
 
 token* lexer::get_next_token() {
 
-    // TODO: Handle cases where tokens are split between buffers
-
     while (true) {
         // If eof return eof token
         if (*lexeme_start == '\0' && file.eof() || *lexeme_start == EOF) {
@@ -134,8 +133,16 @@ token* lexer::get_next_token() {
         // Check for integer literals
         if (std::regex_search(lexeme_start, cm, int_literal_regex) && cm.prefix().length() == 0) {
             std::string literal = cm[0].str();
-            lexeme_start += literal.length();
 
+            // If the token could potentially overflow to the next buffer
+            if (lexeme_start + literal.length() == get_current_buffer_end()) {
+             
+                handle_split(int_literal_regex, literal, literal.length());
+            
+            // Otherwise just offset the pointer with the word length
+            } else lexeme_start += literal.length();
+
+            // Parse integer value and return new integer literal token
             int value = std::stoi(literal);
             return new int_literal_token(value);
         }
@@ -144,6 +151,15 @@ token* lexer::get_next_token() {
         if (std::regex_search(lexeme_start, cm, str_literal_regex) && cm.prefix().length() == 0) {
             std::string literal = cm[0].str();
             lexeme_start += literal.length();
+
+            return new str_literal_token(std::move(literal));
+        // In case literal is split between buffers, look for half string
+        } else if (std::regex_search(lexeme_start, cm, half_str_literal_regex) && cm.prefix().length() == 0) {
+            
+            std::string literal = cm[0].str();
+            if (lexeme_start + literal.length() == get_current_buffer_end()) {
+                handle_split(str_literal_regex, literal, literal.length());
+            } else return new token(tag_t::UNKNOWN);
 
             return new str_literal_token(std::move(literal));
         }

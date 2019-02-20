@@ -41,6 +41,7 @@ private:
     std::regex int_literal_regex;
     std::regex str_literal_regex;
     std::regex whitespace_regex;
+    std::regex half_str_literal_regex;
 
     // Converts an ASCII digit character to its corresponding integer digit
     int char_to_digit(char c);
