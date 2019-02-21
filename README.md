@@ -25,3 +25,5 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
 - [ ] Implement translation from abstract syntax tree to machine code
 - [ ] Implement a register allocation table and register usage
+
+## C-- Specification
