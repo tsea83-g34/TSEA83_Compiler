@@ -111,6 +111,15 @@ token* lexer::get_next_token() {
             continue; // Try again in case of buffer switch
         }
         
+        // Check for comments
+        if (*lexeme_start == '/' && *(lexeme_start) == '/') do {
+
+            if (lexeme_start == get_current_buffer_end()) {
+                switch_buffer();
+                continue;
+            }
+        } while (*lexeme_start++ != '\n');
+
         // Check for identifiers
         if (std::regex_search(lexeme_start, cm, identifier_regex) && cm.prefix().length() == 0) {
 
