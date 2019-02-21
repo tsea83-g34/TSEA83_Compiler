@@ -112,13 +112,28 @@ token* lexer::get_next_token() {
         }
         
         // Check for comments
-        if (*lexeme_start == '/' && *(lexeme_start) == '/') do {
-
-            if (lexeme_start == get_current_buffer_end()) {
-                switch_buffer();
-                continue;
+        if (lexeme_start[0] == '/' && lexeme_start[1] == '/') {
+            do {
+                if (lexeme_start == get_current_buffer_end()) {
+                    switch_buffer();
+                    continue;
+                }
+            } while (*lexeme_start++ != '\n');
+        
+        // Check case where comment signifer // is split between buffers
+        } else if (*lexeme_start == '/' && lexeme_start+1 == get_current_buffer_end()) {
+            switch_buffer();
+            if (*lexeme_start == '/') {
+                do {
+                    if (lexeme_start == get_current_buffer_end()) {
+                        switch_buffer();
+                        continue;
+                    }
+                } while (*lexeme_start++ != '\n');
+            } else {
+                return new token(tag_t::UNKNOWN);
             }
-        } while (*lexeme_start++ != '\n');
+        }
 
         // Check for identifiers
         if (std::regex_search(lexeme_start, cm, identifier_regex) && cm.prefix().length() == 0) {

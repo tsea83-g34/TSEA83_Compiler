@@ -49,7 +49,7 @@ private:
     // Reads from the file into the non-current buffer and switches to it
     char* switch_buffer();
 
-    // Handles tokens that are split between two buffers
+    // Handles tokens that are split between two buffers, returns whether the search was successful or not
     void handle_split(std::regex r, std::string& result, unsigned int size);
 
     // Returns a pointer to the current buffer being read from
