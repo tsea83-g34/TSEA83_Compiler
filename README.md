@@ -28,13 +28,13 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
 ### Other Language Features
 
-- [ ] Structs, struct operator .
-- [ ] Pointers, pointer operators `*, &, -> and []`
-- [ ] While loops
-- [ ] For loops
-- [ ] Arithmetic operators `*, %, a++, ++a, a--, --a, +=, -= and *=`
-- [ ] Logical operators `&&, ||, ^, and !`
-- [ ] Bitwise operators `~, &, |, ^, << and >>`
+- [ ] Structs, struct operator ´.´
+- [ ] Pointers, pointer operators `*, &, ->, []`
+- [ ] While-loops
+- [ ] For-loops
+- [ ] Arithmetic operators `*, %, a++, ++a, a--, --a, +=, -=, *=`
+- [ ] Logical operators `&&, ||, ^, !`
+- [ ] Bitwise operators `~, &, |, ^, <<, >>`
 - [ ] Compound assignment operators 
 
 ## C-- Specification
