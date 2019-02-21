@@ -28,7 +28,7 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
 ### Other Language Features
 
-- [ ] Structs, struct operator ´.´
+- [ ] Structs, struct operator `.`
 - [ ] Pointers, pointer operators `*, &, ->, []`
 - [ ] While-loops
 - [ ] For-loops
