@@ -33,7 +33,6 @@ namespace lex {
 
         // Pointers for reading
         char *lexeme_start;
-        char *forward;
 
         // Current line
         int line;

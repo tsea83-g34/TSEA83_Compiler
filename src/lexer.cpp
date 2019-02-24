@@ -39,7 +39,6 @@ lexer::lexer(std::string filename) {
 
     // Set pointers
     lexeme_start = buffer_1;
-    forward = buffer_1;
 
     // Reserve keywords
     reserved_words.insert({"if", tag_t::IF});
@@ -65,7 +64,6 @@ char* lexer::switch_buffer() {
 
     // Set pointers
     lexeme_start = other_buffer;
-    forward = other_buffer;
     return other_buffer;
 }
 
