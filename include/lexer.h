@@ -17,7 +17,7 @@ class lexer {
 private:
 
     // Keyword map
-    std::unordered_map<std::string, keyword_token*> reserved_words;
+    std::unordered_map<std::string, tag_t> reserved_words;
     
     // Input stream and double buffer
     std::ifstream file;
