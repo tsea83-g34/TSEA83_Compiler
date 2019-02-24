@@ -39,6 +39,7 @@ enum class tag_t : int {
     CLOSED_PAREN,
     OPEN_BRACE,
     CLOSED_BRACE,
+    SEMI_COLON,
     
     eof,
     UNKNOWN
