@@ -11,7 +11,7 @@
 
 lexer::lexer(std::string filename) {
 
-    reserved_words = std::unordered_map<std::string, keyword_token*>();
+    reserved_words = std::unordered_map<std::string, tag_t>();
     line = 0;
 
     identifier_regex        = std::regex("([A-Z]|[a-z]|_)(([A-Z]|[a-z]|_)|[0-9])*");
@@ -40,7 +40,7 @@ lexer::lexer(std::string filename) {
     forward = buffer_1;
 
     // Reserve keywords
-    reserved_words.insert({"if", new keyword_token(tag_t::IF)});
+    reserved_words.insert({"if", tag_t::IF});
 }
 
 int lexer::char_to_digit(char c) {
@@ -108,6 +108,7 @@ token* lexer::get_next_token() {
             lexeme_start += cm[0].length();
             std::string spaces = cm[0].str();
             line += std::count(spaces.begin(), spaces.end(), '\n');
+            //std::cout << "Removed " << cm[0].length() << " whitespace characters" << std::endl;
             continue; // Try again in case of buffer switch
         }
         
@@ -120,7 +121,7 @@ token* lexer::get_next_token() {
                 }
             } while (*lexeme_start++ != '\n');
         
-        // Check case where comment signifer // is split between buffers
+        // Check case where comment signifier // is split between buffers
         } else if (*lexeme_start == '/' && lexeme_start+1 == get_current_buffer_end()) {
             switch_buffer();
             if (*lexeme_start == '/') {
@@ -148,7 +149,8 @@ token* lexer::get_next_token() {
             } else lexeme_start += word.length();
                 
             // If found word is keyword, return the already created token
-            if (reserved_words.count(word)) return reserved_words[word];
+            // Handle deletion of this!
+            if (reserved_words.count(word)) return new keyword_token(reserved_words[word]);
 
             // Otherwise create a new identifier token
             return new id_token(std::move(word));
@@ -186,6 +188,52 @@ token* lexer::get_next_token() {
             } else return new token(tag_t::UNKNOWN);
 
             return new str_literal_token(std::move(literal));
+        }
+
+        // Check for parenthesis, single character operators and semi-colons
+        switch (*lexeme_start) {
+            case ';':
+                lexeme_start++;
+                return new token(tag_t::SEMI_COLON);
+            case '(':
+                lexeme_start++;
+                return new token(tag_t::OPEN_PAREN);
+            case ')':
+                lexeme_start++;
+                return new token(tag_t::CLOSED_PAREN);
+            case '{':
+                lexeme_start++;
+                return new token(tag_t::OPEN_BRACE);
+            case '}':
+                lexeme_start++;
+                return new token(tag_t::CLOSED_BRACE);
+            case '+':
+                lexeme_start++;
+                return new arithop_token(tag_t::PLUS);
+            case '-':
+                lexeme_start++;
+                return new arithop_token(tag_t::MINUS);
+        }
+
+        // Check for relational operators
+        if (*lexeme_start == '=') {
+            // Handle split
+            if (lexeme_start[1] == '\0') {
+                switch_buffer();
+            } else lexeme_start++;
+
+            switch(*lexeme_start) {
+                case '=':
+                    lexeme_start++;
+                    return new relop_token(tag_t::EQUALS);
+                    break;
+                case '!':
+                    lexeme_start++;
+                    return new relop_token(tag_t::NOT_EQUALS);
+                    break;
+                default:
+                    return new token(tag_t::ASSIGNMENT);
+            }
         }
 
         return new token(tag_t::UNKNOWN);

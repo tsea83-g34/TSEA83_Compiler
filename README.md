@@ -6,13 +6,14 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
 ### Lexer
 
-- [ ] Implement a lexer that can identify tokens of the following language features
+- [x] Implement a lexer that can identify tokens of the following language features
     - If statements
     - Variable declarations
     - Function declarations
     - Block statements
-    - Arithmetic operators + and -
-    - Relational operators == and !=
+    - Variable assignment
+    - Arithmetic operators `+, -`
+    - Relational operators `==, !=`
 
 ### Parsing
 

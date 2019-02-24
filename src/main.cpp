@@ -49,21 +49,48 @@ int main(int argc, char const *argv[]) {
                 cout << "If found" << endl;
                 break;
             case tag_t::ID:
-                cout << "Identifier found: " << ((id_token*) t)->lexeme << endl;
-                delete t;
+                cout << "Identifier found: " << dynamic_cast<id_token*>(t)->lexeme << endl;
                 break;
             case tag_t::INT_LITERAL:
-                cout << "Int literal found: " << ((int_literal_token*) t)->value << endl;
-                delete t;
+                cout << "Int literal found: " << dynamic_cast<int_literal_token*>(t)->value << endl;
                 break;
             case tag_t::STRING_LITERAL:
-                cout << "String literal found: " << ((str_literal_token*) t)->value << endl;
-                delete t;
+                cout << "String literal found: " << dynamic_cast<str_literal_token*>(t)->value << endl;
+                break;
+            case tag_t::PLUS:
+                cout << "Plus operator found" << endl;
+                break;
+            case tag_t::MINUS:
+                cout << "Minus operator found" << endl;
+                break;
+            case tag_t::EQUALS:
+                cout << "Equality relational operator found" << endl;
+                break;
+            case tag_t::NOT_EQUALS:
+                cout << "Non-equality relational operator found" << endl;
+                break;
+            case tag_t::OPEN_PAREN:
+                cout << "Open parenthesis found" << endl;
+                break;
+            case tag_t::CLOSED_PAREN:
+                cout << "Closed parenthesis found" << endl;
+                break;
+            case tag_t::OPEN_BRACE:
+                cout << "Open brace found" << endl;
+                break;
+            case tag_t::CLOSED_BRACE:
+                cout << "Closed brace found" << endl;
+                break;
+            case tag_t::ASSIGNMENT:
+                cout << "Assignment operator found" << endl;
+                break;
+            case tag_t::SEMI_COLON:
+                cout << "Semi-colon found" << endl;
                 break;
             case tag_t::UNKNOWN:
                 cout << "UNKNOWN token found!" << endl;
         }
-
+        delete t;
         t = lex.get_next_token();
     }
 
