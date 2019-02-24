@@ -9,6 +9,8 @@
 #include <cstdlib>
 #include <cstring>
 
+using namespace lex;
+
 lexer::lexer(std::string filename) {
 
     reserved_words = std::unordered_map<std::string, tag_t>();
@@ -148,8 +150,7 @@ token* lexer::get_next_token() {
             // Otherwise just offset the pointer with the word length
             } else lexeme_start += word.length();
                 
-            // If found word is keyword, return the already created token
-            // Handle deletion of this!
+            // If found word is keyword
             if (reserved_words.count(word)) return new keyword_token(reserved_words[word]);
 
             // Otherwise create a new identifier token

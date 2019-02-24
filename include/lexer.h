@@ -13,56 +13,61 @@
 
 #define MAX_TOKEN_SIZE 64
 
-class lexer {
-private:
+namespace lex {
 
-    // Keyword map
-    std::unordered_map<std::string, tag_t> reserved_words;
-    
-    // Input stream and double buffer
-    std::ifstream file;
-    char *buffer_1;
-    const char* buffer_1_end;
+    class lexer {
+    private:
 
-    char *buffer_2;
-    const char* buffer_2_end;
-    // True if currently on buffer 1, false if on buffer 2
-    bool buffer_switch;
+        // Keyword map
+        std::unordered_map<std::string, tag_t> reserved_words;
+        
+        // Input stream and double buffer
+        std::ifstream file;
+        char *buffer_1;
+        const char* buffer_1_end;
 
-    // Pointers for reading
-    char *lexeme_start;
-    char *forward;
+        char *buffer_2;
+        const char* buffer_2_end;
+        // True if currently on buffer 1, false if on buffer 2
+        bool buffer_switch;
 
-    // Current line
-    int line;
-    
-    // Regular expressions
-    std::regex identifier_regex;
-    std::regex int_literal_regex;
-    std::regex str_literal_regex;
-    std::regex whitespace_regex;
-    std::regex half_str_literal_regex;
+        // Pointers for reading
+        char *lexeme_start;
+        char *forward;
 
-    // Converts an ASCII digit character to its corresponding integer digit
-    int char_to_digit(char c);
-    
-    // Reads from the file into the non-current buffer and switches to it
-    char* switch_buffer();
+        // Current line
+        int line;
+        
+        // Regular expressions
+        std::regex identifier_regex;
+        std::regex int_literal_regex;
+        std::regex str_literal_regex;
+        std::regex whitespace_regex;
+        std::regex half_str_literal_regex;
 
-    // Handles tokens that are split between two buffers, returns whether the search was successful or not
-    void handle_split(std::regex r, std::string& result, unsigned int size);
+        // Converts an ASCII digit character to its corresponding integer digit
+        int char_to_digit(char c);
+        
+        // Reads from the file into the non-current buffer and switches to it
+        char* switch_buffer();
 
-    // Returns a pointer to the current buffer being read from
-    char* get_current_buffer();
+        // Handles tokens that are split between two buffers, returns whether the search was successful or not
+        void handle_split(std::regex r, std::string& result, unsigned int size);
 
-    const char* get_current_buffer_end();
+        // Returns a pointer to the current buffer being read from
+        char* get_current_buffer();
 
-public:
-    lexer(std::string filename);
+        const char* get_current_buffer_end();
 
-    // Acquires the next token from the buffer
-    token* get_next_token();
+    public:
+        lexer(std::string filename);
 
-};
+        // Acquires the next token from the buffer
+        token* get_next_token();
+
+    };
+
+}
+
 
 #endif
