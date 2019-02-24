@@ -7,9 +7,9 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 ### Lexer
 
 - [x] Implement a lexer that can identify tokens of the following language features
-    - If statements
     - Variable declarations
     - Function declarations
+    - If statements
     - Block statements
     - Variable assignment
     - Arithmetic operators `+, -`
@@ -18,7 +18,7 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 ### Parsing
 
 - [ ] Parsing for the features listed above
-- [ ] Data structures that represent different language contstructs such as expressions and statements
+- [x] Data structures that represent different language constructs such as expressions and statements
 - [ ] Build abstract tree with these data structures from the stream of tokens provided by the lexer
 - [ ] Symbol table tree for variables and declarations
 
