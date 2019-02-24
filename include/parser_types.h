@@ -7,10 +7,10 @@
 
     e denotes empty string
 
-    program     ->  decls 
+    program     ->  decls                       PROGRAM::1
 
-    decls       ->  decl decls
-                |   e
+    decls       ->  decl decls                  DECLS::1
+                |   e                           DECLS::2
 
     decl        ->  func_decl
                 |   var_decl
@@ -47,103 +47,114 @@
  */
 
 /* Predefine syntax tree structs */
-struct decl;
-struct decls;
-struct var_decl;
-struct func_decl;
+struct ast_node_t;
 
-struct stmt;
-struct stmts;
-struct block_stmt;
+struct program_t;
 
-struct if_stmt;
-struct assignment_stmt;
+struct decl_t;
+struct decls_t;
+struct var_decl_t;
+struct func_decl_t;
 
-struct expr;
-struct arith_expr;
-struct term;
+struct stmt_t;
+struct stmts_t;
+struct block_stmt_t;
 
-struct arithop;
-struct relop;
+struct if_stmt_t;
+struct assignment_stmt_t;
+
+struct expr_t;
+struct arith_expr_t;
+struct term_t;
+
+struct arithop_t;
+struct relop_t;
 /* ----------------------------- */
 
 
+struct ast_node_t { };
+
+struct program_t : ast_node_t {
+    decls_t* decls;
+};
+
 /*      Declarations      */
-struct decls {
-    decl*   first;
-    decls*  rest;
+struct decls_t : ast_node_t {
+    decl_t*   first;
+    decls_t*  rest;
 };
 
-struct decl { };
+struct decl_t : ast_node_t { };
 
-struct var_decl : decl, stmt {
+
+struct func_decl_t : decl_t {
     int type;
     std::string id;
-    std::string value;
-};
-
-struct func_decl : decl {
-    int type;
-    std::string id;
-    block_stmt* stmt;
+    block_stmt_t* stmt;
 };
 
 /* ---------------------- */
 
 /*       Statements       */
 
-struct stmt { };
+struct stmt_t : ast_node_t { };
 
-struct stmts {
-    stmt* first;
-    stmts* rest;
+struct var_decl_t : decl_t, stmt_t {
+    int type;
+    std::string id;
+    std::string value;
 };
 
-struct block_stmt : stmt {
-    stmts* statements;
+struct stmts_t : ast_node_t {
+    stmt_t* first;
+    stmts_t* rest;
 };
 
-struct if_stmt : stmt {
-    expr* cond;
-    stmt* actions;
+struct block_stmt_t : stmt_t {
+    stmts_t* statements;
 };
 
-struct assignment_stmt : stmt {
+struct if_stmt_t : stmt_t {
+    expr_t* cond;
+    stmt_t* actions;
+};
+
+struct assignment_stmt_t : stmt_t {
     std::string identifier;
-    expr* rvalue;
+    expr_t* rvalue;
 };
 
 /* ---------------------- */
 
-struct expr { };
+struct expr_t : ast_node_t { };
 
-struct arith_expr : expr {
-    term* left;
-    arithop* op;
-    expr* right;
+struct arith_expr_t : expr_t {
+    term_t* left;
+    arithop_t* op;
+    expr_t* right;
 };
 
-struct rel_expr : expr {
-    term* left;
-    relop* op;
-    expr* right;
+struct rel_expr_t : expr_t {
+    term_t* left;
+    relop_t* op;
+    expr_t* right;
 };
 
-struct neg_expr : expr {
-    term* value;
+struct neg_expr_t : expr_t {
+    term_t* value;
 };
 
-struct term_expr : expr {
-    term* t;
+struct term_expr_t : expr_t {
+    term_t* t;
 };
 
-struct term { };
+struct term_t : ast_node_t { };
 
-struct id_term : term {
+struct id_term_t : term_t {
     std::string identifier;
 };
 
-struct lit_term : term {
+struct lit_term_t : term_t {
     int literal;
 };
 
