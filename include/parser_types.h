@@ -47,8 +47,6 @@
  */
 
 /* Predefine syntax tree structs */
-struct ast_node_t;
-
 struct program_t;
 
 struct decl_t;
@@ -71,21 +69,17 @@ struct arithop_t;
 struct relop_t;
 /* ----------------------------- */
 
-
-struct ast_node_t { };
-
-struct program_t : ast_node_t {
+struct program_t {
     decls_t* decls;
 };
 
 /*      Declarations      */
-struct decls_t : ast_node_t {
+struct decls_t {
     decl_t*   first;
     decls_t*  rest;
 };
 
-struct decl_t : ast_node_t { };
-
+struct decl_t { };
 
 struct func_decl_t : decl_t {
     int type;
@@ -97,15 +91,15 @@ struct func_decl_t : decl_t {
 
 /*       Statements       */
 
-struct stmt_t : ast_node_t { };
+struct stmt_t { };
 
 struct var_decl_t : decl_t, stmt_t {
     int type;
     std::string id;
-    std::string value;
+    expr_t* value;
 };
 
-struct stmts_t : ast_node_t {
+struct stmts_t {
     stmt_t* first;
     stmts_t* rest;
 };
@@ -126,7 +120,7 @@ struct assignment_stmt_t : stmt_t {
 
 /* ---------------------- */
 
-struct expr_t : ast_node_t { };
+struct expr_t { };
 
 struct arith_expr_t : expr_t {
     term_t* left;
@@ -148,7 +142,7 @@ struct term_expr_t : expr_t {
     term_t* t;
 };
 
-struct term_t : ast_node_t { };
+struct term_t { };
 
 struct id_term_t : term_t {
     std::string identifier;
@@ -157,5 +151,17 @@ struct id_term_t : term_t {
 struct lit_term_t : term_t {
     int literal;
 };
+
+struct arithop_t { };
+
+struct arithop_plus_t : arithop_t { };
+
+struct arithop_minus_t : arithop_t { };
+
+struct relop_t { };
+
+struct relop_equals_t : relop_t { };
+
+struct relop_not_equals_t : relop_t { };
 
 #endif
