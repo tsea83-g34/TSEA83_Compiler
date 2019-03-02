@@ -99,6 +99,8 @@ private:
 
     lex::token* get_token();
 
+    void put_back_token(lex::token* t);
+
     bool is_type(const std::string& s);
     
     // Construct specific matching functions
