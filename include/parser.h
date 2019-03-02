@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include <functional>
+#include <deque>
 
 #include "parser_types.h"
 #include "tokens.h"
@@ -75,49 +76,77 @@ struct enum_class_hash_t {
 // Struct for productions
 struct prod_t {
     std::vector<prod_tags_t> rule;
-    std::function<ast_node_t*()> semantics;
+    //std::function<ast_node_t*()> semantics;
 };
 
 class parser_t {
 private:
+    // Map of all productions, might be redundant
     std::unordered_map<prod_tags_t, std::vector<prod_t>, enum_class_hash_t> productions;
+    
+    // The lexical analyzer used by the aprser
     lex::lexer *lexical_analyzer;
 
+    // Maps reserved types to their byte size
+    // TODO: Implement proper type handling for composite types
+    std::unordered_map<std::string, int> type_map;
+
+    // Tokens will be loaded into this double ended queue to be processed
+    std::deque<lex::token*> token_queue;
+    size_t current_pos;
+
     void init_productions();
+
+    lex::token* get_token();
+
+    bool is_type(const std::string& s);
     
-    static ast_node_t* match_program(parser_t* p);
+    // Construct specific matching functions
+    static program_t* match_program(parser_t* p);
+    static decls_t* match_decls(parser_t* p);
+    static decl_t* match_decl(parser_t* p);
+    static var_decl_t* match_decl_var(parser_t* p);
+    static func_decl_t* match_decl_func(parser_t* p);
+    static stmt_t* match_stmt(parser_t* p);
+    static stmts_t* match_stmts(parser_t* p);
+    static expr_t* match_expr(parser_t* p);
+    static arithop_t* match_arithop(parser_t* p);
+    static relop_t* match_relop(parser_t* p);
+    static term_t* match_term(parser_t* p);
 
-    static ast_node_t* match_decls_1(parser_t* p);
-    static ast_node_t* match_decls_2(parser_t* p);
-    
-    static ast_node_t* match_decl_1(parser_t* p);
-    static ast_node_t* match_decl_2(parser_t* p);
-    
-    static ast_node_t* match_stmt_block(parser_t* p);
-    static ast_node_t* match_stmt_if(parser_t* p);
-    static ast_node_t* match_stmt_decl(parser_t* p);
-    static ast_node_t* match_stmt_assign(parser_t* p);
+    // Production specific matching functions
+    static decls_t* match_decls_1(parser_t* p);
+    static decls_t* match_decls_2(parser_t* p);
 
-    static ast_node_t* match_stmts_1(parser_t* p);
-    static ast_node_t* match_stmts_2(parser_t* p);
+    static var_decl_t* match_decl_var_1(parser_t* p);
+    static var_decl_t* match_decl_var_2(parser_t* p);
 
-    static ast_node_t* match_stmt_block(parser_t* p);
+    static func_decl_t* match_decl_func_1(parser_t* p);
+    static func_decl_t* match_decl_func_2(parser_t* p);
 
-    static ast_node_t* match_expr_arithop(parser_t* p);
-    static ast_node_t* match_expr_negated(parser_t* p);
-    static ast_node_t* match_expr_relop(parser_t* p);
-    static ast_node_t* match_expr_term(parser_t* p);
+    static block_stmt_t* match_stmt_block(parser_t* p);
+    static if_stmt_t* match_stmt_if(parser_t* p);
+    static var_decl_t* match_stmt_decl(parser_t* p);
+    static assignment_stmt_t* match_stmt_assign(parser_t* p);
 
-    static ast_node_t* match_arithop_plus(parser_t* p);
-    static ast_node_t* match_arithop_minus(parser_t* p);
+    static stmts_t* match_stmts_1(parser_t* p);
+    static stmts_t* match_stmts_2(parser_t* p);
 
-    static ast_node_t* match_relop_equals(parser_t* p);
-    static ast_node_t* match_relop_not_equals(parser_t* p);
+    static arith_expr_t* match_expr_arithop(parser_t* p);
+    static neg_expr_t* match_expr_negated(parser_t* p);
+    static rel_expr_t* match_expr_relop(parser_t* p);
+    static term_expr_t* match_expr_term(parser_t* p);
 
-    static ast_node_t* match_term_identifier(parser_t* p);
-    static ast_node_t* match_term_literal(parser_t* p);
+    static arithop_plus_t* match_arithop_plus(parser_t* p);
+    static arithop_minus_t* match_arithop_minus(parser_t* p);
+
+    static relop_equals_t* match_relop_equals(parser_t* p);
+    static relop_not_equals_t* match_relop_not_equals(parser_t* p);
+
+    static id_term_t* match_term_identifier(parser_t* p);
+    static lit_term_t* match_term_literal(parser_t* p);
 public:
-    parser_t();
+    parser_t(lex::lexer *l);
     program_t* parse_token_stream();
 };
 
