@@ -20,14 +20,21 @@ void parser_t::init_productions() { }
 
 lex::token* parser_t::get_token() {
     
-    if (current_pos == token_queue.size()) {
-        token_queue.push_back(lexical_analyzer->get_next_token());
+    if (token_queue.size()) {
+        return lexical_analyzer->get_next_token();
+    } else {
+        auto result = token_queue.front();
+        token_queue.pop_front();
+        return result;
     }
-    return token_queue[current_pos++];
 }
 
 bool parser_t::is_type(const std::string& s) {
     return type_map.count(s);
+}
+
+void parser_t::put_back_token(lex::token* t) {
+    token_queue.push_front(t);
 }
 
 // Construct specific matching functions
@@ -68,12 +75,17 @@ func_decl_t* parser_t::match_decl_func(parser_t* p) {
     d = match_decl_func_1(p);
     if (d != nullptr) return d;
 
-    
-    return nullptr;
+    d = match_decl_func_2(p);
+    return d;
 }
 
 var_decl_t* parser_t::match_decl_var(parser_t* p) {
-    return nullptr;
+    
+    // This one is simple, since one of the productions of a variable declaration is the prefix of
+    // the other. SO both have been implemented in the same function. There is a separate function
+    // that checks the common suffix, and the one called here checks for the rest of the other
+    // production
+    return match_decl_var_2(p);
 }
 
 stmts_t* parser_t::match_stmts(parser_t* p) {
@@ -188,20 +200,73 @@ var_decl_t* parser_t::match_decl_var_1(parser_t* p) {
     
     var_decl_t* d = new var_decl_t;
 
-    lex::token *t;
-    t = p->get_token();
+    lex::token *type_token;
+    lex::token *id_token;
+    // Get type
+    type_token = p->get_token();
 
-    if (t->tag != lex::tag_t::ID || ((lex::id_token*) t)->lexeme) {
+    // If first token is not a word token or is not a type, put back token, delete d and return nullptr
+    if (type_token->tag != lex::tag_t::ID || !p->is_type(static_cast<lex::id_token*>(type_token)->lexeme)) {
+        p->put_back_token(type_token);
         delete d;
         return nullptr;
     }
 
+    // Read type from type map
+    d->type = p->type_map[static_cast<lex::id_token*>(type_token)->lexeme];
 
+    // Get identifier
+    id_token = p->get_token();
+    
+    // If token is not an identifier, put back tokens in reverse order, delete d and return nullptr
+    if (id_token->tag != lex::tag_t::ID) {
+        p->put_back_token(id_token);
+        p->put_back_token(type_token);
+        delete d;
+        return nullptr;
+    }
+
+    d->id = static_cast<lex::id_token*>(id_token)->lexeme;
+
+    // If successful, return declaration and delete tokens
+    delete type_token;
+    delete id_token;
+    return d;
 }
 
 // var_decl -> type id "=" expr
 var_decl_t* parser_t::match_decl_var_2(parser_t* p) {
-    return nullptr;
+
+    // Use other function to try to find first part of the declaration
+    var_decl_t* d  = match_decl_var_2(p);
+
+    // If first part is not found, return nullptr
+    if (d == nullptr) return nullptr;
+
+    // Try to find assignment
+    lex::token* equals = p->get_token();
+
+    // If token is not an assignment operator put back token and return earlier declaration
+    if (equals->tag != lex::tag_t::ASSIGNMENT) {
+        p->put_back_token(equals);
+        d->value = nullptr;
+        return d;
+    }
+
+    // Else check for expression
+    expr_t* value = match_expr(p);
+    
+    // If no expression is found, return nullptr
+    // TODO: Throw exception instead and free memory
+    if (value == nullptr) {
+        delete d;
+        return nullptr;
+    }
+
+    // If everything is in order, set value to found expr, free token and return d
+    d->value = value;
+    delete equals;
+    return d;
 }
 
 func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
