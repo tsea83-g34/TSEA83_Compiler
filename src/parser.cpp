@@ -66,7 +66,7 @@ void parser_t::init_productions() {
 
     //  block_stmt  ->  { stmts }
     std::vector<prod_t> block_stmt_productions = {
-        (prod_t){{prod_tags_t::BLOCK_STMT}, std::bind(&parser_t::match_stmt_block, this)}
+        (prod_t){{prod_tags_t::OPEN_BRACE, prod_tags_t::STMTS, prod_tags_t::CLOSED_BRACE}, std::bind(&parser_t::match_stmt_block, this)}
     };
     productions.insert({prod_tags_t::BLOCK_STMT, block_stmt_productions});
 
