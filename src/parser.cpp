@@ -276,6 +276,7 @@ var_decl_t* parser_t::match_decl_var_2(parser_t* p) {
     }
 
     // If everything is in order, set value to found expr, free token and return d
+    // TODO: Add variable name to symbol table
     d->value = value;
     delete equals;
     return d;
