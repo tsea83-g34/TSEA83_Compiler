@@ -18,23 +18,35 @@ parser_t::parser_t(lex::lexer *l) : lexical_analyzer(l) {
 void parser_t::init_productions() { }
 
 
-lex::token* parser_t::get_token() {
+inline lex::token* parser_t::get_token() {
     
     if (token_queue.size()) {
-        return lexical_analyzer->get_next_token();
-    } else {
         auto result = token_queue.front();
         token_queue.pop_front();
         return result;
+    } else {
+        return lexical_analyzer->get_next_token();
     }
 }
 
-bool parser_t::is_type(const std::string& s) {
+inline void parser_t::put_back_token(lex::token* t) {
+    token_queue.push_front(t);
+}
+
+inline bool parser_t::is_type(const std::string& s) {
     return type_map.count(s);
 }
 
-void parser_t::put_back_token(lex::token* t) {
-    token_queue.push_front(t);
+inline bool parser_t::is_type(const lex::token* t) {
+    return t->tag == lex::tag_t::ID && is_type(static_cast<const lex::id_token*>(t)->lexeme);
+}
+
+inline int parser_t::get_type(const std::string& s) {
+    return type_map[s];
+}
+
+inline int parser_t::get_type(const lex::id_token* t) {
+    return type_map[t->lexeme];
 }
 
 // Construct specific matching functions
@@ -206,14 +218,14 @@ var_decl_t* parser_t::match_decl_var_1(parser_t* p) {
     type_token = p->get_token();
 
     // If first token is not a word token or is not a type, put back token, delete d and return nullptr
-    if (type_token->tag != lex::tag_t::ID || !p->is_type(static_cast<lex::id_token*>(type_token)->lexeme)) {
+    if (!p->is_type(type_token)) {
         p->put_back_token(type_token);
         delete d;
         return nullptr;
     }
 
     // Read type from type map
-    d->type = p->type_map[static_cast<lex::id_token*>(type_token)->lexeme];
+    d->type = p->get_type(static_cast<lex::id_token*>(type_token));
 
     // Get identifier
     id_token = p->get_token();
@@ -269,12 +281,133 @@ var_decl_t* parser_t::match_decl_var_2(parser_t* p) {
     return d;
 }
 
+// func_decl -> type id ( ) ;
 func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
-    return nullptr;
+
+    func_decl_t* d = new func_decl_t;
+
+    lex::token* type_token;
+    lex::token* id_token;
+    lex::token* open_paren_token;
+    lex::token* closed_paren_token;
+    lex::token* semi_token;
+
+    // Acquire first token
+    type_token = p->get_token();
+
+    // If first token is not a type token, put back token, delete d and return nullptr
+    if (!p->is_type(type_token)) {
+        p->put_back_token(type_token);
+        delete d;
+        return nullptr;
+    }
+    d->type = p->get_type(static_cast<lex::id_token*>(type_token));
+
+    // Acquire identifier token
+    id_token = p->get_token();
+    // If the acquired token is not an identifier, put back tokens, delete d and return nullptr
+    if (id_token->tag != lex::tag_t::ID) {
+        p->put_back_token(id_token);
+        p->put_back_token(type_token);
+        delete d;
+        return nullptr;
+    }
+
+    // Store function name
+    d->id = static_cast<lex::id_token*>(id_token)->lexeme;
+
+    // Acquire first parenthesis tokens
+    open_paren_token    = p->get_token();
+    closed_paren_token  = p->get_token();
+    semi_token          = p->get_token();
+    // If acquired tokens are not parenthesis
+    if (open_paren_token->tag != lex::tag_t::OPEN_PAREN || closed_paren_token->tag != lex::tag_t::CLOSED_PAREN
+            || semi_token->tag != lex::tag_t::SEMI_COLON) {
+        p->put_back_token(semi_token);
+        p->put_back_token(closed_paren_token);
+        p->put_back_token(open_paren_token);
+        p->put_back_token(id_token);
+        p->put_back_token(type_token);
+        delete d;
+        return nullptr;
+    }
+
+    // If gotten so far, match is successful. Complete func_decl data structure and delete tokens
+    d->stmt = nullptr;
+    delete type_token;
+    delete id_token;
+    delete open_paren_token;
+    delete closed_paren_token;
+    delete semi_token;
+    return d;
 }
 
+// func_decl -> type id ( ) block_stmt
 func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
-    return nullptr;
+    func_decl_t* d = new func_decl_t;
+
+    lex::token* type_token;
+    lex::token* id_token;
+    lex::token* open_paren_token;
+    lex::token* closed_paren_token;
+
+    // Acquire first token
+    type_token = p->get_token();
+
+    // If first token is not a type token, put back token, delete d and return nullptr
+    if (!p->is_type(type_token)) {
+        p->put_back_token(type_token);
+        delete d;
+        return nullptr;
+    }
+    d->type = p->get_type(static_cast<lex::id_token*>(type_token));
+
+    // Acquire identifier token
+    id_token = p->get_token();
+    // If the acquired token is not an identifier, put back tokens, delete d and return nullptr
+    if (id_token->tag != lex::tag_t::ID) {
+        p->put_back_token(id_token);
+        p->put_back_token(type_token);
+        delete d;
+        return nullptr;
+    }
+
+    // Store function name
+    d->id = static_cast<lex::id_token*>(id_token)->lexeme;
+
+    // Acquire first parenthesis tokens
+    open_paren_token    = p->get_token();
+    closed_paren_token  = p->get_token();
+    // If acquired tokens are not parenthesis
+    if (open_paren_token->tag != lex::tag_t::OPEN_PAREN || closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
+        p->put_back_token(closed_paren_token);
+        p->put_back_token(open_paren_token);
+        p->put_back_token(id_token);
+        p->put_back_token(type_token);
+        delete d;
+        return nullptr;
+    }
+
+    // Acquire block statement
+    block_stmt_t* bs = match_stmt_block(p);
+    
+    // If unsuccessful in finding block statement, put back tokens, delete d and return nullptr
+    if (bs == nullptr) { 
+        p->put_back_token(closed_paren_token);
+        p->put_back_token(open_paren_token);
+        p->put_back_token(id_token);
+        p->put_back_token(type_token);
+        delete d;
+        return nullptr;
+    }
+
+    // If gotten so far, match is successful. Complete func_decl data structure and delete tokens
+    d->stmt = bs;
+    delete type_token;
+    delete id_token;
+    delete open_paren_token;
+    delete closed_paren_token;
+    return d;
 }
 
 block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
