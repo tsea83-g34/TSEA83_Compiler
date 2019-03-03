@@ -97,11 +97,15 @@ private:
 
     void init_productions();
 
-    lex::token* get_token();
+    inline lex::token* get_token();
 
-    void put_back_token(lex::token* t);
+    inline void put_back_token(lex::token* t);
 
-    bool is_type(const std::string& s);
+    inline bool is_type(const std::string& s);
+    inline bool is_type(const lex::token* t);
+
+    inline int get_type(const std::string& s);
+    inline int get_type(const lex::id_token* t);
     
     // Construct specific matching functions
     static program_t* match_program(parser_t* p);
