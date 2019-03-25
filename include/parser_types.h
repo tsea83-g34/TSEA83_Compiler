@@ -22,7 +22,7 @@
                 |   type id ( ) block_stmt
 
     stmt        ->  block_stmt
-                |   if ( expr ) stmt
+                |   if ( expr ) stmt // This could lead to great errors if expr is matched but not stmt?
                 |   var_decl ; 
                 |   id "=" expr ;   // assignment
     
