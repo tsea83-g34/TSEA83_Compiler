@@ -674,7 +674,7 @@ neg_expr_t* parser_t::match_expr_negated(parser_t* p) {
     lex::token* neg_token = p->get_token();
     term_t* value = match_term(p);
 
-    if (neg_token->tag != lex::tag_t::MINUS || value == nullptr) {
+    if (neg_token->tag != lex::tag_t::MINUS || value == nullptr) {
         p->put_back_token(neg_token);
         delete result;
         return nullptr;
