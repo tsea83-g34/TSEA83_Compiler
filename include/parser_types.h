@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "printable.h"
+
 /* First tier C-- grammar
 
     e denotes empty string
@@ -120,40 +122,52 @@ struct assignment_stmt_t : stmt_t {
 
 /* ---------------------- */
 
-struct expr_t { };
+struct expr_t : printable_t { };
 
 struct arith_expr_t : expr_t {
     term_t* left;
     arithop_t* op;
     expr_t* right;
+
+    std::string get_string() override;
 };
 
 struct rel_expr_t : expr_t {
     term_t* left;
     relop_t* op;
     expr_t* right;
+
+    std::string get_string() override;
 };
 
 struct neg_expr_t : expr_t {
     term_t* value;
+
+    std::string get_string() override;
 };
 
 struct term_expr_t : expr_t {
     term_t* t;
+
+    std::string get_string() override;
 };
 
-struct term_t {
+struct term_t : printable_t {
     bool is_literal;
 };
 
 struct id_term_t : term_t {
     std::string identifier;
+
     id_term_t() { is_literal = false; }
+    std::string get_string() override;
 };
 
 struct lit_term_t : term_t {
     int literal;
+    
     lit_term_t() { is_literal = true; }
+    std::string get_string() override;
 };
 
 struct arithop_t { };
