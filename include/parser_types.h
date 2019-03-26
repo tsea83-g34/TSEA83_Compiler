@@ -15,15 +15,15 @@
     decl        ->  func_decl
                 |   var_decl
     
-    var_decl    ->  type id
-                |   type id "=" expr
+    var_decl    ->  type id ;
+                |   type id "=" expr ;
 
     func_decl   ->  type id ( ) ;
                 |   type id ( ) block_stmt
 
     stmt        ->  block_stmt
                 |   if ( expr ) stmt // This could lead to great errors if expr is matched but not stmt?
-                |   var_decl ; 
+                |   var_decl ;
                 |   id "=" expr ;   // assignment
     
     stmts       ->  stmt stmts
@@ -142,14 +142,18 @@ struct term_expr_t : expr_t {
     term_t* t;
 };
 
-struct term_t { };
+struct term_t {
+    bool is_literal;
+};
 
 struct id_term_t : term_t {
     std::string identifier;
+    id_term_t() { is_literal = false; }
 };
 
 struct lit_term_t : term_t {
     int literal;
+    lit_term_t() { is_literal = true; }
 };
 
 struct arithop_t { };
