@@ -1,22 +1,23 @@
 
 #include "../include/parser.h"
 
-
+#include <iostream>
 
 parser_t::parser_t(lex::lexer *l) : lexical_analyzer(l) {
 
-    init_productions();
-
     type_map = std::unordered_map<std::string, int>();
     type_map.insert({"int", 0});
+
+    type_name_map = std::unordered_map<int, std::string>();
+    type_name_map.insert({0, "int"});
 
     token_queue = std::deque<lex::token*>();
     current_pos = 0;
 }
 
-
-void parser_t::init_productions() { }
-
+program_t* parser_t::parse_token_stream() {
+    return match_program(this);
+}
 
 inline lex::token* parser_t::get_token() {
     
@@ -49,17 +50,31 @@ inline int parser_t::get_type(const lex::id_token* t) {
     return type_map[t->lexeme];
 }
 
+std::string parser_t::get_type_name(int type) {
+    return type_name_map[type];
+}
+
 // Construct specific matching functions
 
 program_t* parser_t::match_program(parser_t *p) {
     
+    std::cout << "Matching program" << std::endl;
     program_t *program = new program_t();
-    program->decls = (decls_t*) match_decls(p);
+
+    decls_t* d = match_decls(p);
+
+    if (d == nullptr) {
+        std::cout << "Failed matching decls" << std::endl;
+        return program;
+    }
+
+    program->decls = d;
     return program;
 }
 
 decls_t* parser_t::match_decls(parser_t* p) {
-    
+
+    std::cout << "Matching decls" << std::endl;
     decls_t* ds;
     
     ds = match_decls_1(p);
@@ -70,14 +85,15 @@ decls_t* parser_t::match_decls(parser_t* p) {
 }
 
 decl_t* parser_t::match_decl(parser_t* p) {
-
+    std::cout << "Matching decl" << std::endl;
     decl_t* d;
     
     d = match_decl_var(p);
     if (d != nullptr) return d;
 
-    d = match_decl_func(p);
-    return d;
+    // TODO
+    //d = match_decl_func(p);
+    return nullptr;
 }
 
 func_decl_t* parser_t::match_decl_func(parser_t* p) {
@@ -97,7 +113,18 @@ var_decl_t* parser_t::match_decl_var(parser_t* p) {
     // the other. So both have been implemented in the same function. There is a separate function
     // that checks the common suffix, and the one called here checks for the rest of the other
     // production
-    return match_decl_var_2(p);
+    var_decl_t* result = match_decl_var_2(p);
+
+    // Acquire semi colon
+    lex::token* semi_colon_token = p->get_token();
+
+    if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        p->put_back_token(semi_colon_token);
+        delete result;
+        return nullptr;
+    }
+
+    return result;
 }
 
 stmts_t* parser_t::match_stmts(parser_t* p) {
@@ -131,7 +158,7 @@ stmt_t* parser_t::match_stmt(parser_t* p) {
 expr_t* parser_t::match_expr(parser_t* p) {
     
     expr_t* expr;
-    
+
     expr = match_expr_arithop(p);
     if (expr != nullptr) return expr;
 
@@ -143,6 +170,7 @@ expr_t* parser_t::match_expr(parser_t* p) {
 
     expr = match_expr_negated(p);
     return expr;
+
 }
 
 arithop_t* parser_t::match_arithop(parser_t* p) {
@@ -183,18 +211,23 @@ term_t* parser_t::match_term(parser_t* p) {
 // decls -> decl decls
 decls_t* parser_t::match_decls_1(parser_t* p) {
     
-    decls_t* result = new decls_t;
+    std::cout << "Matching decls_1" << std::endl;
 
-    result->first = match_decl(p);
+    decl_t* first = match_decl(p);
 
     // If could not find a declaration, free memory and return nullptr
-    if (result->first == nullptr) {
-        delete result;
+    if (first == nullptr) {
         return nullptr;
     }
+    decls_t* result = new decls_t;
+    result->first = first;
 
     // Otherwise, look for more declarations
-    result->rest = (decls_t*) match_decls(p);
+    decls_t* rest = (decls_t*) match_decls(p);
+    result->rest = rest;
+    std::string s((rest == nullptr) ? "rest not found" : "rest found");
+    std::cout << s << std::endl; 
+
 
     return result;
 }
@@ -250,8 +283,7 @@ var_decl_t* parser_t::match_decl_var_1(parser_t* p) {
 var_decl_t* parser_t::match_decl_var_2(parser_t* p) {
 
     // Use other function to try to find first part of the declaration
-    var_decl_t* d  = match_decl_var_2(p);
-
+    var_decl_t* d  = match_decl_var_1(p);
     // If first part is not found, return nullptr
     if (d == nullptr) return nullptr;
 
@@ -265,12 +297,15 @@ var_decl_t* parser_t::match_decl_var_2(parser_t* p) {
         return d;
     }
 
+    std::cout << "assignment declaration" << std::endl;
+
     // Else check for expression
     expr_t* value = match_expr(p);
     
     // If no expression is found, return nullptr
     // TODO: Throw exception instead and free memory
     if (value == nullptr) {
+        std::cout << "Failed to match rvalue expression" << std::endl;
         delete d;
         return nullptr;
     }
@@ -631,37 +666,67 @@ stmts_t* parser_t::match_stmts_2(parser_t* p) {
 // expr -> term arithop expr
 arith_expr_t* parser_t::match_expr_arithop(parser_t* p) {
     
-    arith_expr_t* result = new arith_expr_t;
+    lex::token* left_term_token;
+    lex::token* op_token;    
 
-    term_t* left_term = match_term(p);
+    left_term_token = p->get_token();
 
-    if (left_term == nullptr) {
-        delete result;
+    // verify that first token is a term
+    if (left_term_token->tag != lex::tag_t::ID && left_term_token->tag != lex::tag_t::INT_LITERAL) {
+        p->put_back_token(left_term_token);
         return nullptr;
     }
 
-    result->left = left_term;
+    op_token = p->get_token();  
 
-    // TODO: Beyond this point, reversal is impossible, throw error instead?
-    arithop_t* op = match_arithop(p);
-
-    if (op == nullptr) {
-        delete result;
-        delete left_term;
+    // Verify that second token is an operator
+    if ((op_token->tag != lex::tag_t::PLUS && op_token->tag != lex::tag_t::MINUS)) {
+        p->put_back_token(op_token);
+        p->put_back_token(left_term_token);
         return nullptr;
     }
 
-    result->op = op;
-
-    expr_t* right = match_expr(p);
-
+    expr_t* right = match_expr(p); 
     if (right == nullptr) {
-        delete result;
-        delete left_term;
-        delete op;
+        p->put_back_token(op_token);
+        p->put_back_token(left_term_token);
         return nullptr;
     }
+    
+    // Acquire the left term value
+    term_t* result_left;
+    if (left_term_token->tag == lex::tag_t::ID) {
 
+        id_term_t* r = new id_term_t();
+        r->identifier = static_cast<lex::id_token*>(left_term_token)->lexeme;
+        result_left = (term_t*) r;
+
+    } else if (left_term_token->tag == lex::tag_t::INT_LITERAL) {
+
+        lit_term_t* r = new lit_term_t();
+        r->literal = static_cast<lex::int_literal_token*>(left_term_token)->value;
+        result_left = (term_t*) r;
+
+    }
+
+    // Acquire the operator
+    arithop_t* op;
+    if (op_token->tag == lex::tag_t::PLUS) {
+
+        op = new arithop_plus_t;
+
+    } else if (op_token->tag == lex::tag_t::MINUS) {
+
+        op = new arithop_minus_t;
+
+    }
+
+    delete left_term_token;
+    delete op_token;
+
+    arith_expr_t* result = new arith_expr_t;
+    result->left  = result_left;
+    result->op    = op;
     result->right = right;
     return result;
 }
@@ -669,58 +734,104 @@ arith_expr_t* parser_t::match_expr_arithop(parser_t* p) {
 // expr -> "-" term
 neg_expr_t* parser_t::match_expr_negated(parser_t* p) {
     
-    neg_expr_t* result = new neg_expr_t;
-    
-    lex::token* neg_token = p->get_token();
-    term_t* value = match_term(p);
 
-    if (neg_token->tag != lex::tag_t::MINUS || value == nullptr) {
+    lex::token* neg_token  = p->get_token();
+    lex::token* term_token = p->get_token();
+
+    // If first token is not a minus operator, or the second token is not a literal nor an identifier, revert
+    if (neg_token->tag != lex::tag_t::MINUS || (term_token->tag != lex::tag_t::INT_LITERAL && term_token->tag != lex::tag_t::ID)) {
+        p->put_back_token(term_token);
         p->put_back_token(neg_token);
-        delete result;
         return nullptr;
     }
 
+    term_t* value;
+    if (term_token->tag == lex::tag_t::INT_LITERAL) {
+
+        lit_term_t* i = new lit_term_t();
+        i->literal = static_cast<lex::int_literal_token*>(term_token)->value;
+        value = i;
+
+    } else if (term_token->tag == lex::tag_t::ID) {
+
+        id_term_t* i = new id_term_t();
+        i->identifier = static_cast<lex::id_token*>(term_token)->lexeme;
+        value = i;
+    }
+
+    neg_expr_t* result = new neg_expr_t;
     result->value = value;
 
     delete neg_token;
+    delete term_token;
     return result;
 
 }
 
 // expr -> term relop expr
 rel_expr_t* parser_t::match_expr_relop(parser_t* p) {
-    
-    rel_expr_t* result = new rel_expr_t;
-    
-    term_t* left = match_term(p);
 
-    if (left == nullptr) {
-        delete result;
+    lex::token* left_term_token;
+    lex::token* op_token;    
+
+    left_term_token = p->get_token();
+
+    // verify that first token is a term
+    if (left_term_token->tag != lex::tag_t::ID && left_term_token->tag != lex::tag_t::INT_LITERAL) {
+        p->put_back_token(left_term_token);
         return nullptr;
     }
 
-    result->left = left;
-    
-    // TODO: Beyond this point errors cannot be reversed, use errors instead
-    relop_t* op = match_relop(p);
+    op_token = p->get_token();  
 
-    if (op == nullptr) {
-        delete result;
-        delete left;
+    // Verify that second token is an operator
+    if ((op_token->tag != lex::tag_t::EQUALS && op_token->tag != lex::tag_t::NOT_EQUALS)) {
+        p->put_back_token(op_token);
+        p->put_back_token(left_term_token);
         return nullptr;
     }
 
-    result->op = op;
-
-    expr_t* right = match_expr(p);
-
+    expr_t* right = match_expr(p); 
     if (right == nullptr) {
-        delete result;
-        delete left;
-        delete op;
+        p->put_back_token(op_token);
+        p->put_back_token(left_term_token);
         return nullptr;
     }
+    
+    // Acquire the left term value
+    term_t* result_left;
+    if (left_term_token->tag == lex::tag_t::ID) {
 
+        id_term_t* r = new id_term_t();
+        r->identifier = static_cast<lex::id_token*>(left_term_token)->lexeme;
+        result_left = (term_t*) r;
+
+    } else if (left_term_token->tag == lex::tag_t::INT_LITERAL) {
+
+        lit_term_t* r = new lit_term_t();
+        r->literal = static_cast<lex::int_literal_token*>(left_term_token)->value;
+        result_left = (term_t*) r;
+
+    }
+
+    // Acquire the operator
+    relop_t* op;
+    if (op_token->tag == lex::tag_t::EQUALS) {
+
+        op = new relop_equals_t;
+
+    } else if (op_token->tag == lex::tag_t::NOT_EQUALS) {
+
+        op = new relop_not_equals_t;
+
+    }
+
+    delete left_term_token;
+    delete op_token;
+
+    rel_expr_t* result = new rel_expr_t;
+    result->left  = result_left;
+    result->op    = op;
     result->right = right;
     return result;
 }

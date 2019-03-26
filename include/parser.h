@@ -90,12 +90,11 @@ private:
     // Maps reserved types to their byte size
     // TODO: Implement proper type handling for composite types
     std::unordered_map<std::string, int> type_map;
+    std::unordered_map<int, std::string> type_name_map;
 
     // Tokens will be loaded into this double ended queue to be processed
     std::deque<lex::token*> token_queue;
     size_t current_pos;
-
-    void init_productions();
 
     inline lex::token* get_token();
 
@@ -154,6 +153,7 @@ private:
 public:
     parser_t(lex::lexer *l);
     program_t* parse_token_stream();
+    std::string get_type_name(int type);
 };
 
 #endif

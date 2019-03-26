@@ -10,6 +10,7 @@
 #endif
 
 #include "../include/lexer.h"
+#include "../include/parser.h"
 
 using namespace std;
 
@@ -39,6 +40,20 @@ int main(int argc, char const *argv[]) {
     cout << "total: " << filename << endl;
 
     lex::lexer lex(filename);
+    parser_t parser(&lex);
+
+    program_t* program = parser.parse_token_stream();
+
+    decls_t* current = program->decls;
+    while (current != nullptr) {
+        var_decl_t* d = static_cast<var_decl_t*>(current->first);
+        cout << "Id:    " << d->id << endl;
+        cout << "Type:  " << parser.get_type_name(d->type) << endl;
+        cout << "Value: " << d->value << endl;
+        current = current->rest;
+    }
+
+    #if 0
     int token_count = 1;
     lex::token* t = lex.get_next_token();
     while (t->tag != lex::tag_t::eof) {
@@ -93,6 +108,6 @@ int main(int argc, char const *argv[]) {
         delete t;
         t = lex.get_next_token();
     }
-
+    #endif
     return 0;
 }
