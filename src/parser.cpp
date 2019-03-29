@@ -1,5 +1,6 @@
 
 #include "../include/parser.h"
+#include "../include/parser_types.h"
 
 #include <iostream>
 
@@ -30,7 +31,7 @@ inline lex::token* parser_t::get_token() {
     }
 }
 
-inline void parser_t::put_back_token(lex::token* t) {
+void parser_t::put_back_token(lex::token* t) {
     token_queue.push_front(t);
 }
 
@@ -91,11 +92,13 @@ decl_t* parser_t::match_decl(parser_t* p) {
     d = match_decl_var(p);
     if (d != nullptr) return d;
 
-    // TODO
-    //d = match_decl_func(p);
+    d = match_decl_func(p);
+    if (d != nullptr) return d;
+
     return nullptr;
 }
 
+// TODO
 func_decl_t* parser_t::match_decl_func(parser_t* p) {
 
     func_decl_t* d;
@@ -114,12 +117,16 @@ var_decl_t* parser_t::match_decl_var(parser_t* p) {
     // that checks the common suffix, and the one called here checks for the rest of the other
     // production
     var_decl_t* result = match_decl_var_2(p);
-
+    
+    // If failed to match declaration, return
+    if (result == nullptr) return nullptr;
+    
     // Acquire semi colon
     lex::token* semi_colon_token = p->get_token();
 
     if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
         p->put_back_token(semi_colon_token);
+        result->undo(p);
         delete result;
         return nullptr;
     }
@@ -159,6 +166,7 @@ expr_t* parser_t::match_expr(parser_t* p) {
     
     expr_t* expr;
 
+    std::cout << "Matching expression..." << std::endl;
     expr = match_expr_arithop(p);
     if (expr != nullptr) return expr;
 
@@ -242,8 +250,6 @@ decls_t* parser_t::match_decls_2(parser_t* p) {
 
 // var_decl -> type id
 var_decl_t* parser_t::match_decl_var_1(parser_t* p) {
-    
-    var_decl_t* d = new var_decl_t;
 
     lex::token *type_token;
     lex::token *id_token;
@@ -253,12 +259,8 @@ var_decl_t* parser_t::match_decl_var_1(parser_t* p) {
     // If first token is not a word token or is not a type, put back token, delete d and return nullptr
     if (!p->is_type(type_token)) {
         p->put_back_token(type_token);
-        delete d;
         return nullptr;
     }
-
-    // Read type from type map
-    d->type = p->get_type(static_cast<lex::id_token*>(type_token));
 
     // Get identifier
     id_token = p->get_token();
@@ -267,15 +269,18 @@ var_decl_t* parser_t::match_decl_var_1(parser_t* p) {
     if (id_token->tag != lex::tag_t::ID) {
         p->put_back_token(id_token);
         p->put_back_token(type_token);
-        delete d;
         return nullptr;
     }
 
+    // If successful, build syntax type
+    var_decl_t* d = new var_decl_t();
+    
+    d->type = p->get_type(static_cast<lex::id_token*>(type_token));
     d->id = static_cast<lex::id_token*>(id_token)->lexeme;
 
-    // If successful, return declaration and delete tokens
-    delete type_token;
-    delete id_token;
+    d->tokens.push_back(type_token);
+    d->tokens.push_back(id_token);
+
     return d;
 }
 
@@ -306,21 +311,26 @@ var_decl_t* parser_t::match_decl_var_2(parser_t* p) {
     // TODO: Throw exception instead and free memory
     if (value == nullptr) {
         std::cout << "Failed to match rvalue expression" << std::endl;
+        
+        value->undo(p);
+        p->put_back_token(equals);
+        d->undo(p);
+        delete value;
         delete d;
         return nullptr;
     }
 
-    // If everything is in order, set value to found expr, free token and return d
+    // If everything is in order, build syntax object
     // TODO: Add variable name to symbol table
+    d->tokens.push_back(equals);
+    
     d->value = value;
-    delete equals;
+
     return d;
 }
 
 // func_decl -> type id ( ) ;
 func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
-
-    func_decl_t* d = new func_decl_t;
 
     lex::token* type_token;
     lex::token* id_token;
@@ -334,10 +344,8 @@ func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
     // If first token is not a type token, put back token, delete d and return nullptr
     if (!p->is_type(type_token)) {
         p->put_back_token(type_token);
-        delete d;
         return nullptr;
     }
-    d->type = p->get_type(static_cast<lex::id_token*>(type_token));
 
     // Acquire identifier token
     id_token = p->get_token();
@@ -345,12 +353,10 @@ func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
     if (id_token->tag != lex::tag_t::ID) {
         p->put_back_token(id_token);
         p->put_back_token(type_token);
-        delete d;
         return nullptr;
     }
 
     // Store function name
-    d->id = static_cast<lex::id_token*>(id_token)->lexeme;
 
     // Acquire first parenthesis tokens
     open_paren_token    = p->get_token();
@@ -364,23 +370,29 @@ func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
         p->put_back_token(type_token);
-        delete d;
         return nullptr;
     }
 
-    // If gotten so far, match is successful. Complete func_decl data structure and delete tokens
-    d->stmt = nullptr;
-    delete type_token;
-    delete id_token;
-    delete open_paren_token;
-    delete closed_paren_token;
-    delete semi_token;
-    return d;
+    // If gotten so far, match is successful.
+
+    // Build syntax object
+    func_decl_t* result = new func_decl_t();
+    result->type = p->get_type(static_cast<lex::id_token*>(type_token));
+    result->id = static_cast<lex::id_token*>(id_token)->lexeme;
+    result->stmt = nullptr;
+
+    // Save tokens in syntax object
+    result->tokens.push_back(type_token);
+    result->tokens.push_back(id_token);
+    result->tokens.push_back(open_paren_token);
+    result->tokens.push_back(closed_paren_token);
+    result->tokens.push_back(semi_token);
+
+    return result;
 }
 
 // func_decl -> type id ( ) block_stmt
 func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
-    func_decl_t* d = new func_decl_t;
 
     lex::token* type_token;
     lex::token* id_token;
@@ -393,10 +405,8 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
     // If first token is not a type token, put back token, delete d and return nullptr
     if (!p->is_type(type_token)) {
         p->put_back_token(type_token);
-        delete d;
         return nullptr;
     }
-    d->type = p->get_type(static_cast<lex::id_token*>(type_token));
 
     // Acquire identifier token
     id_token = p->get_token();
@@ -404,12 +414,10 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
     if (id_token->tag != lex::tag_t::ID) {
         p->put_back_token(id_token);
         p->put_back_token(type_token);
-        delete d;
         return nullptr;
     }
 
     // Store function name
-    d->id = static_cast<lex::id_token*>(id_token)->lexeme;
 
     // Acquire first parenthesis tokens
     open_paren_token    = p->get_token();
@@ -420,36 +428,42 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
         p->put_back_token(type_token);
-        delete d;
         return nullptr;
     }
 
     // Acquire block statement
     block_stmt_t* bs = match_stmt_block(p);
     
-    // If unsuccessful in finding block statement, put back tokens, delete d and return nullptr
-    if (bs == nullptr) { 
+    // If unsuccessful in finding block statement, put back tokens and return nullptr
+    if (bs == nullptr) {
+        bs->undo(p);
+        delete bs;
         p->put_back_token(closed_paren_token);
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
         p->put_back_token(type_token);
-        delete d;
         return nullptr;
     }
 
-    // If gotten so far, match is successful. Complete func_decl data structure and delete tokens
-    d->stmt = bs;
-    delete type_token;
-    delete id_token;
-    delete open_paren_token;
-    delete closed_paren_token;
-    return d;
+    // If gotten so far, match is successful
+
+    // Build syntax object
+    func_decl_t* result = new func_decl_t();
+    result->type = p->get_type(static_cast<lex::id_token*>(type_token));
+    result->id = static_cast<lex::id_token*>(id_token)->lexeme;
+    result->stmt = bs;
+
+    // Store tokens in syntax object
+    result->tokens.push_back(type_token);
+    result->tokens.push_back(id_token);
+    result->tokens.push_back(open_paren_token);
+    result->tokens.push_back(closed_paren_token);
+
+    return result;
 }
 
 // block_stmt  ->  { stmts }
 block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
-    
-    block_stmt_t* s = new block_stmt_t;
     
     lex::token* open_brace;
     lex::token* closed_brace;
@@ -460,7 +474,6 @@ block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
     // If first token is not an open brace, revert
     if (open_brace->tag != lex::tag_t::OPEN_BRACE) {
         p->put_back_token(open_brace);
-        delete s;
         return nullptr;
     }
 
@@ -469,34 +482,38 @@ block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
     // If unsuccessful in finding inner statements, revert
     if (inner == nullptr) {
         p->put_back_token(open_brace);
-        delete s;
         return nullptr;
     }
-
-    s->statements = inner;
 
     // Get token for closed brace
     closed_brace = p->get_token();
 
     // TODO: At this point reverting is impossible throw error?
     if (closed_brace->tag != lex::tag_t::CLOSED_BRACE) {
-        p->put_back_token(open_brace);
+        
         p->put_back_token(closed_brace);
+        inner->undo(p);
         delete inner;
-        delete s;
+        p->put_back_token(open_brace);
+
         return nullptr;
     }
 
-    // If we got this far, we have a successful match, delete tokens and return block_stmt
-    delete open_brace;
-    delete closed_brace;
-    return s;
+    // If we got this far, we have a successful match
+
+    // Build syntax object
+    block_stmt_t* result = new block_stmt_t();
+    result->statements = inner;
+
+    // Store tokens
+    result->tokens.push_back(open_brace);
+    result->tokens.push_back(closed_brace);
+
+    return result;
 }
 
 // stmt -> if ( expr ) stmt
 if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
-    
-    if_stmt_t* is = new if_stmt_t;
 
     lex::token* if_token;
     lex::token* open_paren_token;
@@ -509,7 +526,6 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
     if (if_token->tag != lex::tag_t::IF || open_paren_token->tag != lex::tag_t::IF) {
         p->put_back_token(open_paren_token);
         p->put_back_token(if_token);
-        delete is;
         return nullptr;
     }
 
@@ -520,42 +536,45 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
     if (cond == nullptr) {
         p->put_back_token(open_paren_token);
         p->put_back_token(if_token);
-        delete is;
         return nullptr; 
     }
 
-    is->cond = cond;
-
     closed_paren_token = p->get_token();
 
-    // TODO: At this point, cannot revert, throw error?
     if (closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
         p->put_back_token(closed_paren_token);
+        cond->undo(p);
         p->put_back_token(open_paren_token);
         p->put_back_token(if_token);
-        delete is;
+
         delete cond;
         return nullptr;
     }
 
     stmt_t* stmt = match_stmt(p);
 
-    // TODO: At this point, cannot revert, throw error?
     if (stmt == nullptr) {
         p->put_back_token(closed_paren_token);
+        cond->undo(p);
         p->put_back_token(open_paren_token);
         p->put_back_token(if_token);
-        delete is;
         delete cond;
         return nullptr;
     }
 
     // If we got this far, we have a successful match, delete tokens and return result
-    is->actions = stmt;
-    delete if_token;
-    delete open_paren_token;
-    delete closed_paren_token;
-    return is;
+    
+    // Build syntax object
+    if_stmt_t* result = new if_stmt_t();
+    result->cond = cond;
+    result->actions = stmt;
+
+    // Store tokens
+    result->tokens.push_back(if_token);
+    result->tokens.push_back(open_paren_token);
+    result->tokens.push_back(closed_paren_token);
+
+    return result;
 }
 
 // stmt -> var_decl ; 
@@ -572,22 +591,20 @@ var_decl_t* parser_t::match_stmt_decl(parser_t* p) {
 
     semi_colon_token = p->get_token();
 
-    // TODO: At this point cannot revert, throw error instead?
     if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
         p->put_back_token(semi_colon_token);
+        result->undo(p);
         delete result;
         return nullptr;
     }
 
-    // If gotten this far, match was successful
-    delete semi_colon_token;
+    // If gotten this far, match was successful, store token
+    result->tokens.push_back(semi_colon_token);
     return result;
 }
 
 // stmt -> id "=" expr ;
 assignment_stmt_t* parser_t::match_stmt_assign(parser_t* p) {
-    
-    assignment_stmt_t* result = new assignment_stmt_t;
 
     lex::token* id_token;
     lex::token* assign_token;
@@ -600,55 +617,57 @@ assignment_stmt_t* parser_t::match_stmt_assign(parser_t* p) {
     if (id_token->tag != lex::tag_t::ID || assign_token->tag != lex::tag_t::ASSIGNMENT) {
         p->put_back_token(assign_token);
         p->put_back_token(id_token);
-        delete result;
         return nullptr;
     }
 
     // Acquire identifier from token
-    result->identifier = static_cast<lex::id_token*>(id_token)->lexeme;
     expr_t* rvalue = match_expr(p);
 
     // If could not match expression, revert
     if (rvalue == nullptr) {
         p->put_back_token(assign_token);
         p->put_back_token(id_token);
-        delete result;
         return nullptr;
     }
 
-    result->rvalue = rvalue;
     semi_colon_token = p->get_token();
 
-    // TODO: At this point, too late to revert, throw error instead?
     if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
         p->put_back_token(semi_colon_token);
+        rvalue->undo(p);
         p->put_back_token(assign_token);
         p->put_back_token(id_token);
         delete rvalue;
-        delete result;
         return nullptr;
     }
-
+    
     // If gotten this far, match was successful
-    delete id_token;
-    delete assign_token;
-    delete semi_colon_token;
+
+    // Build syntax object
+    assignment_stmt_t* result = new assignment_stmt_t();
+    result->identifier = static_cast<lex::id_token*>(id_token)->lexeme;
+    result->rvalue = rvalue;
+
+    // Store tokens
+    result->tokens.push_back(id_token);
+    result->tokens.push_back(assign_token);
+    result->tokens.push_back(semi_colon_token);
+    
     return result;
 }
 
 // stmts -> stmt stmts
 stmts_t* parser_t::match_stmts_1(parser_t* p) {
-    
-    stmts_t* result = new stmts_t;
 
     stmt_t* stmt = match_stmt(p);
 
     // If matching a single statement fails, return nullptr
     // A list of statements following this production must include at least one
     if (stmt == nullptr) {
-        delete result;
         return nullptr;
     }
+
+    stmts_t* result = new stmts_t();
     result->first = stmt;
 
     // Try matching more statements
@@ -665,189 +684,129 @@ stmts_t* parser_t::match_stmts_2(parser_t* p) {
 
 // expr -> term arithop expr
 arith_expr_t* parser_t::match_expr_arithop(parser_t* p) {
-    
-    lex::token* left_term_token;
-    lex::token* op_token;    
 
-    left_term_token = p->get_token();
+    term_t* left = match_term(p);
 
-    // verify that first token is a term
-    if (left_term_token->tag != lex::tag_t::ID && left_term_token->tag != lex::tag_t::INT_LITERAL) {
-        p->put_back_token(left_term_token);
+    if (left == nullptr) {
+        std::cout << "term not found" << std::endl;
+        return nullptr;
+    }
+    std::cout << "term found" << std::endl;
+
+    arithop_t* op = match_arithop(p);
+
+    if (op == nullptr) {
+        std::cout << "operator not found" << std::endl;
+        left->undo(p);
+        delete left;
         return nullptr;
     }
 
-    op_token = p->get_token();  
+    std::cout << "operator found" << std::endl;
 
-    // Verify that second token is an operator
-    if ((op_token->tag != lex::tag_t::PLUS && op_token->tag != lex::tag_t::MINUS)) {
-        p->put_back_token(op_token);
-        p->put_back_token(left_term_token);
-        return nullptr;
-    }
+    expr_t* right = match_expr(p);
 
-    expr_t* right = match_expr(p); 
     if (right == nullptr) {
-        p->put_back_token(op_token);
-        p->put_back_token(left_term_token);
-        return nullptr;
+        std::cout << "expr not found" << std::endl;
+        op->undo(p);
+        left->undo(p);
+        
+        delete op;
+        delete left;
     }
-    
-    // Acquire the left term value
-    term_t* result_left;
-    if (left_term_token->tag == lex::tag_t::ID) {
+    std::cout << "expr found" << std::endl;
 
-        id_term_t* r = new id_term_t();
-        r->identifier = static_cast<lex::id_token*>(left_term_token)->lexeme;
-        result_left = (term_t*) r;
+    arith_expr_t* result = new arith_expr_t();
 
-    } else if (left_term_token->tag == lex::tag_t::INT_LITERAL) {
-
-        lit_term_t* r = new lit_term_t();
-        r->literal = static_cast<lex::int_literal_token*>(left_term_token)->value;
-        result_left = (term_t*) r;
-
-    }
-
-    // Acquire the operator
-    arithop_t* op;
-    if (op_token->tag == lex::tag_t::PLUS) {
-
-        op = new arithop_plus_t;
-
-    } else if (op_token->tag == lex::tag_t::MINUS) {
-
-        op = new arithop_minus_t;
-
-    }
-
-    delete left_term_token;
-    delete op_token;
-
-    arith_expr_t* result = new arith_expr_t;
-    result->left  = result_left;
+    result->left  = left;
     result->op    = op;
     result->right = right;
+    
     return result;
 }
 
 // expr -> "-" term
 neg_expr_t* parser_t::match_expr_negated(parser_t* p) {
     
-
     lex::token* neg_token  = p->get_token();
-    lex::token* term_token = p->get_token();
 
     // If first token is not a minus operator, or the second token is not a literal nor an identifier, revert
-    if (neg_token->tag != lex::tag_t::MINUS || (term_token->tag != lex::tag_t::INT_LITERAL && term_token->tag != lex::tag_t::ID)) {
-        p->put_back_token(term_token);
+    if (neg_token->tag != lex::tag_t::MINUS ) {
         p->put_back_token(neg_token);
         return nullptr;
     }
 
-    term_t* value;
-    if (term_token->tag == lex::tag_t::INT_LITERAL) {
-
-        lit_term_t* i = new lit_term_t();
-        i->literal = static_cast<lex::int_literal_token*>(term_token)->value;
-        value = i;
-
-    } else if (term_token->tag == lex::tag_t::ID) {
-
-        id_term_t* i = new id_term_t();
-        i->identifier = static_cast<lex::id_token*>(term_token)->lexeme;
-        value = i;
+    term_t* value = match_term(p);
+    
+    if (value == nullptr) {
+        p->put_back_token(neg_token);
+        return nullptr;
     }
 
-    neg_expr_t* result = new neg_expr_t;
+    // If gotten this far, match is successful
+
+    // Create syntax object
+    neg_expr_t* result = new neg_expr_t();
     result->value = value;
 
-    delete neg_token;
-    delete term_token;
+    // Store token
+    result->tokens.push_back(neg_token);
+    
     return result;
-
 }
 
 // expr -> term relop expr
 rel_expr_t* parser_t::match_expr_relop(parser_t* p) {
 
-    lex::token* left_term_token;
-    lex::token* op_token;    
+    term_t* left = match_term(p);
 
-    left_term_token = p->get_token();
-
-    // verify that first token is a term
-    if (left_term_token->tag != lex::tag_t::ID && left_term_token->tag != lex::tag_t::INT_LITERAL) {
-        p->put_back_token(left_term_token);
+    if (left == nullptr) {
         return nullptr;
     }
 
-    op_token = p->get_token();  
+    relop_t* op = match_relop(p);
 
-    // Verify that second token is an operator
-    if ((op_token->tag != lex::tag_t::EQUALS && op_token->tag != lex::tag_t::NOT_EQUALS)) {
-        p->put_back_token(op_token);
-        p->put_back_token(left_term_token);
+    if (op == nullptr) {
+        left->undo(p);
+        delete left;
         return nullptr;
     }
 
-    expr_t* right = match_expr(p); 
+    expr_t* right = match_expr(p);
+
     if (right == nullptr) {
-        p->put_back_token(op_token);
-        p->put_back_token(left_term_token);
+        op->undo(p);
+        left->undo(p);
+        delete left;
+        delete op;
         return nullptr;
     }
-    
-    // Acquire the left term value
-    term_t* result_left;
-    if (left_term_token->tag == lex::tag_t::ID) {
 
-        id_term_t* r = new id_term_t();
-        r->identifier = static_cast<lex::id_token*>(left_term_token)->lexeme;
-        result_left = (term_t*) r;
+    // If gotten this far, match was successful
 
-    } else if (left_term_token->tag == lex::tag_t::INT_LITERAL) {
-
-        lit_term_t* r = new lit_term_t();
-        r->literal = static_cast<lex::int_literal_token*>(left_term_token)->value;
-        result_left = (term_t*) r;
-
-    }
-
-    // Acquire the operator
-    relop_t* op;
-    if (op_token->tag == lex::tag_t::EQUALS) {
-
-        op = new relop_equals_t;
-
-    } else if (op_token->tag == lex::tag_t::NOT_EQUALS) {
-
-        op = new relop_not_equals_t;
-
-    }
-
-    delete left_term_token;
-    delete op_token;
-
-    rel_expr_t* result = new rel_expr_t;
-    result->left  = result_left;
+    // Build syntax object
+    rel_expr_t* result = new rel_expr_t();
+    result->left  = left;
     result->op    = op;
     result->right = right;
+
     return result;
 }
 
 // expr -> term
 term_expr_t* parser_t::match_expr_term(parser_t* p) {
     
-    term_expr_t* result = new term_expr_t;
 
     term_t* t = match_term(p);
 
     if (t == nullptr) {
-        delete result;
         return nullptr;
     }
 
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    term_expr_t* result = new term_expr_t();
     result->t = t;
     return result;
 }
@@ -862,8 +821,15 @@ arithop_plus_t* parser_t::match_arithop_plus(parser_t* p) {
         return nullptr;
     }
 
-    delete plus_token;
-    return new arithop_plus_t;
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    arithop_plus_t* result = new arithop_plus_t();
+
+    // Store token
+    result->tokens.push_back(plus_token);
+    
+    return result;
 }
 
 // arithop -> "-"
@@ -876,8 +842,15 @@ arithop_minus_t* parser_t::match_arithop_minus(parser_t* p) {
         return nullptr;
     }
 
-    delete minus_token;
-    return new arithop_minus_t;
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    arithop_minus_t* result = new arithop_minus_t();
+
+    // Store token
+    result->tokens.push_back(minus_token);
+    
+    return result;
 }
 
 // relop -> "=="
@@ -890,8 +863,15 @@ relop_equals_t* parser_t::match_relop_equals(parser_t* p) {
         return nullptr;
     }
 
-    delete equals_token;
-    return new relop_equals_t;
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    relop_equals_t* result = new relop_equals_t();
+
+    // Store token
+    result->tokens.push_back(equals_token);
+    
+    return result;
 }
 
 // relop -> "!="
@@ -904,8 +884,15 @@ relop_not_equals_t* parser_t::match_relop_not_equals(parser_t* p) {
         return nullptr;
     }
 
-    delete not_equals_token;
-    return new relop_not_equals_t;
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    relop_not_equals_t* result = new relop_not_equals_t();
+
+    // Store token
+    result->tokens.push_back(not_equals_token);
+    
+    return result;
 }
 
 // term -> id
@@ -917,10 +904,16 @@ id_term_t* parser_t::match_term_identifier(parser_t* p) {
         p->put_back_token(id_token);
         return nullptr;
     }
-
-    id_term_t* result = new id_term_t;
+    
+    // If gotten this far, match was successful
+    
+    // Build syntax object
+    id_term_t* result = new id_term_t();
     result->identifier = static_cast<lex::id_token*>(id_token)->lexeme;
-    delete id_token;
+    
+    // Store token
+    result->tokens.push_back(id_token);
+
     return result;
 }
 
@@ -934,8 +927,14 @@ lit_term_t* parser_t::match_term_literal(parser_t* p) {
         return nullptr;
     }
 
-    lit_term_t* result = new lit_term_t;
+    // If gotten this far, match was successful
+    
+    // Build syntax object
+    lit_term_t* result = new lit_term_t();
     result->literal = static_cast<lex::int_literal_token*>(literal_token)->value;
-    delete literal_token;
+    
+    // Store token
+    result->tokens.push_back(literal_token);
+
     return result;
 }
