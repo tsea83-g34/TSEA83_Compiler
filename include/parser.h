@@ -98,8 +98,6 @@ private:
 
     inline lex::token* get_token();
 
-    inline void put_back_token(lex::token* t);
-
     inline bool is_type(const std::string& s);
     inline bool is_type(const lex::token* t);
 
@@ -154,6 +152,7 @@ public:
     parser_t(lex::lexer *l);
     program_t* parse_token_stream();
     std::string get_type_name(int type);
+    inline void put_back_token(lex::token* t);
 };
 
 #endif
