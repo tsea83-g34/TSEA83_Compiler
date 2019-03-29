@@ -9,7 +9,7 @@
 class parser_t;
 
 struct printable_t {
-    virtual std::string get_string() = 0;
+    virtual std::string get_string(parser_t* p) = 0;
 };
 
 struct undoable_t {
