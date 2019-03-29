@@ -1,0 +1,3 @@
+#!/bin/bash
+
+g++ -std=c++17 -g  $(find src/ -name '*.*pp') $(find include/ -name '*.h')
