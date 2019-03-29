@@ -9,6 +9,7 @@
     #define get_current_dir getcwd
 #endif
 
+#include "../include/parser_types.h"
 #include "../include/lexer.h"
 #include "../include/parser.h"
 
