@@ -7,9 +7,42 @@
 #include <functional>
 #include <deque>
 
-#include "parser_types.h"
 #include "tokens.h"
 #include "lexer.h"
+
+/* Predefine syntax tree structs */
+struct program_t;
+
+struct decl_t;
+struct decls_t;
+struct var_decl_t;
+struct func_decl_t;
+
+struct stmt_t;
+struct stmts_t;
+struct block_stmt_t;
+
+struct if_stmt_t;
+struct assignment_stmt_t;
+
+struct expr_t;
+struct arith_expr_t;
+struct rel_expr_t;
+struct neg_expr_t;
+struct term_expr_t;
+
+struct term_t;
+struct lit_term_t;
+struct id_term_t;
+
+struct arithop_t;
+struct arithop_plus_t;
+struct arithop_minus_t;
+
+struct relop_t;
+struct relop_equals_t;
+struct relop_not_equals_t;
+/* ----------------------------- */
 
 
 // Build syntax tree recursively, create function that matches each production. Matching function
@@ -152,7 +185,7 @@ public:
     parser_t(lex::lexer *l);
     program_t* parse_token_stream();
     std::string get_type_name(int type);
-    inline void put_back_token(lex::token* t);
+    void put_back_token(lex::token* t);
 };
 
 #endif
