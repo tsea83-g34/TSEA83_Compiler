@@ -77,6 +77,12 @@ decls_t* parser_t::match_decls(parser_t* p) {
 
     std::cout << "Matching decls" << std::endl;
     decls_t* ds;
+
+    lex::token* test_token = p->get_token();
+    lex::tag_t tag = test_token->tag;
+    p->put_back_token(test_token);
+    std::cout << "Decl test token tag: " << (int) tag << std::endl;
+    if (tag == lex::tag_t::eof) return nullptr;
     
     ds = match_decls_1(p);
     if (ds != nullptr) return ds;
@@ -88,7 +94,7 @@ decls_t* parser_t::match_decls(parser_t* p) {
 decl_t* parser_t::match_decl(parser_t* p) {
     std::cout << "Matching decl" << std::endl;
     decl_t* d;
-    
+
     d = match_decl_var(p);
     if (d != nullptr) return d;
 
@@ -381,7 +387,7 @@ func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
     }
 
     // If gotten so far, match is successful.
-
+    std::cout << "Function declaration match successful" << std::endl;
     // Build syntax object
     func_decl_t* result = new func_decl_t();
     result->type = p->get_type(static_cast<lex::id_token*>(type_token));
@@ -453,7 +459,7 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
     }
 
     // If gotten so far, match is successful
-
+    std::cout << "Function definition match successful" << std::endl;
     // Build syntax object
     func_decl_t* result = new func_decl_t();
     result->type = p->get_type(static_cast<lex::id_token*>(type_token));
@@ -593,7 +599,7 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
 var_decl_t* parser_t::match_stmt_decl(parser_t* p) {
     
     var_decl_t* result = match_decl_var(p);
-    
+
     // If could not match a variable declaration, return nullptr
     if (result == nullptr) {
         return nullptr;
