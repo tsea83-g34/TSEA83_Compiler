@@ -137,7 +137,7 @@ var_decl_t* parser_t::match_decl_var(parser_t* p) {
 stmts_t* parser_t::match_stmts(parser_t* p) {
     
     stmts_t* stmts;
-
+    std::cout << "Matching statement list" << std::endl;
     stmts = match_stmts_1(p);
     if (stmts != nullptr) return stmts;
 
@@ -147,13 +147,18 @@ stmts_t* parser_t::match_stmts(parser_t* p) {
 
 stmt_t* parser_t::match_stmt(parser_t* p) {
     
+    std::cout << "Matching statement" << std::endl;
     stmt_t* stmt;
 
     stmt = match_stmt_assign(p);
     if (stmt != nullptr) return stmt;
 
+    std::cout << "boop" << std::endl;
+
     stmt = match_stmt_decl(p);
     if (stmt != nullptr) return stmt;
+
+    std::cout << "beep" << std::endl;
 
     stmt = match_stmt_block(p);
     if (stmt != nullptr) return stmt;
@@ -332,6 +337,8 @@ var_decl_t* parser_t::match_decl_var_2(parser_t* p) {
 // func_decl -> type id ( ) ;
 func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
 
+    std::cout << "Matching func declaration" << std::endl;
+
     lex::token* type_token;
     lex::token* id_token;
     lex::token* open_paren_token;
@@ -394,6 +401,8 @@ func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
 // func_decl -> type id ( ) block_stmt
 func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
 
+    std::cout << "Matching func definition" << std::endl;
+
     lex::token* type_token;
     lex::token* id_token;
     lex::token* open_paren_token;
@@ -417,8 +426,6 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
         return nullptr;
     }
 
-    // Store function name
-
     // Acquire first parenthesis tokens
     open_paren_token    = p->get_token();
     closed_paren_token  = p->get_token();
@@ -431,13 +438,13 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
         return nullptr;
     }
 
+
     // Acquire block statement
     block_stmt_t* bs = match_stmt_block(p);
     
     // If unsuccessful in finding block statement, put back tokens and return nullptr
     if (bs == nullptr) {
         bs->undo(p);
-        delete bs;
         p->put_back_token(closed_paren_token);
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
@@ -476,6 +483,7 @@ block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
         p->put_back_token(open_brace);
         return nullptr;
     }
+    std::cout << "Matched first brace" << std::endl;
 
     stmts_t* inner = match_stmts(p);
 
@@ -484,6 +492,8 @@ block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
         p->put_back_token(open_brace);
         return nullptr;
     }
+
+    std::cout << "Matched inner statements" << std::endl;
 
     // Get token for closed brace
     closed_brace = p->get_token();
@@ -498,6 +508,8 @@ block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
 
         return nullptr;
     }
+
+    std::cout << "Matched second brace" << std::endl;
 
     // If we got this far, we have a successful match
 
@@ -581,25 +593,11 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
 var_decl_t* parser_t::match_stmt_decl(parser_t* p) {
     
     var_decl_t* result = match_decl_var(p);
-
-    lex::token* semi_colon_token;
-
+    
     // If could not match a variable declaration, return nullptr
     if (result == nullptr) {
         return nullptr;
     }
-
-    semi_colon_token = p->get_token();
-
-    if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
-        p->put_back_token(semi_colon_token);
-        result->undo(p);
-        delete result;
-        return nullptr;
-    }
-
-    // If gotten this far, match was successful, store token
-    result->tokens.push_back(semi_colon_token);
     return result;
 }
 
