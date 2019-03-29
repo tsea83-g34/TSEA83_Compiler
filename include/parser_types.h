@@ -75,20 +75,26 @@ struct ast_node_t : undoable_t { };
 
 struct program_t : virtual ast_node_t {
     decls_t* decls;
+
+    void undo(parser_t* p) override;
 };
 
 /*      Declarations      */
 struct decls_t : virtual ast_node_t {
     decl_t*   first;
     decls_t*  rest;
+
+    void undo(parser_t* p) override;
 };
 
 struct decl_t : virtual ast_node_t { };
 
-struct func_decl_t {
+struct func_decl_t : decl_t {
     int type;
     std::string id;
     block_stmt_t* stmt;
+
+    void undo(parser_t* p) override;
 };
 
 /* ---------------------- */
@@ -101,25 +107,35 @@ struct var_decl_t : decl_t, stmt_t {
     int type;
     std::string id;
     expr_t* value;
+
+    void undo(parser_t* p) override;
 };
 
 struct stmts_t : virtual ast_node_t {
     stmt_t* first;
     stmts_t* rest;
+
+    void undo(parser_t* p) override;
 };
 
 struct block_stmt_t : stmt_t {
     stmts_t* statements;
+
+    void undo(parser_t* p) override;
 };
 
 struct if_stmt_t : stmt_t {
     expr_t* cond;
     stmt_t* actions;
+
+    void undo(parser_t* p) override;
 };
 
 struct assignment_stmt_t : stmt_t {
     std::string identifier;
     expr_t* rvalue;
+
+    void undo(parser_t* p) override;
 };
 
 /* ---------------------- */
@@ -131,7 +147,7 @@ struct arith_expr_t : expr_t {
     arithop_t* op;
     expr_t* right;
 
-    std::string get_string() override;
+    void undo(parser_t* p) override;
 };
 
 struct rel_expr_t : expr_t {
@@ -139,46 +155,51 @@ struct rel_expr_t : expr_t {
     relop_t* op;
     expr_t* right;
 
-    std::string get_string() override;
+    void undo(parser_t* p) override;
+
 };
 
 struct neg_expr_t : expr_t {
     term_t* value;
 
-    std::string get_string() override;
+    void undo(parser_t* p) override;
 };
 
 struct term_expr_t : expr_t {
     term_t* t;
 
-    std::string get_string() override;
+    void undo(parser_t* p) override;
 };
 
 struct term_t : virtual ast_node_t {
     bool is_literal;
+
+    void undo(parser_t* p) override;
 };
 
 struct id_term_t : term_t {
     std::string identifier;
 
     id_term_t() { is_literal = false; }
-    std::string get_string() override;
 };
 
 struct lit_term_t : term_t {
     int literal;
 
     lit_term_t() { is_literal = true; }
-    std::string get_string() override;
 };
 
-struct arithop_t : virtual ast_node_t { };
+struct arithop_t : virtual ast_node_t {
+    void undo(parser_t* p) override;
+};
 
 struct arithop_plus_t : arithop_t { };
 
 struct arithop_minus_t : arithop_t { };
 
-struct relop_t :  virtual ast_node_t { };
+struct relop_t :  virtual ast_node_t {
+    void undo(parser_t* p) override;
+};
 
 struct relop_equals_t : relop_t { };
 
