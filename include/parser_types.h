@@ -72,24 +72,26 @@ struct relop_t;
 /* ----------------------------- */
 class parser_t;
 
-struct program_t : undoable_t {
+struct program_t : undoable_t, printable_t {
     decls_t* decls;
 
     program_t() = default;
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
 /*      Declarations      */
-struct decls_t : undoable_t {
+struct decls_t : undoable_t, printable_t {
     decl_t*   first;
     decls_t*  rest;
 
     decls_t() = default;
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
-struct decl_t : virtual undoable_t {
-    decl_t  () = default;
+struct decl_t : virtual undoable_t, virtual printable_t {
+    decl_t() = default;
 };
 
 struct func_decl_t : decl_t {
@@ -99,13 +101,14 @@ struct func_decl_t : decl_t {
 
     func_decl_t() = default;
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
 /* ---------------------- */
 
 /*       Statements       */
 
-struct stmt_t : virtual undoable_t { };
+struct stmt_t : virtual undoable_t, virtual printable_t { };
 
 struct var_decl_t : decl_t, stmt_t {
     int type;
@@ -113,19 +116,22 @@ struct var_decl_t : decl_t, stmt_t {
     expr_t* value;
 
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
-struct stmts_t : undoable_t {
+struct stmts_t : undoable_t, printable_t {
     stmt_t* first;
     stmts_t* rest;
 
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
 struct block_stmt_t : stmt_t {
     stmts_t* statements;
 
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
 struct if_stmt_t : stmt_t {
@@ -133,6 +139,7 @@ struct if_stmt_t : stmt_t {
     stmt_t* actions;
 
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
 struct assignment_stmt_t : stmt_t {
@@ -140,11 +147,12 @@ struct assignment_stmt_t : stmt_t {
     expr_t* rvalue;
 
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
 /* ---------------------- */
 
-struct expr_t : undoable_t { };
+struct expr_t : undoable_t, printable_t { };
 
 struct arith_expr_t : expr_t {
     term_t* left;
@@ -152,6 +160,7 @@ struct arith_expr_t : expr_t {
     expr_t* right;
 
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
 struct rel_expr_t : expr_t {
@@ -160,22 +169,24 @@ struct rel_expr_t : expr_t {
     expr_t* right;
 
     void undo(parser_t* p) override;
-
+    std::string get_string(parser_t* p) override;
 };
 
 struct neg_expr_t : expr_t {
     term_t* value;
 
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
 struct term_expr_t : expr_t {
     term_t* t;
 
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
 };
 
-struct term_t : undoable_t {
+struct term_t : undoable_t, printable_t {
     bool is_literal;
 
     void undo(parser_t* p) override;
@@ -185,28 +196,38 @@ struct id_term_t : term_t {
     std::string identifier;
 
     id_term_t() { is_literal = false; }
+    std::string get_string(parser_t* p) override;
 };
 
 struct lit_term_t : term_t {
     int literal;
 
     lit_term_t() { is_literal = true; }
+    std::string get_string(parser_t* p) override;
 };
 
-struct arithop_t : undoable_t {
+struct arithop_t : undoable_t, printable_t {
     void undo(parser_t* p) override;
 };
 
-struct arithop_plus_t : arithop_t { };
+struct arithop_plus_t : arithop_t {
+    std::string get_string(parser_t* p) override;
+};
 
-struct arithop_minus_t : arithop_t { };
+struct arithop_minus_t : arithop_t {
+    std::string get_string(parser_t* p) override;
+};
 
-struct relop_t :  undoable_t {
+struct relop_t :  undoable_t, printable_t {
     void undo(parser_t* p) override;
 };
 
-struct relop_equals_t : relop_t { };
+struct relop_equals_t : relop_t {
+    std::string get_string(parser_t* p) override;
+};
 
-struct relop_not_equals_t : relop_t { };
+struct relop_not_equals_t : relop_t {
+    std::string get_string(parser_t* p) override;
+};
 
 #endif
