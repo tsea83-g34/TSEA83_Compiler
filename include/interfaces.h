@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include "parser.h"
 #include "lexer.h"
 
+class parser_t;
 
 struct printable_t {
     virtual std::string get_string() = 0;
@@ -14,8 +14,10 @@ struct printable_t {
 
 struct undoable_t {
     std::vector<lex::token*> tokens;
-    virtual void undo(parser_t* p);
-    virtual void clear();
+    virtual void undo(parser_t* p) = 0;
+    
+    undoable_t() = default;
+    virtual ~undoable_t(){}
 };
 
 
