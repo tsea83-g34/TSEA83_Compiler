@@ -6,14 +6,49 @@ void program_t::undo(parser_t* p) {
     decls->undo(p);
 }
 
+std::string program_t::get_string() {
+    return "(program){ " + decls->get_string() + " }";
+}
+
 void decls_t::undo(parser_t* p) {
     
     if (rest != nullptr) rest->undo(p);
     first->undo(p);
 }
 
+std::string decls_t::get_string() {
+    
+    std::string result = first->get_string();
+    if (rest != nullptr) result += " " + rest->get_string();
+    return result;
+}
+
 void func_decl_t::undo(parser_t* p) {
-    return;
+    
+    if (stmt != nullptr) {
+        stmt->undo;
+    } else {
+        // Put back ; token
+        p->put_back_token(tokens.back());
+        tokens.pop_back();
+    }
+
+    // Put back ) token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back ( token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back type token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
 }
 
 void var_decl_t::undo(parser_t* p) {
