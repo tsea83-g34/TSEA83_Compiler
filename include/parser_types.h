@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "printable.h"
+#include "interfaces.h"
 
 /* First tier C-- grammar
 
@@ -71,19 +71,21 @@ struct arithop_t;
 struct relop_t;
 /* ----------------------------- */
 
-struct program_t {
+struct ast_node_t : undoable_t { };
+
+struct program_t : virtual ast_node_t {
     decls_t* decls;
 };
 
 /*      Declarations      */
-struct decls_t {
+struct decls_t : virtual ast_node_t {
     decl_t*   first;
     decls_t*  rest;
 };
 
-struct decl_t { };
+struct decl_t : virtual ast_node_t { };
 
-struct func_decl_t : decl_t {
+struct func_decl_t {
     int type;
     std::string id;
     block_stmt_t* stmt;
@@ -93,7 +95,7 @@ struct func_decl_t : decl_t {
 
 /*       Statements       */
 
-struct stmt_t { };
+struct stmt_t : virtual ast_node_t { };
 
 struct var_decl_t : decl_t, stmt_t {
     int type;
@@ -101,7 +103,7 @@ struct var_decl_t : decl_t, stmt_t {
     expr_t* value;
 };
 
-struct stmts_t {
+struct stmts_t : virtual ast_node_t {
     stmt_t* first;
     stmts_t* rest;
 };
@@ -122,7 +124,7 @@ struct assignment_stmt_t : stmt_t {
 
 /* ---------------------- */
 
-struct expr_t : printable_t { };
+struct expr_t : virtual ast_node_t { };
 
 struct arith_expr_t : expr_t {
     term_t* left;
@@ -152,7 +154,7 @@ struct term_expr_t : expr_t {
     std::string get_string() override;
 };
 
-struct term_t : printable_t {
+struct term_t : virtual ast_node_t {
     bool is_literal;
 };
 
@@ -165,18 +167,18 @@ struct id_term_t : term_t {
 
 struct lit_term_t : term_t {
     int literal;
-    
+
     lit_term_t() { is_literal = true; }
     std::string get_string() override;
 };
 
-struct arithop_t { };
+struct arithop_t : virtual ast_node_t { };
 
 struct arithop_plus_t : arithop_t { };
 
 struct arithop_minus_t : arithop_t { };
 
-struct relop_t { };
+struct relop_t :  virtual ast_node_t { };
 
 struct relop_equals_t : relop_t { };
 
