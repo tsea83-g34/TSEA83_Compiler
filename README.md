@@ -39,3 +39,14 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 - [ ] Compound assignment operators 
 
 ## C-- Specification
+
+### Types
+
+
+#### Integer types
+    - char (signed 8-bit)
+    - int  (signed 16-bit)
+    - long (signed 32-bit)
+
+#### String types
+    - const char* (string literal type)
