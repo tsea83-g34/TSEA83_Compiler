@@ -44,14 +44,11 @@ int main(int argc, char const *argv[]) {
     parser_t parser(&lex);
 
     program_t* program = parser.parse_token_stream();
-
-    decls_t* current = program->decls;
-    while (current != nullptr) {
-        var_decl_t* d = static_cast<var_decl_t*>(current->first);
-        cout << "Id:    " << d->id << endl;
-        cout << "Type:  " << parser.get_type_name(d->type) << endl;
-        cout << "Value: " << d->value << endl;
-        current = current->rest;
+    cout << "Finished parsing" << endl;
+    if (program != nullptr) {
+        cout << program->get_string(&parser) << endl;
+    } else {
+        cout << "Syntax error" << endl;
     }
 
     #if 0
