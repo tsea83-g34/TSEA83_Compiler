@@ -70,30 +70,34 @@ struct term_t;
 struct arithop_t;
 struct relop_t;
 /* ----------------------------- */
+class parser_t;
 
-struct ast_node_t : undoable_t { };
-
-struct program_t : virtual ast_node_t {
+struct program_t : undoable_t {
     decls_t* decls;
 
+    program_t() = default;
     void undo(parser_t* p) override;
 };
 
 /*      Declarations      */
-struct decls_t : virtual ast_node_t {
+struct decls_t : undoable_t {
     decl_t*   first;
     decls_t*  rest;
 
+    decls_t() = default;
     void undo(parser_t* p) override;
 };
 
-struct decl_t : virtual ast_node_t { };
+struct decl_t : virtual undoable_t {
+    decl_t  () = default;
+};
 
 struct func_decl_t : decl_t {
     int type;
     std::string id;
     block_stmt_t* stmt;
 
+    func_decl_t() = default;
     void undo(parser_t* p) override;
 };
 
@@ -101,7 +105,7 @@ struct func_decl_t : decl_t {
 
 /*       Statements       */
 
-struct stmt_t : virtual ast_node_t { };
+struct stmt_t : virtual undoable_t { };
 
 struct var_decl_t : decl_t, stmt_t {
     int type;
@@ -111,7 +115,7 @@ struct var_decl_t : decl_t, stmt_t {
     void undo(parser_t* p) override;
 };
 
-struct stmts_t : virtual ast_node_t {
+struct stmts_t : undoable_t {
     stmt_t* first;
     stmts_t* rest;
 
@@ -140,7 +144,7 @@ struct assignment_stmt_t : stmt_t {
 
 /* ---------------------- */
 
-struct expr_t : virtual ast_node_t { };
+struct expr_t : undoable_t { };
 
 struct arith_expr_t : expr_t {
     term_t* left;
@@ -171,7 +175,7 @@ struct term_expr_t : expr_t {
     void undo(parser_t* p) override;
 };
 
-struct term_t : virtual ast_node_t {
+struct term_t : undoable_t {
     bool is_literal;
 
     void undo(parser_t* p) override;
@@ -189,7 +193,7 @@ struct lit_term_t : term_t {
     lit_term_t() { is_literal = true; }
 };
 
-struct arithop_t : virtual ast_node_t {
+struct arithop_t : undoable_t {
     void undo(parser_t* p) override;
 };
 
@@ -197,7 +201,7 @@ struct arithop_plus_t : arithop_t { };
 
 struct arithop_minus_t : arithop_t { };
 
-struct relop_t :  virtual ast_node_t {
+struct relop_t :  undoable_t {
     void undo(parser_t* p) override;
 };
 
