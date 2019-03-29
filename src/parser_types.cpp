@@ -1,5 +1,6 @@
 
 #include "../include/parser_types.h"
+#include "../include/parser.h"
 
 void program_t::undo(parser_t* p) {
     decls->undo(p);
@@ -11,10 +12,17 @@ void decls_t::undo(parser_t* p) {
     first->undo(p);
 }
 
-// TODO: Undo semi-colon?
+void func_decl_t::undo(parser_t* p) {
+    return;
+}
+
 void var_decl_t::undo(parser_t* p) {
     
     if (value != nullptr) {
+
+        // Put back ; token
+        p->put_back_token(tokens.back());
+        tokens.pop_back();
 
         value->undo(p);
         // Put back assignment token
