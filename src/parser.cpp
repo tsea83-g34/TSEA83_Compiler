@@ -167,7 +167,6 @@ stmt_t* parser_t::match_stmt(parser_t* p) {
     stmt = match_stmt_block(p);
     if (stmt != nullptr) return stmt;
 
-
     stmt = match_stmt_if(p);
     return stmt;
 }
@@ -540,7 +539,7 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
     open_paren_token = p->get_token();
     
     // Mismatching tokens, revert
-    if (if_token->tag != lex::tag_t::IF || open_paren_token->tag != lex::tag_t::IF) {
+    if (if_token->tag != lex::tag_t::IF || open_paren_token->tag != lex::tag_t::OPEN_PAREN) {
         p->put_back_token(open_paren_token);
         p->put_back_token(if_token);
         return nullptr;
