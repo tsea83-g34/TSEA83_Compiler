@@ -1,0 +1,12 @@
+
+int f ( ) {
+    int a = 3;
+    c = 1;
+    int b;
+    int d;
+
+    if (a) {
+        b = 1;
+    }
+    return 0;
+}
