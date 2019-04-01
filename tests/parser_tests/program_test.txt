@@ -3,4 +3,8 @@
 int main( ) {
     int a;
     a = 3;
+
+    if (1) {
+        a = 1;
+    }
 }
