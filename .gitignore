@@ -8,3 +8,4 @@ case_gen.cpp
 *.gch
 *.DSYM
 a.out
+test.txt
