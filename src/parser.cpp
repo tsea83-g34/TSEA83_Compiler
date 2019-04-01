@@ -113,7 +113,6 @@ decl_t* parser_t::match_decl(parser_t* p) {
     return nullptr;
 }
 
-// TODO
 func_decl_t* parser_t::match_decl_func(parser_t* p) {
 
     func_decl_t* d;
