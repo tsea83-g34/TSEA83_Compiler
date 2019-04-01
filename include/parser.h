@@ -24,6 +24,8 @@ struct block_stmt_t;
 
 struct if_stmt_t;
 struct assignment_stmt_t;
+struct return_stmt_t;
+
 
 struct expr_t;
 struct arith_expr_t;
@@ -56,6 +58,7 @@ enum class prod_tags_t : int {
 
         // Keywords
         IF = (int) lex::tag_t::IF,
+        RETURN = (int) lex::tag_t::RETURN,
 
         // Other
         ID = (int) lex::tag_t::ID,
@@ -164,6 +167,7 @@ private:
     static if_stmt_t* match_stmt_if(parser_t* p);
     static var_decl_t* match_stmt_decl(parser_t* p);
     static assignment_stmt_t* match_stmt_assign(parser_t* p);
+    static return_stmt_t* match_stmt_return(parser_t* p);
 
     static stmts_t* match_stmts_1(parser_t* p);
     static stmts_t* match_stmts_2(parser_t* p);

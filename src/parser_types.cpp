@@ -178,6 +178,24 @@ std::string assignment_stmt_t::get_string(parser_t* p) {
     return "(assign)[ " + identifier + " value( " + rvalue->get_string(p) + " )]";
 }
 
+void return_stmt_t::undo(parser_t* p) {
+
+    // Put back ; token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    return_value->undo(p);
+    delete return_value;
+
+    // Put back return token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string return_stmt_t::get_string(parser_t* p) {
+    return "(return)[ " + return_value->get_string(p) + " ]";
+}
+
 void arith_expr_t::undo(parser_t* p) {
     
     right->undo(p);

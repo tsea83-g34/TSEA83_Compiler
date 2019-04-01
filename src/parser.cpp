@@ -176,6 +176,9 @@ stmt_t* parser_t::match_stmt(parser_t* p) {
     stmt = match_stmt_block(p);
     if (stmt != nullptr) return stmt;
 
+    stmt = match_stmt_return(p);
+    if (stmt != nullptr) return stmt;
+
     stmt = match_stmt_if(p);
     return stmt;
 }
@@ -601,6 +604,45 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
 
     return result;
     std::cout << "Finished matching if statement" << std::endl;
+}
+
+// stmt -> return expr ;
+return_stmt_t* parser_t::match_stmt_return(parser_t* p) {
+
+    lex::token* return_token;
+    lex::token* semi_colon_token;
+
+    return_token = p->get_token();
+    expr_t* return_value = match_expr(p);
+
+    if (return_token->tag != lex::tag_t::RETURN || return_value == nullptr) {
+        p->put_back_token(return_token);
+        return nullptr;
+    }
+
+    semi_colon_token = p->get_token();
+
+    if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        
+        p->put_back_token(semi_colon_token);
+        return_value->undo(p);
+        p->put_back_token(return_token);
+
+        delete return_value;
+        return nullptr;
+    }
+
+    // If gotten so far, match is successful
+    
+    // Build syntax object
+    return_stmt_t* result = new return_stmt_t();
+    result->return_value = return_value;
+
+    // Store tokens
+    result->tokens.push_back(return_token);
+    result->tokens.push_back(semi_colon_token);
+
+    return result;
 }
 
 // stmt -> var_decl ; 

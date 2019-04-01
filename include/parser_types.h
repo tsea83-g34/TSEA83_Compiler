@@ -27,6 +27,7 @@
                 |   if ( expr ) stmt // This could lead to great errors if expr is matched but not stmt?
                 |   var_decl ;
                 |   id "=" expr ;   // assignment
+                |   return expr ;
     
     stmts       ->  stmt stmts
                 |   e
@@ -59,9 +60,9 @@ struct func_decl_t;
 struct stmt_t;
 struct stmts_t;
 struct block_stmt_t;
-
 struct if_stmt_t;
 struct assignment_stmt_t;
+struct return_stmt_t;
 
 struct expr_t;
 struct arith_expr_t;
@@ -145,6 +146,13 @@ struct if_stmt_t : stmt_t {
 struct assignment_stmt_t : stmt_t {
     std::string identifier;
     expr_t* rvalue;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+};
+
+struct return_stmt_t : stmt_t {
+    expr_t* return_value;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
