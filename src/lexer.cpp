@@ -44,6 +44,11 @@ lexer::lexer(std::string filename) {
     reserved_words.insert({"if", tag_t::IF});
 }
 
+lexer::~lexer() {
+    free(buffer_1);
+    free(buffer_2);
+}
+
 int lexer::char_to_digit(char c) {
     return c - '0';
 }

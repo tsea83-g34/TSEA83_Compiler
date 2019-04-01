@@ -60,6 +60,7 @@ namespace lex {
 
     public:
         lexer(std::string filename);
+        ~lexer();
 
         // Acquires the next token from the buffer
         token* get_next_token();
