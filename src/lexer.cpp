@@ -17,7 +17,7 @@ lexer::lexer(std::string filename) {
     line = 0;
 
     identifier_regex        = std::regex("([A-Z]|[a-z]|_)(([A-Z]|[a-z]|_)|[0-9])*");
-    int_literal_regex       = std::regex("[1-9][0-9]*");
+    int_literal_regex       = std::regex("([1-9][0-9]*)|0");
     str_literal_regex       = std::regex("\"([^\"]*)\"");
     whitespace_regex        = std::regex("[\t\n\ ]+");
     half_str_literal_regex  = std::regex("\"([^\"]*)");
