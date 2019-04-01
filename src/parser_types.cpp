@@ -12,8 +12,13 @@ std::string program_t::get_string(parser_t* p) {
 
 void decls_t::undo(parser_t* p) {
     
-    if (rest != nullptr) rest->undo(p);
+    if (rest != nullptr) {
+        rest->undo(p);
+        delete rest;
+    }
+
     first->undo(p);
+    delete first;
 }
 
 std::string decls_t::get_string(parser_t* p) {
@@ -27,6 +32,7 @@ void func_decl_t::undo(parser_t* p) {
     
     if (stmt != nullptr) {
         stmt->undo(p);
+        delete stmt;
     } else {
         // Put back ; token
         p->put_back_token(tokens.back());
@@ -64,6 +70,8 @@ void var_decl_t::undo(parser_t* p) {
         tokens.pop_back();
 
         value->undo(p);
+        delete value;
+
         // Put back assignment token
         p->put_back_token(tokens.back());
         tokens.pop_back();
@@ -86,8 +94,13 @@ std::string var_decl_t::get_string(parser_t* p) {
 
 void stmts_t::undo(parser_t* p) {
 
-    if (rest != nullptr) rest->undo(p);
+    if (rest != nullptr) {
+        rest->undo(p);
+        delete rest;
+    }
+
     first->undo(p);
+    delete first;
 }
 
 std::string stmts_t::get_string(parser_t* p) {
@@ -102,7 +115,10 @@ void block_stmt_t::undo(parser_t* p) {
     p->put_back_token(tokens.back());
     tokens.pop_back();
 
-    if (statements != nullptr) statements->undo(p);
+    if (statements != nullptr) {
+        statements->undo(p);
+        delete statements;
+    }
 
     // Put back { token
     p->put_back_token(tokens.back());
@@ -115,13 +131,17 @@ std::string block_stmt_t::get_string(parser_t* p) {
 
 void if_stmt_t::undo(parser_t* p) {
     
-    if (actions != nullptr) actions->undo(p);
+    if (actions != nullptr) {
+        actions->undo(p);
+        delete actions;
+    }
 
     // Put back ) token
     p->put_back_token(tokens.back());
     tokens.pop_back();
 
     cond->undo(p);
+    delete cond;
 
     // Put back ( token
     p->put_back_token(tokens.back());
@@ -143,6 +163,7 @@ void assignment_stmt_t::undo(parser_t* p) {
     tokens.pop_back();
 
     rvalue->undo(p);
+    delete rvalue;
 
     // Put back = token
     p->put_back_token(tokens.back());
@@ -162,6 +183,10 @@ void arith_expr_t::undo(parser_t* p) {
     right->undo(p);
     op->undo(p);
     left->undo(p);
+
+    delete right;
+    delete op;
+    delete left;
 }
 
 std::string arith_expr_t::get_string(parser_t* p) {
@@ -173,6 +198,10 @@ void rel_expr_t::undo(parser_t* p) {
     right->undo(p);
     op->undo(p);
     left->undo(p);
+    
+    delete right;
+    delete op;
+    delete left;
 
 }
 
@@ -183,6 +212,7 @@ std::string rel_expr_t::get_string(parser_t* p) {
 void neg_expr_t::undo(parser_t* p) {
     
     value->undo(p);
+    delete value;
     
     // Put back - token
     p->put_back_token(tokens.back());
@@ -196,6 +226,7 @@ std::string neg_expr_t::get_string(parser_t* p) {
 void term_expr_t::undo(parser_t* p) {
     
     t->undo(p);
+    delete t;
 
 }
 
