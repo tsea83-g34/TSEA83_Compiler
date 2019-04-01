@@ -139,6 +139,8 @@ var_decl_t* parser_t::match_decl_var(parser_t* p) {
     lex::token* semi_colon_token = p->get_token();
 
     if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        std::cout << "Failed acquiring semi colon: " << (int) semi_colon_token->tag << std::endl;
+
         p->put_back_token(semi_colon_token);
         result->undo(p);
         delete result;
@@ -227,6 +229,9 @@ relop_t* parser_t::match_relop(parser_t* p) {
 term_t* parser_t::match_term(parser_t* p) {
     
     term_t* term;
+
+    term = match_term_call(p);
+    if (term != nullptr) return term;
     
     term = match_term_identifier(p);
     if (term != nullptr) return term;
@@ -429,6 +434,7 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
 
     // If first token is not a type token, put back token, delete d and return nullptr
     if (!p->is_type(type_token)) {
+        std::cout << "Could not match function type: " << (int) type_token->tag << " " << static_cast<lex::id_token*>(type_token)->lexeme << std::endl;
         p->put_back_token(type_token);
         return nullptr;
     }
@@ -437,6 +443,7 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
     id_token = p->get_token();
     // If the acquired token is not an identifier, put back tokens, delete d and return nullptr
     if (id_token->tag != lex::tag_t::ID) {
+        std::cout << "Could not match function identifier" << std::endl;
         p->put_back_token(id_token);
         p->put_back_token(type_token);
         return nullptr;
@@ -447,6 +454,7 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
     closed_paren_token  = p->get_token();
     // If acquired tokens are not parenthesis
     if (open_paren_token->tag != lex::tag_t::OPEN_PAREN || closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
+        std::cout << "Could not match function parenthesis" << std::endl;
         p->put_back_token(closed_paren_token);
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
@@ -460,6 +468,7 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
     
     // If unsuccessful in finding block statement, put back tokens and return nullptr
     if (bs == nullptr) {
+        std::cout << "Could not match function block statement" << std::endl;
         p->put_back_token(closed_paren_token);
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
@@ -517,9 +526,9 @@ block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
         
         p->put_back_token(closed_brace);
         inner->undo(p);
-        delete inner;
         p->put_back_token(open_brace);
 
+        delete inner;
         return nullptr;
     }
 
@@ -613,9 +622,15 @@ return_stmt_t* parser_t::match_stmt_return(parser_t* p) {
     lex::token* semi_colon_token;
 
     return_token = p->get_token();
+
+    if (return_token->tag != lex::tag_t::RETURN) {
+        p->put_back_token(return_token);
+        return nullptr;
+    }
+    
     expr_t* return_value = match_expr(p);
 
-    if (return_token->tag != lex::tag_t::RETURN || return_value == nullptr) {
+    if (return_value == nullptr) {
         p->put_back_token(return_token);
         return nullptr;
     }
@@ -679,6 +694,7 @@ assignment_stmt_t* parser_t::match_stmt_assign(parser_t* p) {
 
     // If could not match expression, revert
     if (rvalue == nullptr) {
+        std::cout << "Could not match expr" << std::endl;
         p->put_back_token(assign_token);
         p->put_back_token(id_token);
         return nullptr;
@@ -989,6 +1005,38 @@ lit_term_t* parser_t::match_term_literal(parser_t* p) {
     
     // Store token
     result->tokens.push_back(literal_token);
+
+    return result;
+}
+
+// term -> id ( )
+call_term_t* parser_t::match_term_call(parser_t* p) {
+
+    lex::token* id_token;
+    lex::token* open_paren_token;
+    lex::token* closed_paren_token;
+
+    id_token = p->get_token();
+    open_paren_token = p->get_token();
+    closed_paren_token = p->get_token();
+
+    if (id_token->tag != lex::tag_t::ID || open_paren_token->tag != lex::tag_t::OPEN_PAREN || closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
+        p->put_back_token(closed_paren_token);
+        p->put_back_token(open_paren_token);
+        p->put_back_token(id_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    call_term_t* result = new call_term_t();
+    result->function_identifier = static_cast<lex::id_token*>(id_token)->lexeme;
+
+    // Store tokens
+    result->tokens.push_back(id_token);
+    result->tokens.push_back(open_paren_token);
+    result->tokens.push_back(closed_paren_token);
 
     return result;
 }
