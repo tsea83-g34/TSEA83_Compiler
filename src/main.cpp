@@ -47,6 +47,8 @@ int main(int argc, char const *argv[]) {
     cout << "Finished parsing" << endl;
     if (program != nullptr) {
         cout << program->get_string(&parser) << endl;
+        program->undo(&parser);
+        delete program;
     } else {
         cout << "Syntax error" << endl;
     }
