@@ -58,16 +58,18 @@ void func_decl_t::undo(parser_t* p) {
 }
 
 std::string func_decl_t::get_string(parser_t* p) {
-    return "(function)[" + p->get_type_name(type) + " " + id + "]{" + stmt->get_string(p) + "}";
+    return "(function)[" + p->get_type_name(type) + " " + id + "]{" +  (stmt != nullptr ? stmt->get_string(p) : "")  + "}";
 }
 
 void var_decl_t::undo(parser_t* p) {
-    
-    if (value != nullptr) {
 
-        // Put back ; token
+    // If last token is a semi colon, put it back
+    if (tokens.back()->tag == lex::tag_t::SEMI_COLON) {
         p->put_back_token(tokens.back());
         tokens.pop_back();
+    }
+
+    if (value != nullptr) {
 
         value->undo(p);
         delete value;
@@ -282,6 +284,26 @@ std::string id_term_t::get_string(parser_t* p) {
 
 std::string lit_term_t::get_string(parser_t* p) {
     return std::to_string(literal);
+}
+
+void call_term_t::undo(parser_t* p) {
+    
+    // Put back ) token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back ( token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+    
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+    
+}
+
+std::string call_term_t::get_string(parser_t* p) {
+    return function_identifier + "()";
 }
 
 std::string arithop_plus_t::get_string(parser_t* p) {

@@ -47,6 +47,7 @@
 
     term        ->  id
                 |   literal
+                |   id ( )  // Function call
  */
 
 /* Predefine syntax tree structs */
@@ -66,7 +67,14 @@ struct return_stmt_t;
 
 struct expr_t;
 struct arith_expr_t;
+struct rel_expr_t;
+struct neg_expr_t;
+struct term_expr_t;
+
 struct term_t;
+struct lit_term_t;
+struct id_term_t;
+struct call_term_t;
 
 struct arithop_t;
 struct relop_t;
@@ -197,13 +205,21 @@ struct term_expr_t : expr_t {
 struct term_t : undoable_t, printable_t {
     bool is_literal;
 
-    void undo(parser_t* p) override;
+    virtual void undo(parser_t* p) override;
 };
 
 struct id_term_t : term_t {
     std::string identifier;
 
     id_term_t() { is_literal = false; }
+    std::string get_string(parser_t* p) override;
+};
+
+struct call_term_t : term_t {
+    std::string function_identifier;
+
+    call_term_t() { is_literal = false; }
+    void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
 };
 
