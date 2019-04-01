@@ -23,6 +23,7 @@ namespace lex {
         
         // Keywords
         IF,
+        RETURN,
 
         // Other
         ID,
