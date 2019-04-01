@@ -60,15 +60,15 @@ std::string parser_t::get_type_name(int type) {
 program_t* parser_t::match_program(parser_t *p) {
     
     std::cout << "Matching program" << std::endl;
-    program_t *program = new program_t();
 
     decls_t* d = match_decls(p);
 
     if (d == nullptr) {
         std::cout << "Failed matching decls" << std::endl;
-        return program;
+        return nullptr;
     }
-
+    
+    program_t *program = new program_t();
     program->decls = d;
     return program;
 }
@@ -159,8 +159,6 @@ stmt_t* parser_t::match_stmt(parser_t* p) {
     stmt = match_stmt_assign(p);
     if (stmt != nullptr) return stmt;
 
-    std::cout << "boop" << std::endl;
-
     stmt = match_stmt_decl(p);
     if (stmt != nullptr) return stmt;
 
@@ -168,6 +166,7 @@ stmt_t* parser_t::match_stmt(parser_t* p) {
 
     stmt = match_stmt_block(p);
     if (stmt != nullptr) return stmt;
+
 
     stmt = match_stmt_if(p);
     return stmt;
@@ -450,7 +449,6 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
     
     // If unsuccessful in finding block statement, put back tokens and return nullptr
     if (bs == nullptr) {
-        bs->undo(p);
         p->put_back_token(closed_paren_token);
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
@@ -503,9 +501,8 @@ block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
 
     // Get token for closed brace
     closed_brace = p->get_token();
-
-    // TODO: At this point reverting is impossible throw error?
     if (closed_brace->tag != lex::tag_t::CLOSED_BRACE) {
+        std::cout << "Debug" << std::endl;
         
         p->put_back_token(closed_brace);
         inner->undo(p);
@@ -532,6 +529,8 @@ block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
 
 // stmt -> if ( expr ) stmt
 if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
+
+    std::cout << "Matching if statement" << std::endl;
 
     lex::token* if_token;
     lex::token* open_paren_token;
@@ -593,6 +592,7 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
     result->tokens.push_back(closed_paren_token);
 
     return result;
+    std::cout << "Finished matching if statement" << std::endl;
 }
 
 // stmt -> var_decl ; 
