@@ -133,7 +133,7 @@ void if_stmt_t::undo(parser_t* p) {
 }
 
 std::string if_stmt_t::get_string(parser_t* p) {
-    return "(if)[ cond{ " + cond->get_string(p) + "} ]{ " + actions->get_string(p) + " }";
+    return "(if)[ cond{ " + cond->get_string(p) + " } ]{ " + actions->get_string(p) + " }";
 }
 
 void assignment_stmt_t::undo(parser_t* p) {
