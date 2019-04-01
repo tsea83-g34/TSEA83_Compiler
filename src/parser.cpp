@@ -137,6 +137,7 @@ var_decl_t* parser_t::match_decl_var(parser_t* p) {
         return nullptr;
     }
 
+    result->tokens.push_back(semi_colon_token);
     return result;
 }
 
