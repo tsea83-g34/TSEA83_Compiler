@@ -16,6 +16,14 @@ parser_t::parser_t(lex::lexer *l) : lexical_analyzer(l) {
     current_pos = 0;
 }
 
+parser_t::~parser_t() {
+
+    while (!token_queue.empty()) {
+        delete token_queue.back();
+        token_queue.pop_back();
+    }
+}
+
 program_t* parser_t::parse_token_stream() {
     return match_program(this);
 }
@@ -82,6 +90,7 @@ decls_t* parser_t::match_decls(parser_t* p) {
     lex::tag_t tag = test_token->tag;
     p->put_back_token(test_token);
     std::cout << "Decl test token tag: " << (int) tag << std::endl;
+    
     if (tag == lex::tag_t::eof) return nullptr;
     
     ds = match_decls_1(p);

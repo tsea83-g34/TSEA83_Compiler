@@ -117,7 +117,7 @@ private:
     // Map of all productions, might be redundant
     std::unordered_map<prod_tags_t, std::vector<prod_t>, enum_class_hash_t> productions;
     
-    // The lexical analyzer used by the aprser
+    // The lexical analyzer used by the parser
     lex::lexer *lexical_analyzer;
 
     // Maps reserved types to their byte size
@@ -183,6 +183,8 @@ private:
     static lit_term_t* match_term_literal(parser_t* p);
 public:
     parser_t(lex::lexer *l);
+    ~parser_t();
+
     program_t* parse_token_stream();
     std::string get_type_name(int type);
     void put_back_token(lex::token* t);
