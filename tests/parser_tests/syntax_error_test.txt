@@ -1,0 +1,16 @@
+
+int a;
+
+int f( ) {
+    // hhhhh
+    return 0;
+}
+
+int main( ) {
+    int b = f(2);
+    f( );
+    a = 3;
+}
+
+
+
