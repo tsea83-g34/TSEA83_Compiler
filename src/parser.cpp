@@ -43,6 +43,15 @@ void parser_t::put_back_token(lex::token* t) {
     token_queue.push_front(t);
 }
 
+const lex::token* parser_t::peek() {
+    
+    if (!token_queue.size()) {
+        token_queue.push_front(get_token());
+    }
+    
+    return token_queue.front();
+}
+
 inline bool parser_t::is_type(const std::string& s) {
     return type_map.count(s);
 }
@@ -84,7 +93,7 @@ program_t* parser_t::match_program(parser_t *p) {
 decls_t* parser_t::match_decls(parser_t* p) {
 
     std::cout << "Matching decls" << std::endl;
-    decls_t* ds;
+    decls_t* ds = nullptr;
 
     lex::token* test_token = p->get_token();
     lex::tag_t tag = test_token->tag;
@@ -93,11 +102,21 @@ decls_t* parser_t::match_decls(parser_t* p) {
     
     if (tag == lex::tag_t::eof) return nullptr;
     
-    ds = match_decls_1(p);
+    // Try matching decl, if it fails, check if next token is EOF, if it is, everything is in order
+    // If it is not rethrow the syntax error
+    try {
+        ds = match_decls_1(p);
+    } catch (syntax_error e) {
+
+        std::cout << "Caught syntax error in match_decls" << std::endl;
+        if (p->peek()->tag != lex::tag_t::eof) {
+            throw e;
+        }
+    }
+
     if (ds != nullptr) return ds;
 
-    ds = match_decls_2(p);
-    return ds;
+    return match_decls_2(p);
 }
 
 decl_t* parser_t::match_decl(parser_t* p) {
@@ -110,7 +129,7 @@ decl_t* parser_t::match_decl(parser_t* p) {
     d = match_decl_func(p);
     if (d != nullptr) return d;
 
-    return nullptr;
+    throw syntax_error("Could not match declaration. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token");
 }
 
 func_decl_t* parser_t::match_decl_func(parser_t* p) {
@@ -153,13 +172,21 @@ var_decl_t* parser_t::match_decl_var(parser_t* p) {
 
 stmts_t* parser_t::match_stmts(parser_t* p) {
     
-    stmts_t* stmts;
+    stmts_t* stmts = nullptr;
     std::cout << "Matching statement list" << std::endl;
-    stmts = match_stmts_1(p);
+
+    try {
+        stmts = match_stmts_1(p);
+    } catch (syntax_error e) {
+
+        std::cout << "Caught syntax error in match_stmts" << std::endl;
+        if (p->peek()->tag != lex::tag_t::CLOSED_BRACE) {
+            throw e;
+        }
+    }
     if (stmts != nullptr) return stmts;
 
-    stmts = match_stmts_2(p);
-    return stmts;
+    return match_stmts_2(p);;
 }
 
 stmt_t* parser_t::match_stmt(parser_t* p) {
@@ -185,7 +212,9 @@ stmt_t* parser_t::match_stmt(parser_t* p) {
     if (stmt != nullptr) return stmt;
 
     stmt = match_stmt_if(p);
-    return stmt;
+    if (stmt != nullptr) return stmt;
+
+    throw syntax_error("Could not match statement. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token");
 }
 
 expr_t* parser_t::match_expr(parser_t* p) {
@@ -203,8 +232,9 @@ expr_t* parser_t::match_expr(parser_t* p) {
     if (expr != nullptr) return expr;
 
     expr = match_expr_negated(p);
-    return expr;
+    if (expr != nullptr) return expr;
 
+    throw syntax_error("Could not match expression. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token");
 }
 
 arithop_t* parser_t::match_arithop(parser_t* p) {
@@ -668,9 +698,12 @@ expr_stmt_t* parser_t::match_stmt_expr(parser_t* p) {
 
     lex::token* semi_colon_token;
 
-    expr_t* e = match_expr(p);
+    expr_t* e = nullptr;
+        e = match_expr(p);
+    try {
+    } catch (syntax_error e) {
 
-    if (e == nullptr) {
+        // If could not match expression, return nullptr
         return nullptr;
     }
 
