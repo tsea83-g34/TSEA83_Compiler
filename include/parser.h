@@ -122,8 +122,8 @@ private:
 public:
     syntax_error(std::string _msg) : msg(_msg) {}
     ~syntax_error() {}
-    
-    std::string get_message() const noexcept { return msg; }
+
+    const char* what() const noexcept { return msg.c_str(); }
 };
 
 class parser_t {
@@ -205,6 +205,7 @@ public:
     program_t* parse_token_stream();
     std::string get_type_name(int type);
     void put_back_token(lex::token* t);
+    const lex::token* peek();
 };
 
 #endif
