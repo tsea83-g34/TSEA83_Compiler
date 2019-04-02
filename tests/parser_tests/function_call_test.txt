@@ -8,6 +8,7 @@ int f( ) {
 
 int main( ) {
     int b = f();
+    f( );
     a = 3;
 }
 

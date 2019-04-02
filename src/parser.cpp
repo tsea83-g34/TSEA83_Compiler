@@ -181,6 +181,9 @@ stmt_t* parser_t::match_stmt(parser_t* p) {
     stmt = match_stmt_return(p);
     if (stmt != nullptr) return stmt;
 
+    stmt = match_stmt_expr(p);
+    if (stmt != nullptr) return stmt;
+
     stmt = match_stmt_if(p);
     return stmt;
 }
@@ -655,6 +658,38 @@ return_stmt_t* parser_t::match_stmt_return(parser_t* p) {
 
     // Store tokens
     result->tokens.push_back(return_token);
+    result->tokens.push_back(semi_colon_token);
+
+    return result;
+}
+
+// stmt -> expr ;
+expr_stmt_t* parser_t::match_stmt_expr(parser_t* p) {
+
+    lex::token* semi_colon_token;
+
+    expr_t* e = match_expr(p);
+
+    if (e == nullptr) {
+        return nullptr;
+    }
+
+    semi_colon_token = p->get_token();
+
+    if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        p->put_back_token(semi_colon_token);
+        e->undo(p);
+        delete e;
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    expr_stmt_t* result = new expr_stmt_t();
+    result->e = e;
+
+    // Save token
     result->tokens.push_back(semi_colon_token);
 
     return result;

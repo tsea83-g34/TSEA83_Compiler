@@ -25,7 +25,7 @@ struct block_stmt_t;
 struct if_stmt_t;
 struct assignment_stmt_t;
 struct return_stmt_t;
-
+struct expr_stmt_t;
 
 struct expr_t;
 struct arith_expr_t;
@@ -116,6 +116,16 @@ struct prod_t {
     //std::function<ast_node_t*()> semantics;
 };
 
+class syntax_error : public std::exception {
+private:
+    std::string msg;
+public:
+    syntax_error(std::string _msg) : msg(_msg) {}
+    ~syntax_error() {}
+    
+    std::string get_message() const noexcept { return msg; }
+};
+
 class parser_t {
 private:
     // Map of all productions, might be redundant
@@ -169,6 +179,7 @@ private:
     static var_decl_t* match_stmt_decl(parser_t* p);
     static assignment_stmt_t* match_stmt_assign(parser_t* p);
     static return_stmt_t* match_stmt_return(parser_t* p);
+    static expr_stmt_t* match_stmt_expr(parser_t* p);
 
     static stmts_t* match_stmts_1(parser_t* p);
     static stmts_t* match_stmts_2(parser_t* p);

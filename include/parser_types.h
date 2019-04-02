@@ -28,6 +28,7 @@
                 |   var_decl ;
                 |   id "=" expr ;   // assignment
                 |   return expr ;
+                |   expr ;
     
     stmts       ->  stmt stmts
                 |   e
@@ -64,6 +65,7 @@ struct block_stmt_t;
 struct if_stmt_t;
 struct assignment_stmt_t;
 struct return_stmt_t;
+struct expr_stmt_t;
 
 struct expr_t;
 struct arith_expr_t;
@@ -161,6 +163,13 @@ struct assignment_stmt_t : stmt_t {
 
 struct return_stmt_t : stmt_t {
     expr_t* return_value;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+};
+
+struct expr_stmt_t : stmt_t {
+    expr_t* e;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;

@@ -198,6 +198,20 @@ std::string return_stmt_t::get_string(parser_t* p) {
     return "(return)[ " + return_value->get_string(p) + " ]";
 }
 
+void expr_stmt_t::undo(parser_t* p) {
+    
+    // Put ; return token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    e->undo(p);
+    delete e;
+}
+
+std::string expr_stmt_t::get_string(parser_t* p) {
+    return "(expr)[ " + e->get_string(p) + " ]";
+}
+
 void arith_expr_t::undo(parser_t* p) {
     
     right->undo(p);
