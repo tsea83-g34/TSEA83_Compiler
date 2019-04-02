@@ -126,6 +126,10 @@ token* lexer::get_next_token() {
                     continue;
                 }
             } while (*lexeme_start++ != '\n');
+            line++;
+
+            // Restart token matching loop
+            continue;
         
         // Check case where comment signifier // is split between buffers
         } else if (*lexeme_start == '/' && lexeme_start+1 == get_current_buffer_end()) {
