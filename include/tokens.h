@@ -48,6 +48,26 @@ namespace lex {
         UNKNOWN
     };
 
+    const std::string token_names[] = {
+        "if keyword", 
+        "return keyword", 
+        "identifier", 
+        "integer literal", 
+        "string literal",
+        "plus operator",
+        "minus operator",
+        "equals operator",
+        "not equals operator",
+        "assignment operator",
+        "open parenthesis",
+        "closed parenthesis",
+        "open brace",
+        "closed brace",
+        "semicolon",
+        "end of file",
+        "unknown"
+    };
+
     struct token {
         const tag_t tag;
         token(tag_t _tag) : tag(_tag) { }
