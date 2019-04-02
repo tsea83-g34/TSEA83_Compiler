@@ -15,6 +15,9 @@
 
 using namespace std;
 
+#define PARSE_DEBUG
+//#define LEX_DEBUG
+
 
 int main(int argc, char const *argv[]) {
 
@@ -41,19 +44,27 @@ int main(int argc, char const *argv[]) {
     cout << "total: " << filename << endl;
 
     lex::lexer lex(filename);
-    parser_t parser(&lex);
 
-    program_t* program = parser.parse_token_stream();
+    #ifdef PARSE_DEBUG
+    parser_t parser(&lex);
+    program_t* program = nullptr;
+
+    try {
+        program = parser.parse_token_stream();
+    } catch (syntax_error e) {
+        cout << "--- Syntax Error: " << e.what() << std::endl;
+    }
+
     cout << "Finished parsing" << endl;
     if (program != nullptr) {
         cout << program->get_string(&parser) << endl;
         program->undo(&parser);
         delete program;
-    } else {
-        cout << "Syntax error" << endl;
     }
 
-    #if 0
+    #endif
+
+    #ifdef LEX_DEBUG
     int token_count = 1;
     lex::token* t = lex.get_next_token();
     while (t->tag != lex::tag_t::eof) {
@@ -62,6 +73,9 @@ int main(int argc, char const *argv[]) {
         switch(t->tag) {
             case lex::tag_t::IF:
                 cout << "If found" << endl;
+                break;
+            case lex::tag_t::RETURN:
+                cout << "Return found" << endl;
                 break;
             case lex::tag_t::ID:
                 cout << "Identifier found: " << dynamic_cast<lex::id_token*>(t)->lexeme << endl;
