@@ -18,6 +18,10 @@ struct decls_t;
 struct var_decl_t;
 struct func_decl_t;
 
+struct param_decls_t;
+struct param_decl_t;
+struct params_t;
+
 struct stmt_t;
 struct stmts_t;
 struct block_stmt_t;
@@ -155,10 +159,17 @@ private:
     static program_t* match_program(parser_t* p);
     static decls_t* match_decls(parser_t* p);
     static decl_t* match_decl(parser_t* p);
+
     static var_decl_t* match_decl_var(parser_t* p);
     static func_decl_t* match_decl_func(parser_t* p);
+
+    static param_decls_t* match_param_decls(parser_t* p);
+    static param_decl_t* match_param_decl(parser_t* p);
+    static params_t* match_params(parser_t* p);
+    
     static stmt_t* match_stmt(parser_t* p);
     static stmts_t* match_stmts(parser_t* p);
+
     static expr_t* match_expr(parser_t* p);
     static arithop_t* match_arithop(parser_t* p);
     static relop_t* match_relop(parser_t* p);
@@ -198,6 +209,7 @@ private:
     static id_term_t* match_term_identifier(parser_t* p);
     static lit_term_t* match_term_literal(parser_t* p);
     static call_term_t* match_term_call(parser_t* p);
+
 public:
     parser_t(lex::lexer *l);
     ~parser_t();

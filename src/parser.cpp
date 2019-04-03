@@ -170,6 +170,77 @@ var_decl_t* parser_t::match_decl_var(parser_t* p) {
     return result;
 }
 
+// param_decls -> param params
+//             |  e  
+param_decls_t* parser_t::match_param_decls(parser_t* p) {
+
+    std::cout << "Matching param declarations" << std::endl;
+    param_decl_t* first = match_param_decl(p);
+    // If failed matching first, return nullptr
+    if (first == nullptr) {
+        std::cout << "Failed matching param declarations" << std::endl;
+        return nullptr;
+    }
+
+    param_decls_t* result = new param_decls_t();
+    result->first = first;
+
+    // TODO add syntax error handling here
+
+    // Try matching more decls
+    result->rest = match_param_decls(p);
+    
+    return result;
+}
+
+// param_decl -> type id
+param_decl_t* parser_t::match_param_decl(parser_t* p) {
+
+    lex::token* type_token;
+    lex::token* id_token;
+
+    type_token  = p->get_token();
+    id_token    = p->get_token();
+
+    if (!p->is_type(type_token) || id_token->tag != lex::tag_t::ID) {
+        p->put_back_token(id_token);
+        p->put_back_token(type_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match was succesful
+
+    // Create syntax object
+    param_decl_t* result = new param_decl_t();
+    result->type    = p->get_type(static_cast<lex::id_token*>(type_token));
+    result->id      = static_cast<lex::id_token*>(id_token)->lexeme;
+
+    // Store token
+    result->tokens.push_back(type_token);
+    result->tokens.push_back(id_token);
+
+    return result;
+}
+
+params_t* parser_t::match_params(parser_t* p) {
+
+    expr_t* first;
+
+    try {
+        first = match_expr(p);
+    } catch (syntax_error e) {
+        return nullptr;
+    }
+    
+    params_t* result = new params_t();
+    result->first = first;
+
+    // Try matching more parameters
+    result->rest = match_params(p);
+
+    return result;
+}
+
 stmts_t* parser_t::match_stmts(parser_t* p) {
     
     stmts_t* stmts = nullptr;
@@ -186,7 +257,7 @@ stmts_t* parser_t::match_stmts(parser_t* p) {
     }
     if (stmts != nullptr) return stmts;
 
-    return match_stmts_2(p);;
+    return match_stmts_2(p);
 }
 
 stmt_t* parser_t::match_stmt(parser_t* p) {
@@ -388,7 +459,7 @@ var_decl_t* parser_t::match_decl_var_2(parser_t* p) {
     return d;
 }
 
-// func_decl -> type id ( ) ;
+// func_decl -> type id ( param_decls ) ;
 func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
 
     std::cout << "Matching func declaration" << std::endl;
@@ -417,17 +488,33 @@ func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
         return nullptr;
     }
 
-    // Store function name
-
     // Acquire first parenthesis tokens
     open_paren_token    = p->get_token();
+
+    if (open_paren_token->tag != lex::tag_t::OPEN_PAREN) {
+        p->put_back_token(open_paren_token);
+        p->put_back_token(id_token);
+        p->put_back_token(type_token);
+        return nullptr;
+    }
+
+    // Try matching parameter declarations, if none is found, it's not a problem
+    param_decls_t* param_list = match_param_decls(p);
+
+
     closed_paren_token  = p->get_token();
     semi_token          = p->get_token();
     // If acquired tokens are not parenthesis
-    if (open_paren_token->tag != lex::tag_t::OPEN_PAREN || closed_paren_token->tag != lex::tag_t::CLOSED_PAREN
-            || semi_token->tag != lex::tag_t::SEMI_COLON) {
+    if (closed_paren_token->tag != lex::tag_t::CLOSED_PAREN || semi_token->tag != lex::tag_t::SEMI_COLON) {
+        
         p->put_back_token(semi_token);
         p->put_back_token(closed_paren_token);
+
+        if (param_list != nullptr) {
+            param_list->undo(p);
+            delete param_list;
+        }
+
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
         p->put_back_token(type_token);
@@ -441,6 +528,7 @@ func_decl_t* parser_t::match_decl_func_1(parser_t* p) {
     result->type = p->get_type(static_cast<lex::id_token*>(type_token));
     result->id = static_cast<lex::id_token*>(id_token)->lexeme;
     result->stmt = nullptr;
+    result->param_list = param_list;
 
     // Save tokens in syntax object
     result->tokens.push_back(type_token);
@@ -483,18 +571,35 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
     }
 
     // Acquire first parenthesis tokens
-    open_paren_token    = p->get_token();
-    closed_paren_token  = p->get_token();
-    // If acquired tokens are not parenthesis
-    if (open_paren_token->tag != lex::tag_t::OPEN_PAREN || closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
-        std::cout << "Could not match function parenthesis" << std::endl;
-        p->put_back_token(closed_paren_token);
+    open_paren_token = p->get_token();
+
+    if (open_paren_token->tag != lex::tag_t::OPEN_PAREN) {
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
         p->put_back_token(type_token);
         return nullptr;
     }
 
+    // Try matching parameter declarations, if none is found, it's not a problem
+    param_decls_t* param_list = match_param_decls(p);
+
+    closed_paren_token  = p->get_token();
+    // If acquired tokens are not parenthesis
+    if (closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
+        std::cout << "Could not match function parenthesis" << std::endl;
+        p->put_back_token(closed_paren_token);
+
+        // If there is a parameter list, undo it
+        if (param_list != nullptr) {
+            param_list->undo(p);
+            delete param_list;
+        }
+
+        p->put_back_token(open_paren_token);
+        p->put_back_token(id_token);
+        p->put_back_token(type_token);
+        return nullptr;
+    }
 
     // Acquire block statement
     block_stmt_t* bs = match_stmt_block(p);
@@ -503,6 +608,13 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
     if (bs == nullptr) {
         std::cout << "Could not match function block statement" << std::endl;
         p->put_back_token(closed_paren_token);
+
+        // If there is a parameter list, undo it
+        if (param_list != nullptr) {
+            param_list->undo(p);
+            delete param_list;
+        }
+
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
         p->put_back_token(type_token);
@@ -516,6 +628,7 @@ func_decl_t* parser_t::match_decl_func_2(parser_t* p) {
     result->type = p->get_type(static_cast<lex::id_token*>(type_token));
     result->id = static_cast<lex::id_token*>(id_token)->lexeme;
     result->stmt = bs;
+    result->param_list = param_list;
 
     // Store tokens in syntax object
     result->tokens.push_back(type_token);
@@ -1077,7 +1190,7 @@ lit_term_t* parser_t::match_term_literal(parser_t* p) {
     return result;
 }
 
-// term -> id ( )
+// term -> id ( params )
 call_term_t* parser_t::match_term_call(parser_t* p) {
 
     lex::token* id_token;
@@ -1086,10 +1199,26 @@ call_term_t* parser_t::match_term_call(parser_t* p) {
 
     id_token = p->get_token();
     open_paren_token = p->get_token();
+
+
+    if (id_token->tag != lex::tag_t::ID || open_paren_token->tag != lex::tag_t::OPEN_PAREN) {
+        p->put_back_token(open_paren_token);
+        p->put_back_token(id_token);
+        return nullptr;
+    }
+
+    params_t* params = match_params(p);
+
     closed_paren_token = p->get_token();
 
-    if (id_token->tag != lex::tag_t::ID || open_paren_token->tag != lex::tag_t::OPEN_PAREN || closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
+    if (closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
         p->put_back_token(closed_paren_token);
+
+        if (params != nullptr) {
+            params->undo(p);
+            delete params;
+        }
+
         p->put_back_token(open_paren_token);
         p->put_back_token(id_token);
         return nullptr;
@@ -1100,6 +1229,7 @@ call_term_t* parser_t::match_term_call(parser_t* p) {
     // Build syntax object
     call_term_t* result = new call_term_t();
     result->function_identifier = static_cast<lex::id_token*>(id_token)->lexeme;
+    result->params = params;
 
     // Store tokens
     result->tokens.push_back(id_token);

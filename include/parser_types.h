@@ -20,8 +20,13 @@
     var_decl    ->  type id ;
                 |   type id "=" expr ;
 
-    func_decl   ->  type id ( ) ;
-                |   type id ( ) block_stmt
+    func_decl   ->  type id ( param_decls ) ;
+                |   type id ( param_decls ) block_stmt
+
+    param_decls ->  param_decl param_decls
+                |   e
+
+    param_decl  ->  type id
 
     stmt        ->  block_stmt
                 |   if ( expr ) stmt // This could lead to great errors if expr is matched but not stmt?
@@ -48,7 +53,11 @@
 
     term        ->  id
                 |   literal
-                |   id ( )  // Function call
+                |   id ( params )  // Function call
+    
+    params      ->  expr params
+                |   e
+
  */
 
 /* Predefine syntax tree structs */
@@ -58,6 +67,10 @@ struct decl_t;
 struct decls_t;
 struct var_decl_t;
 struct func_decl_t;
+
+struct param_decls_t;
+struct param_decl_t;
+struct params_t;
 
 struct stmt_t;
 struct stmts_t;
@@ -108,9 +121,38 @@ struct decl_t : virtual undoable_t, virtual printable_t {
 struct func_decl_t : decl_t {
     int type;
     std::string id;
+    param_decls_t* param_list;
     block_stmt_t* stmt;
 
     func_decl_t() = default;
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+};
+
+/* ---------------------- */
+
+/*       Parameters       */
+
+struct param_decls_t : undoable_t, virtual printable_t {
+    param_decl_t* first;
+    param_decls_t* rest;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+};
+
+struct param_decl_t : undoable_t, virtual printable_t {
+    int type;
+    std::string id;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+};
+
+struct params_t : undoable_t, virtual printable_t {
+    expr_t* first;
+    params_t* rest;
+
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
 };
@@ -226,6 +268,7 @@ struct id_term_t : term_t {
 
 struct call_term_t : term_t {
     std::string function_identifier;
+    params_t* params;
 
     call_term_t() { is_literal = false; }
     void undo(parser_t* p) override;

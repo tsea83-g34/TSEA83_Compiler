@@ -28,39 +28,6 @@ std::string decls_t::get_string(parser_t* p) {
     return result;
 }
 
-void func_decl_t::undo(parser_t* p) {
-    
-    if (stmt != nullptr) {
-        stmt->undo(p);
-        delete stmt;
-    } else {
-        // Put back ; token
-        p->put_back_token(tokens.back());
-        tokens.pop_back();
-    }
-
-    // Put back ) token
-    p->put_back_token(tokens.back());
-    tokens.pop_back();
-
-    // Put back ( token
-    p->put_back_token(tokens.back());
-    tokens.pop_back();
-
-    // Put back id token
-    p->put_back_token(tokens.back());
-    tokens.pop_back();
-
-    // Put back type token
-    p->put_back_token(tokens.back());
-    tokens.pop_back();
-
-}
-
-std::string func_decl_t::get_string(parser_t* p) {
-    return "(function)[" + p->get_type_name(type) + " " + id + "]{" +  (stmt != nullptr ? stmt->get_string(p) : "")  + "}";
-}
-
 void var_decl_t::undo(parser_t* p) {
 
     // If last token is a semi colon, put it back
@@ -92,6 +59,98 @@ void var_decl_t::undo(parser_t* p) {
 std::string var_decl_t::get_string(parser_t* p) {
     return "(var_decl)[ " + p->get_type_name(type) + " " + id + " ]" +
         ((value != nullptr) ? "{ " + value->get_string(p) + " }" : "");
+}
+
+void func_decl_t::undo(parser_t* p) {
+    
+    if (stmt != nullptr) {
+        stmt->undo(p);
+        delete stmt;
+    } else {
+        // Put back ; token
+        p->put_back_token(tokens.back());
+        tokens.pop_back();
+    }
+
+    // Put back ) token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // If the declaration has parameters, undo them
+    if (param_list != nullptr) {
+        param_list->undo(p);
+        delete param_list;
+    }
+
+    // Put back ( token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back type token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+}
+
+std::string func_decl_t::get_string(parser_t* p) {
+
+    std::string stmt_string   = (stmt != nullptr) ? stmt->get_string(p) : "";
+    std::string params_string = (param_list != nullptr) ? (" params: " + param_list->get_string(p)) : "";
+
+    return "(function)[type: " + p->get_type_name(type) + " id: " + id + params_string + "]{" + stmt_string + "}";
+}
+
+void param_decls_t::undo(parser_t* p) {
+
+    if (rest != nullptr) {
+        rest->undo(p);
+        delete rest;
+    }
+
+    first->undo(p);
+    delete first;
+}
+
+std::string param_decls_t::get_string(parser_t* p) {
+    std::string result = first->get_string(p);
+    if (rest != nullptr) result += " " + rest->get_string(p);
+    return result;
+}
+
+void param_decl_t::undo(parser_t* p) {
+
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back type token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string param_decl_t::get_string(parser_t* p) {
+    return p->get_type_name(type) + " " + id;
+}
+
+void params_t::undo(parser_t* p) {
+
+    if (rest != nullptr) {
+        rest->undo(p);
+        delete rest;
+    }
+
+    first->undo(p);
+    delete first;
+}
+
+std::string params_t::get_string(parser_t* p) {
+    std::string result = first->get_string(p);
+    if (rest != nullptr) result += " " + rest->get_string(p);
+    return result;
 }
 
 void stmts_t::undo(parser_t* p) {
@@ -306,6 +365,12 @@ void call_term_t::undo(parser_t* p) {
     p->put_back_token(tokens.back());
     tokens.pop_back();
 
+    // If parameters are given, return them
+    if (params != nullptr) {
+        params->undo(p);
+        delete params;
+    }
+
     // Put back ( token
     p->put_back_token(tokens.back());
     tokens.pop_back();
@@ -317,7 +382,8 @@ void call_term_t::undo(parser_t* p) {
 }
 
 std::string call_term_t::get_string(parser_t* p) {
-    return function_identifier + "()";
+    std::string params_string = (params != nullptr) ? params->get_string(p) : "";
+    return function_identifier + "(" + params_string + ")";
 }
 
 std::string arithop_plus_t::get_string(parser_t* p) {
