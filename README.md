@@ -17,15 +17,15 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
 ### Parsing
 
-- [ ] Parsing for the features listed above
+- [x] Parsing for the features listed above
 - [x] Data structures that represent different language constructs such as expressions and statements
-- [ ] Build abstract tree with these data structures from the stream of tokens provided by the lexer
-- [ ] Symbol table tree for variables and declarations
+- [x] Build abstract tree with these data structures from the stream of tokens provided by the lexer
 
 ### Code Generation
 
-- [ ] Translation from abstract syntax tree to machine code
+- [ ] Symbol table tree for variables and declarations
 - [ ] Register allocation table and register usage
+- [ ] Translation from abstract syntax tree to machine code
 
 ### Other Language Features
 
