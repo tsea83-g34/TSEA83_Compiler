@@ -231,7 +231,7 @@ params_t* parser_t::match_params(parser_t* p) {
     } catch (syntax_error e) {
         return nullptr;
     }
-    
+
     params_t* result = new params_t();
     result->first = first;
 
@@ -713,13 +713,16 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
     }
 
     // Acquire conditional expression
-    expr_t* cond = match_expr(p);
+    expr_t* cond;
 
-    // If could not acquire conditional, revert
-    if (cond == nullptr) {
+    try {
+        cond = match_expr(p);
+    } catch (syntax_error e) {
+
+        // If could not acquire conditional, revert
         p->put_back_token(open_paren_token);
         p->put_back_token(if_token);
-        return nullptr; 
+        throw syntax_error("Could not match conditional expression for if statement");
     }
 
     closed_paren_token = p->get_token();
@@ -774,11 +777,14 @@ return_stmt_t* parser_t::match_stmt_return(parser_t* p) {
         return nullptr;
     }
     
-    expr_t* return_value = match_expr(p);
+    expr_t* return_value;
 
-    if (return_value == nullptr) {
+    // Try matching return value expression
+    try {
+        return_value = match_expr(p);
+    } catch (syntax_error e) {
         p->put_back_token(return_token);
-        return nullptr;
+        throw syntax_error("Could not match expression for return statement");
     }
 
     semi_colon_token = p->get_token();
@@ -812,8 +818,8 @@ expr_stmt_t* parser_t::match_stmt_expr(parser_t* p) {
     lex::token* semi_colon_token;
 
     expr_t* e = nullptr;
-        e = match_expr(p);
     try {
+        e = match_expr(p);
     } catch (syntax_error e) {
 
         // If could not match expression, return nullptr
@@ -871,11 +877,13 @@ assignment_stmt_t* parser_t::match_stmt_assign(parser_t* p) {
     }
 
     // Acquire identifier from token
-    expr_t* rvalue = match_expr(p);
+    expr_t* rvalue;
 
-    // If could not match expression, revert
-    if (rvalue == nullptr) {
-        std::cout << "Could not match expr" << std::endl;
+    try {
+        rvalue = match_expr(p);
+    } catch (syntax_error e) {
+        // If could not match expression, revert
+        std::cout << "Could not match assignment expr" << std::endl;
         p->put_back_token(assign_token);
         p->put_back_token(id_token);
         return nullptr;
