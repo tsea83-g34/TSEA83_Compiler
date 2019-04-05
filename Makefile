@@ -1,21 +1,15 @@
 CCX=g++-7
-CCXFLAGS = -std=c++17 -c -g
-LDFLAGS = -g -o compiler -std=c++17 
+CCXFLAGS = -std=c++17 -g
 
-compiler: main.o lexer.o parser.o parser_types.o
-	$(CCX) $(LDFLAGS) main.o lexer.o parser.o
+HEADERS = $(wildcard include/*.h)
+SOURCES = $(wildcard src/*.cpp)
+OBJS	= $(patsubst *.cpp, %.o, $(SOURCES))
 
-main.o: src/main.cpp include/tokens.h include/parser_types.h include/parser.h
-	$(CCX) $(CCXFLAGS) src/main.cpp
+compiler: $(OBJS)
+	$(CCX) $(CCXFLAGS) $(OBJS) -o compiler
 
-lexer.o: include/lexer.h src/lexer.cpp
-	$(CCX) $(CCXFLAGS) src/lexer.cpp
-
-parser.o: include/parser.h include/parser_types.h src/parser.cpp
-	$(CCX) $(CCXFLAGS) src/parser.cpp
-
-parser_types.o: include/parser_types.h include/parser.h src/parser_types.cpp
-	$(CCX) $(CCXFLAGS) src/parser_types.cpp
+obj/%.o: src/%.cpp $(HEADERS)
+	$(CCX) $(CCXFLAGS) -c $< -o $@
 
 clean:
-	rm compiler main.o lexer.o parser.o parser_types.o interfaces.o
+	rm -f compiler
