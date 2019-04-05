@@ -1,15 +1,21 @@
 CCX=g++-7
 CCXFLAGS = -std=c++17 -g
 
-HEADERS = $(wildcard include/*.h)
-SOURCES = $(wildcard src/*.cpp)
-OBJS	= $(patsubst *.cpp, %.o, $(SOURCES))
+SRCDIR  = ./src
+OBJSDIR = ./build
+DEPDIR	= ./include
+VPATH = $(SRCDIR)
 
-compiler: $(OBJS)
-	$(CCX) $(CCXFLAGS) $(OBJS) -o compiler
+HEADERS = $(wildcard $(DEPDIR)/*.h)
+SOURCES = $(wildcard $(SRCDIR)/*.cpp)
+OBJECTS  = $(SOURCES:$(SRCDIR)/%.cpp=$(OBJSDIR)/%.o)
 
-obj/%.o: src/%.cpp $(HEADERS)
+compiler: $(OBJECTS)
+	$(CCX) $(CCXFLAGS) $(OBJECTS) -o compiler
+
+$(OBJECTS): $(OBJSDIR)/%.o: $(SRCDIR)/%.cpp $(HEADERS)
 	$(CCX) $(CCXFLAGS) -c $< -o $@
 
 clean:
-	rm -f compiler
+	rm -f compiler 
+	find $(OBJSDIR)/ -name '*.o' -delete
