@@ -33,7 +33,7 @@ public:
     register_allocator_t(); 
     ~register_allocator_t();
 
-    int allocate(var_info_t* var_to_alloc);
+    int allocate(var_info_t* var_to_alloc, bool lock);
     void free(int index);
 
     static std::string get_register_string(int index);

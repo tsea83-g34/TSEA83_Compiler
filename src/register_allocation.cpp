@@ -57,7 +57,7 @@ register_t* register_allocator_t::get_register(int index) {
     return nullptr;
 }
 
-int register_allocator_t::allocate(var_info_t* var_to_alloc) {
+int register_allocator_t::allocate(var_info_t* var_to_alloc, bool lock = false) {
 
     if (var_to_alloc == nullptr) return -1;
 
