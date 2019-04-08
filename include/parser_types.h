@@ -234,7 +234,9 @@ struct expr_stmt_t : stmt_t {
 
 /* ---------------------- */
 
-struct expr_t : undoable_t, printable_t, translateable_t { };
+struct expr_t : undoable_t, printable_t, translateable_t {
+    virtual bool evaluate(int* result) = 0;
+};
 
 struct arith_expr_t : expr_t {
     term_t* left;
@@ -244,6 +246,7 @@ struct arith_expr_t : expr_t {
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
 };
 
 struct rel_expr_t : expr_t {
@@ -254,6 +257,7 @@ struct rel_expr_t : expr_t {
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
 };
 
 struct neg_expr_t : expr_t {
@@ -262,6 +266,7 @@ struct neg_expr_t : expr_t {
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
 };
 
 struct term_expr_t : expr_t {
@@ -270,6 +275,7 @@ struct term_expr_t : expr_t {
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
 };
 
 struct term_t : undoable_t, printable_t, translateable_t {
