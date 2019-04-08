@@ -401,3 +401,109 @@ std::string relop_equals_t::get_string(parser_t* p) {
 std::string relop_not_equals_t::get_string(parser_t* p) {
     return std::string("!=");
 }
+
+
+// -------------------- TRANSLATION --------------------
+//
+// -----------------------------------------------------
+
+int program_t::translate(translator_t* t) {
+
+}
+
+int decls_t::translate(translator_t* t) {
+    
+}
+
+int func_decl_t::translate(translator_t* t) {
+    
+}
+
+int param_decls_t::translate(translator_t* t) {
+    
+}
+
+int param_decl_t::translate(translator_t* t) {
+    
+}
+
+int params_t::translate(translator_t* t) {
+    
+}
+
+int var_decl_t::translate(translator_t* t) {
+    
+}
+
+int stmts_t::translate(translator_t* t) {
+    
+}
+
+int block_stmt_t::translate(translator_t* t) {
+    
+}
+
+int if_stmt_t::translate(translator_t* t) {
+    
+}
+
+int assignment_stmt_t::translate(translator_t* t) {
+    
+}
+
+int return_stmt_t::translate(translator_t* t) {
+    
+}
+
+int expr_stmt_t::translate(translator_t* t) {
+    
+}
+
+int arith_expr_t::translate(translator_t* t) {
+    
+}
+
+int rel_expr_t::translate(translator_t* t) {
+    
+}
+
+int neg_expr_t::translate(translator_t* t) {
+    
+}
+
+int term_expr_t::translate(translator_t* t) {
+    
+}
+
+int id_term_t::translate(translator_t* t) {
+    
+}
+
+int call_term_t::translate(translator_t* t) {
+    
+}
+
+int lit_term_t::translate(translator_t* t) {
+    
+}
+
+int arithop_plus_t::translate(translator_t* t) {
+    
+}
+
+int arithop_minus_t::translate(translator_t* t) {
+    
+}
+
+int relop_equals_t::translate(translator_t* t) {
+    
+}
+
+int relop_not_equals_t::translate(translator_t* t) {
+    
+}
+
+
+
+
+

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "lexer.h"
+#include "translator.h"
 
 class parser_t;
 
@@ -18,6 +19,11 @@ struct undoable_t {
     
     undoable_t() = default;
     virtual ~undoable_t(){}
+};
+
+struct translateable_t {
+
+    virtual int translate(translator_t* t) = 0;
 };
 
 

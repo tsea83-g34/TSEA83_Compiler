@@ -4,6 +4,7 @@
 #include <string>
 
 #include "interfaces.h"
+#include "translator.h"
 
 /* First tier C-- grammar
 
@@ -96,25 +97,28 @@ struct relop_t;
 /* ----------------------------- */
 class parser_t;
 
-struct program_t : undoable_t, printable_t {
+struct program_t : undoable_t, printable_t, translateable_t {
     decls_t* decls;
 
     program_t() = default;
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 /*      Declarations      */
-struct decls_t : undoable_t, printable_t {
+struct decls_t : undoable_t, printable_t, translateable_t {
     decl_t*   first;
     decls_t*  rest;
 
     decls_t() = default;
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
-struct decl_t : virtual undoable_t, virtual printable_t {
+struct decl_t : virtual undoable_t, virtual printable_t, virtual translateable_t {
+    
     decl_t() = default;
 };
 
@@ -127,41 +131,45 @@ struct func_decl_t : decl_t {
     func_decl_t() = default;
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 /* ---------------------- */
 
 /*       Parameters       */
 
-struct param_decls_t : undoable_t, virtual printable_t {
+struct param_decls_t : undoable_t, virtual printable_t, virtual translateable_t {
     param_decl_t* first;
     param_decls_t* rest;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
-struct param_decl_t : undoable_t, virtual printable_t {
+struct param_decl_t : undoable_t, virtual printable_t, virtual translateable_t {
     int type;
     std::string id;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
-struct params_t : undoable_t, virtual printable_t {
+struct params_t : undoable_t, virtual printable_t, virtual translateable_t {
     expr_t* first;
     params_t* rest;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 /* ---------------------- */
 
 /*       Statements       */
 
-struct stmt_t : virtual undoable_t, virtual printable_t { };
+struct stmt_t : virtual undoable_t, virtual printable_t, virtual translateable_t { };
 
 struct var_decl_t : decl_t, stmt_t {
     int type;
@@ -170,14 +178,16 @@ struct var_decl_t : decl_t, stmt_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
-struct stmts_t : undoable_t, printable_t {
+struct stmts_t : undoable_t, printable_t, translateable_t {
     stmt_t* first;
     stmts_t* rest;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct block_stmt_t : stmt_t {
@@ -185,6 +195,7 @@ struct block_stmt_t : stmt_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct if_stmt_t : stmt_t {
@@ -193,6 +204,7 @@ struct if_stmt_t : stmt_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct assignment_stmt_t : stmt_t {
@@ -201,6 +213,7 @@ struct assignment_stmt_t : stmt_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct return_stmt_t : stmt_t {
@@ -208,6 +221,7 @@ struct return_stmt_t : stmt_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct expr_stmt_t : stmt_t {
@@ -215,11 +229,12 @@ struct expr_stmt_t : stmt_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 /* ---------------------- */
 
-struct expr_t : undoable_t, printable_t { };
+struct expr_t : undoable_t, printable_t, translateable_t { };
 
 struct arith_expr_t : expr_t {
     term_t* left;
@@ -228,6 +243,7 @@ struct arith_expr_t : expr_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct rel_expr_t : expr_t {
@@ -237,6 +253,7 @@ struct rel_expr_t : expr_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct neg_expr_t : expr_t {
@@ -244,6 +261,7 @@ struct neg_expr_t : expr_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct term_expr_t : expr_t {
@@ -251,9 +269,10 @@ struct term_expr_t : expr_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
-struct term_t : undoable_t, printable_t {
+struct term_t : undoable_t, printable_t, translateable_t {
     bool is_literal;
 
     virtual void undo(parser_t* p) override;
@@ -264,6 +283,7 @@ struct id_term_t : term_t {
 
     id_term_t() { is_literal = false; }
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct call_term_t : term_t {
@@ -273,6 +293,7 @@ struct call_term_t : term_t {
     call_term_t() { is_literal = false; }
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct lit_term_t : term_t {
@@ -280,30 +301,35 @@ struct lit_term_t : term_t {
 
     lit_term_t() { is_literal = true; }
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
-struct arithop_t : undoable_t, printable_t {
+struct arithop_t : undoable_t, printable_t, translateable_t {
     void undo(parser_t* p) override;
 };
 
 struct arithop_plus_t : arithop_t {
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct arithop_minus_t : arithop_t {
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
-struct relop_t :  undoable_t, printable_t {
+struct relop_t : undoable_t, printable_t, translateable_t {
     void undo(parser_t* p) override;
 };
 
 struct relop_equals_t : relop_t {
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 struct relop_not_equals_t : relop_t {
     std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
 };
 
 #endif
