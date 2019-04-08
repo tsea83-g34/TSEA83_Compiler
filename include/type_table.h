@@ -12,14 +12,14 @@ struct type_descriptor_t {
 
 class type_table_t {
     
-    std::unordered_map<std::string, type_descriptor_t> type_map;
+    std::unordered_map<int, type_descriptor_t> type_map;
 
 public:
     type_table_t();
     ~type_table_t();
 
-    type_descriptor_t* at(std::string key);
-    void insert(std::string key, type_descriptor_t value);
+    type_descriptor_t* at(int key);
+    void insert(int key, type_descriptor_t value);
 };
 
 #endif
