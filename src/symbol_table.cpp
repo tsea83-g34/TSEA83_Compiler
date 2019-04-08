@@ -92,6 +92,10 @@ std::string symbol_table_t::add(const std::string& name, const int type) {
     return id;
 }
 
+bool symbol_table_t::is_global_scope() {
+    return scope_stack.size() == 1;
+}
+
 void symbol_table_t::push_scope(bool inherit_scope) {
     
     scope_t* new_scope;

@@ -58,6 +58,8 @@ public:
     var_info_t* operator[](const std::string& key);
 
     std::string add(const std::string& name, const int type);
+    
+    bool is_global_scope();
 
     void push_scope(bool inherit_scope);
     void pop_scope();
