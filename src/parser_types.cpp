@@ -409,10 +409,17 @@ std::string relop_not_equals_t::get_string(parser_t* p) {
 
 int program_t::translate(translator_t* t) {
 
+    decls->translate(t);
+
 }
 
 int decls_t::translate(translator_t* t) {
     
+    first->translate(t);
+
+    if (rest != nullptr) rest->translate(t);
+
+    return 0;
 }
 
 int func_decl_t::translate(translator_t* t) {
@@ -433,6 +440,21 @@ int params_t::translate(translator_t* t) {
 
 int var_decl_t::translate(translator_t* t) {
     
+    if (t->symbol_table.is_global_scope()) {
+        
+        // Global variable
+        char buffer[100];
+        memset(buffer, 0, sizeof(buffer));
+        sprintf(buffer, "%s:\n", id.c_str());
+        
+        int constant_value;
+        value->evaluate(&constant_value);
+
+        type_descriptor_t* type_desc = t->type_table.at(type);
+        t->print_instruction_row(t->static_alloc(type_desc->size, constant_value));
+    } else {
+        // Local variable (stack)
+    }
 }
 
 int stmts_t::translate(translator_t* t) {
