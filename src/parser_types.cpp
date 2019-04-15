@@ -408,19 +408,94 @@ std::string relop_not_equals_t::get_string(parser_t* p) {
 // -----------------------------------------------------
 
 bool arith_expr_t::evaluate(int* result) {
-    return false;
+    return op->evaluate(result, left, right);
 }
 
 bool rel_expr_t::evaluate(int* result) {
-    return false;
+    return op->evaluate(result, left, right);
 }
 
 bool neg_expr_t::evaluate(int* result) {
-    return false;
+    
+    int val;
+    bool success = value->evaluate(&val);
+
+    if (!success) return false;
+
+    *result = - val;
+    return true;
 }
 
 bool term_expr_t::evaluate(int* result) {
+    return t->evaluate(result);
+}
+
+bool lit_term_t::evaluate(int* result) {
+    *result = literal;
+    return true;
+}
+
+bool call_term_t::evaluate(int* result) {
     return false;
+}
+
+bool id_term_t::evaluate(int* result) {
+    return false;
+}
+
+bool arithop_plus_t::evaluate(int* result, term_t* left, expr_t* right) {
+
+    int left_val;
+    int right_val;
+
+    bool success;
+    success = left->evaluate(&left_val) && right->evaluate(&right_val);
+
+    if (!success) return false;
+
+    *result = left_val + right_val;
+    return true; 
+}
+
+bool arithop_minus_t::evaluate(int* result, term_t* left, expr_t* right) {
+
+    int left_val;
+    int right_val;
+
+    bool success;
+    success = left->evaluate(&left_val) && right->evaluate(&right_val);
+
+    if (!success) return false;
+
+    *result = left_val - right_val;
+    return true; 
+}
+
+bool relop_equals_t::evaluate(int* result, term_t* left, expr_t* right) {
+
+    int left_val;
+    int right_val;
+
+    bool success;
+    success = left->evaluate(&left_val) && right->evaluate(&right_val);
+
+    if (!success) return false;
+
+    *result = (left_val == right_val);
+    return true; 
+}
+
+bool relop_not_equals_t::evaluate(int* result, term_t* left, expr_t* right) {
+    int left_val;
+    int right_val;
+
+    bool success;
+    success = left->evaluate(&left_val) && right->evaluate(&right_val);
+
+    if (!success) return false;
+
+    *result = (left_val != right_val);
+    return true; 
 }
 
 // -------------------- TRANSLATION --------------------

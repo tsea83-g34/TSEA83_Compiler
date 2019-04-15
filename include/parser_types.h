@@ -282,6 +282,7 @@ struct term_t : undoable_t, printable_t, translateable_t {
     bool is_literal;
 
     virtual void undo(parser_t* p) override;
+    virtual bool evaluate(int* result);
 };
 
 struct id_term_t : term_t {
@@ -290,6 +291,7 @@ struct id_term_t : term_t {
     id_term_t() { is_literal = false; }
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
 };
 
 struct call_term_t : term_t {
@@ -300,6 +302,7 @@ struct call_term_t : term_t {
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
 };
 
 struct lit_term_t : term_t {
@@ -308,34 +311,41 @@ struct lit_term_t : term_t {
     lit_term_t() { is_literal = true; }
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
 };
 
 struct arithop_t : undoable_t, printable_t, translateable_t {
     void undo(parser_t* p) override;
+    virtual bool evaluate(int* result, term_t* left, expr_t* right);
 };
 
 struct arithop_plus_t : arithop_t {
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result, term_t* left, expr_t* right) override;
 };
 
 struct arithop_minus_t : arithop_t {
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result, term_t* left, expr_t* right) override;
 };
 
 struct relop_t : undoable_t, printable_t, translateable_t {
     void undo(parser_t* p) override;
+    virtual bool evaluate(int* result, term_t* left, expr_t* right);
 };
 
 struct relop_equals_t : relop_t {
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result, term_t* left, expr_t* right) override;
 };
 
 struct relop_not_equals_t : relop_t {
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
+    bool evaluate(int* result, term_t* left, expr_t* right) override;
 };
 
 #endif
