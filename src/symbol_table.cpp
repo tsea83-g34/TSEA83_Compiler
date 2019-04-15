@@ -1,5 +1,9 @@
 
-#include "symbol_table.h"
+#include "../include/symbol_table.h"
+
+scope_name_allocator_t::scope_name_allocator_t() {
+    name_counter = std::unordered_map<std::string, int>();
+}
 
 std::string scope_name_allocator_t::get_name(const std::string& id) {
 

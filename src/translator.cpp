@@ -1,5 +1,5 @@
 
-#include "translator.h"
+#include "../include/translator.h"
 
 #include <ostream>
 
@@ -8,7 +8,7 @@ void translator_t::print_instruction_row(const std::string& instr) {
     instr_cnt++;
 }
 
-std::string static_alloc(int size, int value) {
+std::string translator_t::static_alloc(int size, int value) {
     std::string result;
 
     switch (size) {

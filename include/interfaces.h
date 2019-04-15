@@ -5,7 +5,8 @@
 #include <vector>
 
 #include "lexer.h"
-#include "translator.h"
+
+class translator_t;
 
 class parser_t;
 

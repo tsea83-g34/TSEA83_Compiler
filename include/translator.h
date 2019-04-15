@@ -4,8 +4,8 @@
 #include <sstream>
 
 #include "symbol_table.h"
-#include "register_allocation.h"
 #include "type_table.h"
+#include "register_allocation.h"
 
 class translator_t {
 

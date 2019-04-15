@@ -3,13 +3,14 @@
 
 #include <vector>
 
-#include "translator.h"
 #include "symbol_table.h"
+
+class translator_t;
 
 #define REGISTER_COUNT  16
 #define RESERVE_COUNT   1
 
-struct register_t {
+struct reg_t {
     int index;
     var_info_t* content;
     long last_changed;
@@ -18,15 +19,15 @@ struct register_t {
     bool temp;      // The register contains a temporary value and can be used as soon as possible
     bool reserved;  // The register can never be allocated
 
-    register_t();
+    reg_t();
 };
 
 class register_allocator_t {
 
-    std::vector<register_t*> registers;
+    std::vector<reg_t*> registers;
     const translator_t* parent;
 
-    register_t* get_register(int index);
+    reg_t* get_register(int index);
 
 public:
 

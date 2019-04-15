@@ -1,5 +1,5 @@
 
-#include "type_table.h"
+#include "../include/type_table.h"
 
 type_table_t::type_table_t() {
     type_map = std::unordered_map<int, type_descriptor_t>();

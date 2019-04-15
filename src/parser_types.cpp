@@ -1,6 +1,7 @@
 
 #include "../include/parser_types.h"
 #include "../include/parser.h"
+#include "../include/translator.h"
 
 void program_t::undo(parser_t* p) {
     decls->undo(p);
@@ -402,6 +403,25 @@ std::string relop_not_equals_t::get_string(parser_t* p) {
     return std::string("!=");
 }
 
+// -------------------- EVALUATION ---------------------
+//
+// -----------------------------------------------------
+
+bool arith_expr_t::evaluate(int* result) {
+    return false;
+}
+
+bool rel_expr_t::evaluate(int* result) {
+    return false;
+}
+
+bool neg_expr_t::evaluate(int* result) {
+    return false;
+}
+
+bool term_expr_t::evaluate(int* result) {
+    return false;
+}
 
 // -------------------- TRANSLATION --------------------
 //
