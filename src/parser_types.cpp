@@ -414,39 +414,39 @@ void binop_expr_t::undo(parser_t* p) {
     p->put_back_token(tokens.back());
 
     // Put back term
-    first->undo(p);
+    term->undo(p);
 
 }
 
 std::string add_binop_t::get_string(parser_t* p) {
     if (left_assoc) {
-        return rest->get_string(p) + " + " + first->get_string(p);
+        return rest->get_string(p) + " + " + term->get_string(p);
     } else {
-        return first->get_string(p) + " + " + rest->get_string(p);
+        return term->get_string(p) + " + " + rest->get_string(p);
     }
 }
 
 std::string sub_binop_t::get_string(parser_t* p) {
     if (left_assoc) {
-        return rest->get_string(p) + " - " + first->get_string(p);
+        return rest->get_string(p) + " - " + term->get_string(p);
     } else {
-        return first->get_string(p) + " - " + rest->get_string(p);
+        return term->get_string(p) + " - " + rest->get_string(p);
     }
 }
 
 std::string eq_binop_t::get_string(parser_t* p) {
     if (left_assoc) {
-        return rest->get_string(p) + " == " + first->get_string(p);
+        return rest->get_string(p) + " == " + term->get_string(p);
     } else {
-        return first->get_string(p) + " == " + rest->get_string(p);
+        return term->get_string(p) + " == " + rest->get_string(p);
     }
 }
 
 std::string neq_binop_t::get_string(parser_t* p) {
     if (left_assoc) {
-        return rest->get_string(p) + " != " + first->get_string(p);
+        return rest->get_string(p) + " != " + term->get_string(p);
     } else {
-        return first->get_string(p) + " != " + rest->get_string(p);
+        return term->get_string(p) + " != " + rest->get_string(p);
     }
 }
 
@@ -616,9 +616,12 @@ expr_t* binop_expr_t::rewrite(expr_t* e) {
     binop_expr_t* current = nullptr;
 
     // The previous binop in the new tree, the parent of current
-    binop_expr_t* previous = nullptr;
+    binop_expr_t* previous_new = nullptr;
 
-    while (true) {
+    // The previous binop in the old tree
+    binop_expr_t* previous_old = nullptr;
+
+    while (!op_stack.empty()) {
         
         // If this is the first node in the new tree
         if (new_tree == nullptr) {
@@ -628,19 +631,35 @@ expr_t* binop_expr_t::rewrite(expr_t* e) {
             new_tree = op_stack.top()->duplicate();
 
             // TODO: currently assume that expr_t is term_expr_t fix this?
-            new_tree->first = op_stack.top()->first;
+            new_tree->term = op_stack.top()->rest;
             new_tree->left_assoc = true;
             current = new_tree;
             op_stack.pop();
             continue;
         }
 
-        current = previous;
+        // Get a new operation from the stack and duplicate it
+        previous_new = current;
         current = op_stack.top()->duplicate();
+        
+        // Set the associativity of new node to left, and it's term to the term of the previous operation from the old tree
         current->left_assoc = true;
-        //current->first = 
+        current->term = previous_old->term;
 
+        // Set the rest of the previous node from the new tree to this node
+        previous_new->rest = current;
+
+        // Delete the previous node from the old tree and upate it's value
+        delete previous_old;
+        previous_old = op_stack.top();
+        op_stack.pop();
     }
+
+    // When the stack has been emptied set the rest of the current node in the new tree
+    // to the term of the term of the last old node
+    current->rest = previous_old->term;
+    delete previous_old;
+    return new_tree;
 }
 
 
