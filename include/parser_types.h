@@ -94,6 +94,16 @@ struct call_term_t;
 
 struct arithop_t;
 struct relop_t;
+
+// New binary operation system
+
+struct binop_expr_t;
+
+struct add_binop_t;
+struct sub_binop_t;
+struct eq_binop_t;
+struct neq_binop_t;
+
 /* ----------------------------- */
 class parser_t;
 
@@ -346,6 +356,53 @@ struct relop_not_equals_t : relop_t {
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
     bool evaluate(int* result, term_t* left, expr_t* right) override;
+};
+
+// New binary operation system
+
+struct binop_expr_t : expr_t {
+    term_t* first;
+    expr_t* rest;
+    bool left_assoc;
+
+    void undo(parser_t* p) override;
+    binop_expr_t() : left_assoc(false) { }
+};
+
+// Arithmetic addition
+struct add_binop_t : binop_expr_t {
+    add_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
+};
+
+// Arithmetic subtraction
+struct sub_binop_t : binop_expr_t {
+    sub_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
+};
+
+// Conditional equality
+struct eq_binop_t : binop_expr_t {
+    eq_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
+};
+
+// Conditional non-equality
+struct neq_binop_t : binop_expr_t {
+    neq_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
 };
 
 #endif

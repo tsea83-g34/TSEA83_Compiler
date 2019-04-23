@@ -403,6 +403,51 @@ std::string relop_not_equals_t::get_string(parser_t* p) {
     return std::string("!=");
 }
 
+void binop_expr_t::undo(parser_t* p) {
+
+    // Put back the rest of the expression
+    rest->undo(p);
+
+    // Put back operator token
+    p->put_back_token(tokens.back());
+
+    // Put back term
+    first->undo(p);
+
+}
+
+std::string add_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return rest->get_string(p) + " + " + first->get_string(p);
+    } else {
+        return first->get_string(p) + " + " + rest->get_string(p);
+    }
+}
+
+std::string sub_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return rest->get_string(p) + " - " + first->get_string(p);
+    } else {
+        return first->get_string(p) + " - " + rest->get_string(p);
+    }
+}
+
+std::string eq_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return rest->get_string(p) + " == " + first->get_string(p);
+    } else {
+        return first->get_string(p) + " == " + rest->get_string(p);
+    }
+}
+
+std::string neq_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return rest->get_string(p) + " != " + first->get_string(p);
+    } else {
+        return first->get_string(p) + " != " + rest->get_string(p);
+    }
+}
+
 // -------------------- EVALUATION ---------------------
 //
 // -----------------------------------------------------
@@ -497,6 +542,23 @@ bool relop_not_equals_t::evaluate(int* result, term_t* left, expr_t* right) {
     *result = (left_val != right_val);
     return true; 
 }
+
+bool add_binop_t::evaluate(int* result) {
+    return false;
+}
+
+bool sub_binop_t::evaluate(int* result) {
+    return false;
+}
+
+bool eq_binop_t::evaluate(int* result) {
+    return false;
+}
+
+bool neq_binop_t::evaluate(int* result) {
+    return false;
+}
+
 
 // -------------------- TRANSLATION --------------------
 //
@@ -617,6 +679,22 @@ int relop_equals_t::translate(translator_t* t) {
 }
 
 int relop_not_equals_t::translate(translator_t* t) {
+    
+}
+
+int add_binop_t::translate(translator_t* t) {
+    
+}
+
+int sub_binop_t::translate(translator_t* t) {
+    
+}
+
+int eq_binop_t::translate(translator_t* t) {
+    
+}
+
+int neq_binop_t::translate(translator_t* t) {
     
 }
 
