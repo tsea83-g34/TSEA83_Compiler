@@ -36,6 +36,7 @@ struct arith_expr_t;
 struct rel_expr_t;
 struct neg_expr_t;
 struct term_expr_t;
+struct binop_expr_t;
 
 struct term_t;
 struct lit_term_t;
@@ -45,6 +46,11 @@ struct call_term_t;
 struct arithop_t;
 struct arithop_plus_t;
 struct arithop_minus_t;
+
+struct add_binop_t;
+struct sub_binop_t;
+struct eq_binop_t;
+struct neq_binop_t;
 
 struct relop_t;
 struct relop_equals_t;
@@ -194,6 +200,9 @@ private:
 
     static stmts_t* match_stmts_1(parser_t* p);
     static stmts_t* match_stmts_2(parser_t* p);
+
+    static binop_expr_t* match_expr_binop(parser_t* p);
+    static binop_expr_t* match_binop(parser_t* p);
 
     static arith_expr_t* match_expr_arithop(parser_t* p);
     static neg_expr_t* match_expr_negated(parser_t* p);

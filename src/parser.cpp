@@ -293,11 +293,13 @@ expr_t* parser_t::match_expr(parser_t* p) {
     expr_t* expr;
 
     std::cout << "Matching expression..." << std::endl;
-    expr = match_expr_arithop(p);
-    if (expr != nullptr) return expr;
-
-    expr = match_expr_relop(p);
-    if (expr != nullptr) return expr;
+    expr = match_expr_binop(p);
+    if (expr != nullptr) {
+        std::cout << "Matched binary operation!" << std::endl;
+    // If successfully matched a binary operation, rewrite it to right associativity
+        //expr = binop_expr_t::rewrite(expr);    
+        return expr;
+    }
 
     expr = match_expr_term(p);
     if (expr != nullptr) return expr;
@@ -306,6 +308,37 @@ expr_t* parser_t::match_expr(parser_t* p) {
     if (expr != nullptr) return expr;
 
     throw syntax_error("Could not match expression. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token");
+}
+
+binop_expr_t* parser_t::match_binop(parser_t* p) {
+   
+    lex::token* op_token = p->get_token();
+    binop_expr_t* result = nullptr; 
+
+    switch (op_token->tag) {
+        case lex::tag_t::PLUS:
+            result = new add_binop_t();
+            break;
+        case lex::tag_t::MINUS:
+            result = new sub_binop_t();
+            break;
+        case lex::tag_t::EQUALS:
+            result = new eq_binop_t();
+            break;
+        case lex::tag_t::NOT_EQUALS:
+            result = new neq_binop_t();
+            break;
+        default:
+            p->put_back_token(op_token);
+            return nullptr;
+    }
+
+    // If gotten this far, match was successful
+    
+    // Store token
+    result->tokens.push_back(op_token);
+
+    return result;
 }
 
 arithop_t* parser_t::match_arithop(parser_t* p) {
@@ -1048,6 +1081,45 @@ rel_expr_t* parser_t::match_expr_relop(parser_t* p) {
     result->left  = left;
     result->op    = op;
     result->right = right;
+
+    return result;
+}
+
+binop_expr_t* parser_t::match_expr_binop(parser_t* p) {
+
+    term_t* left = match_term(p);
+
+    if (left == nullptr) {
+        return nullptr;
+    }
+
+    binop_expr_t* result = match_binop(p);
+
+    if (result == nullptr) {
+        left->undo(p);
+        delete left;
+        return nullptr;
+    }
+
+    expr_t* right = match_expr(p);
+
+    if (right == nullptr) {
+        
+        // Put back operator token
+        p->put_back_token(result->tokens.back());
+        result->tokens.pop_back();
+        
+        left->undo(p);
+        delete left;
+        delete result;
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+
+    // Build syntax object 
+    result->term = left;
+    result->rest = right;
 
     return result;
 }
