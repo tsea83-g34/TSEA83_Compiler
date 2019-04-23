@@ -361,12 +361,18 @@ struct relop_not_equals_t : relop_t {
 // New binary operation system
 
 struct binop_expr_t : expr_t {
-    term_t* first;
-    expr_t* rest;
+    
+    // if left assoc this is the right term, if right assoc this is the left term
+    expr_t* term; 
+    
+    // The rest
+    expr_t* rest; 
+    
+    // Associativity
     bool left_assoc;
 
     void undo(parser_t* p) override;
-    binop_expr_t() : left_assoc(false), first(nullptr), rest(nullptr) { }
+    binop_expr_t() : left_assoc(false), term(nullptr), rest(nullptr) { }
     virtual binop_expr_t* duplicate() = 0;
     
     static expr_t* rewrite(expr_t* e);
