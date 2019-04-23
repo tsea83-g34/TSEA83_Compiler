@@ -282,7 +282,7 @@ struct term_t : undoable_t, printable_t, translateable_t {
     bool is_literal;
 
     virtual void undo(parser_t* p) override;
-    virtual bool evaluate(int* result);
+    virtual bool evaluate(int* result) = 0;
 };
 
 struct id_term_t : term_t {
@@ -316,7 +316,7 @@ struct lit_term_t : term_t {
 
 struct arithop_t : undoable_t, printable_t, translateable_t {
     void undo(parser_t* p) override;
-    virtual bool evaluate(int* result, term_t* left, expr_t* right);
+    virtual bool evaluate(int* result, term_t* left, expr_t* right) = 0;
 };
 
 struct arithop_plus_t : arithop_t {
@@ -333,7 +333,7 @@ struct arithop_minus_t : arithop_t {
 
 struct relop_t : undoable_t, printable_t, translateable_t {
     void undo(parser_t* p) override;
-    virtual bool evaluate(int* result, term_t* left, expr_t* right);
+    virtual bool evaluate(int* result, term_t* left, expr_t* right) = 0;
 };
 
 struct relop_equals_t : relop_t {
