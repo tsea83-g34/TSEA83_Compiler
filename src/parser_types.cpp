@@ -3,6 +3,8 @@
 #include "../include/parser.h"
 #include "../include/translator.h"
 
+#include <stack>
+
 void program_t::undo(parser_t* p) {
     decls->undo(p);
 }
@@ -557,6 +559,88 @@ bool eq_binop_t::evaluate(int* result) {
 
 bool neq_binop_t::evaluate(int* result) {
     return false;
+}
+
+// ------------------ BINOP REWRITING ------------------
+//
+// -----------------------------------------------------
+
+
+add_binop_t* add_binop_t::duplicate() {
+    return new add_binop_t();
+}
+
+sub_binop_t* sub_binop_t::duplicate() {
+    return new sub_binop_t();
+}
+
+eq_binop_t* eq_binop_t::duplicate() {
+    return new eq_binop_t();
+}
+
+neq_binop_t* neq_binop_t::duplicate() {
+    return new neq_binop_t();
+}
+
+expr_t* binop_expr_t::rewrite(expr_t* e) {
+    
+    binop_expr_t* starting_root = dynamic_cast<binop_expr_t*>(e);
+
+    // If given expression is not a binary operation, return
+    if (starting_root == nullptr) return e;
+
+    // If the given binop tree is already left associative, return
+    if (starting_root->left_assoc) return e;
+
+    std::stack<binop_expr_t*> op_stack{};
+    op_stack.push(starting_root);
+
+
+    // Build up the stack
+    while (true) {
+        binop_expr_t* current = op_stack.top();
+        binop_expr_t* rest = dynamic_cast<binop_expr_t*>(current->rest);
+
+        // If cannot cast to binary operation, we have reached the bottom
+        if (rest == nullptr) break;
+
+        op_stack.push(rest);
+    }
+
+    // Set up variables that will be used
+
+    // The root of the resulting tree
+    binop_expr_t* new_tree = nullptr;
+
+    // The current binop in the new tree
+    binop_expr_t* current = nullptr;
+
+    // The previous binop in the new tree, the parent of current
+    binop_expr_t* previous = nullptr;
+
+    while (true) {
+        
+        // If this is the first node in the new tree
+        if (new_tree == nullptr) {
+
+            // Duplicate the node, set the term to the term of the old node
+            // and set associativity to left
+            new_tree = op_stack.top()->duplicate();
+
+            // TODO: currently assume that expr_t is term_expr_t fix this?
+            new_tree->first = op_stack.top()->first;
+            new_tree->left_assoc = true;
+            current = new_tree;
+            op_stack.pop();
+            continue;
+        }
+
+        current = previous;
+        current = op_stack.top()->duplicate();
+        current->left_assoc = true;
+        //current->first = 
+
+    }
 }
 
 
