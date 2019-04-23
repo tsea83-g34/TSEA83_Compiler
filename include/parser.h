@@ -198,7 +198,7 @@ private:
     static arith_expr_t* match_expr_arithop(parser_t* p);
     static neg_expr_t* match_expr_negated(parser_t* p);
     static rel_expr_t* match_expr_relop(parser_t* p);
-    static term_expr_t* match_expr_term(parser_t* p);
+    static term_t* match_expr_term(parser_t* p);
 
     static arithop_plus_t* match_arithop_plus(parser_t* p);
     static arithop_minus_t* match_arithop_minus(parser_t* p);

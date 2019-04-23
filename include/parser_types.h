@@ -288,7 +288,7 @@ struct term_expr_t : expr_t {
     bool evaluate(int* result) override;
 };
 
-struct term_t : undoable_t, printable_t, translateable_t {
+struct term_t : expr_t {
     bool is_literal;
 
     virtual void undo(parser_t* p) override;
