@@ -1053,21 +1053,9 @@ rel_expr_t* parser_t::match_expr_relop(parser_t* p) {
 }
 
 // expr -> term
-term_expr_t* parser_t::match_expr_term(parser_t* p) {
+term_t* parser_t::match_expr_term(parser_t* p) {
     
-
-    term_t* t = match_term(p);
-
-    if (t == nullptr) {
-        return nullptr;
-    }
-
-    // If gotten this far, match was successful
-
-    // Build syntax object
-    term_expr_t* result = new term_expr_t();
-    result->t = t;
-    return result;
+    return match_term(p);
 }
 
 // arithop -> "+"
