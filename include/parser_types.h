@@ -366,7 +366,10 @@ struct binop_expr_t : expr_t {
     bool left_assoc;
 
     void undo(parser_t* p) override;
-    binop_expr_t() : left_assoc(false) { }
+    binop_expr_t() : left_assoc(false), first(nullptr), rest(nullptr) { }
+    virtual binop_expr_t* duplicate() = 0;
+    
+    static expr_t* rewrite(expr_t* e);
 };
 
 // Arithmetic addition
@@ -376,6 +379,7 @@ struct add_binop_t : binop_expr_t {
     std::string get_string(parser_t* p) override;
     int translate(translator_t* p) override;
     bool evaluate(int* result) override;
+    add_binop_t* duplicate() override;
 };
 
 // Arithmetic subtraction
@@ -385,6 +389,7 @@ struct sub_binop_t : binop_expr_t {
     std::string get_string(parser_t* p) override;
     int translate(translator_t* p) override;
     bool evaluate(int* result) override;
+    sub_binop_t* duplicate() override;
 };
 
 // Conditional equality
@@ -394,6 +399,7 @@ struct eq_binop_t : binop_expr_t {
     std::string get_string(parser_t* p) override;
     int translate(translator_t* p) override;
     bool evaluate(int* result) override;
+    eq_binop_t* duplicate() override;
 };
 
 // Conditional non-equality
@@ -403,6 +409,7 @@ struct neq_binop_t : binop_expr_t {
     std::string get_string(parser_t* p) override;
     int translate(translator_t* p) override;
     bool evaluate(int* result) override;
+    neq_binop_t* duplicate() override;
 };
 
 #endif
