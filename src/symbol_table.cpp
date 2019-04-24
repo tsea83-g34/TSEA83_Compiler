@@ -1,6 +1,19 @@
 
 #include "../include/symbol_table.h"
 
+#include <iostream>
+
+
+std::string global_addr_info_t::get_address_string() {
+    return label;
+}
+
+std::string local_addr_info_t::get_address_string() {
+    
+    return "BP+" + std::to_string(base_offset);
+}
+
+
 scope_name_allocator_t::scope_name_allocator_t() {
     name_counter = std::unordered_map<std::string, int>();
 }
@@ -16,12 +29,22 @@ std::string scope_name_allocator_t::get_name(const std::string& id) {
 }
 
 scope_t::scope_t() : inherit_scope(false), base_offset(0) {
-    data = std::unordered_map<std::string, var_info_t>();
+    data = std::unordered_map<std::string, var_info_t*>();
+}
+
+scope_t::~scope_t() {
+    
+    std::cout << "Destroying scope... size: " << data.size() << std::endl;
+    for (std::pair<std::string, var_info_t*> kv_pair : data) {
+        std::cout << kv_pair.first << "   " << kv_pair.second << std::endl;
+        delete kv_pair.second;
+    }
+    data.clear();
 }
 
 scope_t::scope_t(bool _inherit_scope, int _base_offset) : inherit_scope(_inherit_scope) {
     
-    data = std::unordered_map<std::string, var_info_t>();
+    data = std::unordered_map<std::string, var_info_t*>();
     base_offset = _base_offset;
 }
 
@@ -35,17 +58,17 @@ int scope_t::get_end_offset() {
 
 var_info_t* scope_t::at(const std::string& key) {
     if (data.count(key)) {
-        return &data[key];
+        return data[key];
     } else {
         return nullptr;
     }
 }
 
 var_info_t* scope_t::operator[](const std::string& key) {
-    return &data[key];
+    return data[key];
 }
 
-void scope_t::add(const std::string& name, const var_info_t& varinfo) {
+void scope_t::add(const std::string& name, var_info_t* varinfo) {
     data.insert({name, varinfo});
 }
 
@@ -61,8 +84,7 @@ symbol_table_t::symbol_table_t() {
 symbol_table_t::~symbol_table_t() {
 
     while (!scope_stack.empty()) {
-        delete scope_stack.back();
-        scope_stack.pop_back();
+        pop_scope();
     }
 }
 
@@ -88,12 +110,21 @@ var_info_t* symbol_table_t::operator[](const std::string& key) {
     return this->get(key);
 }
 
-std::string symbol_table_t::add(const std::string& name, const int type) {
-    std::string id = name_alloc.get_name(name);
+std::string symbol_table_t::add(const std::string& name, const int type, addr_info_t* addr) {
 
-    var_info_t varinfo = (var_info_t){name, id, type, (addr_info_t){}};
+    var_info_t* varinfo = new var_info_t();
+    varinfo->name = name;
+    varinfo->type = type;
+    varinfo->address = addr;
+
+    if (is_global_scope()) {
+        varinfo->id = name;
+    } else {
+        varinfo->id = name_alloc.get_name(name);
+    }
+
     scope_stack.back()->add(name, varinfo);
-    return id;
+    return varinfo->id;
 }
 
 bool symbol_table_t::is_global_scope() {
