@@ -408,45 +408,55 @@ std::string relop_not_equals_t::get_string(parser_t* p) {
 void binop_expr_t::undo(parser_t* p) {
 
     // Put back the rest of the expression
-    rest->undo(p);
+
+    if (left_assoc) {
+        term->undo(p);
+    } else {
+        rest->undo(p);
+    }
 
     // Put back operator token
     p->put_back_token(tokens.back());
+    tokens.pop_back();
 
     // Put back term
-    term->undo(p);
+    if (left_assoc) {
+        rest->undo(p);
+    } else {
+        term->undo(p);
+    }
 
 }
 
 std::string add_binop_t::get_string(parser_t* p) {
     if (left_assoc) {
-        return rest->get_string(p) + " + " + term->get_string(p);
+        return "(" + rest->get_string(p) + ") + " + term->get_string(p);
     } else {
-        return term->get_string(p) + " + " + rest->get_string(p);
+        return term->get_string(p) + " + (" + rest->get_string(p) + ")";
     }
 }
 
 std::string sub_binop_t::get_string(parser_t* p) {
     if (left_assoc) {
-        return rest->get_string(p) + " - " + term->get_string(p);
+        return "(" + rest->get_string(p) + ") - " + term->get_string(p);
     } else {
-        return term->get_string(p) + " - " + rest->get_string(p);
+        return term->get_string(p) + " - (" + rest->get_string(p) + ")";
     }
 }
 
 std::string eq_binop_t::get_string(parser_t* p) {
     if (left_assoc) {
-        return rest->get_string(p) + " == " + term->get_string(p);
+        return "(" + rest->get_string(p) + ") == " + term->get_string(p);
     } else {
-        return term->get_string(p) + " == " + rest->get_string(p);
+        return term->get_string(p) + " == (" + rest->get_string(p) + ")";
     }
 }
 
 std::string neq_binop_t::get_string(parser_t* p) {
     if (left_assoc) {
-        return rest->get_string(p) + " != " + term->get_string(p);
+        return "(" + rest->get_string(p) + ") != " + term->get_string(p);
     } else {
-        return term->get_string(p) + " != " + rest->get_string(p);
+        return term->get_string(p) + " != (" + rest->get_string(p) + ")";
     }
 }
 
@@ -567,19 +577,47 @@ bool neq_binop_t::evaluate(int* result) {
 
 
 add_binop_t* add_binop_t::duplicate() {
-    return new add_binop_t();
+    
+    add_binop_t* result = new add_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
 }
 
 sub_binop_t* sub_binop_t::duplicate() {
-    return new sub_binop_t();
+    
+    sub_binop_t* result = new sub_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
 }
 
 eq_binop_t* eq_binop_t::duplicate() {
-    return new eq_binop_t();
+        
+    eq_binop_t* result = new eq_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
 }
 
 neq_binop_t* neq_binop_t::duplicate() {
-    return new neq_binop_t();
+        
+    neq_binop_t* result = new neq_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
 }
 
 expr_t* binop_expr_t::rewrite(expr_t* e) {
@@ -597,7 +635,9 @@ expr_t* binop_expr_t::rewrite(expr_t* e) {
 
 
     // Build up the stack
+    int i = 0;
     while (true) {
+        i++;
         binop_expr_t* current = op_stack.top();
         binop_expr_t* rest = dynamic_cast<binop_expr_t*>(current->rest);
 
@@ -630,10 +670,10 @@ expr_t* binop_expr_t::rewrite(expr_t* e) {
             // and set associativity to left
             new_tree = op_stack.top()->duplicate();
 
-            // TODO: currently assume that expr_t is term_expr_t fix this?
             new_tree->term = op_stack.top()->rest;
             new_tree->left_assoc = true;
             current = new_tree;
+            previous_old = op_stack.top();
             op_stack.pop();
             continue;
         }
@@ -649,7 +689,7 @@ expr_t* binop_expr_t::rewrite(expr_t* e) {
         // Set the rest of the previous node from the new tree to this node
         previous_new->rest = current;
 
-        // Delete the previous node from the old tree and upate it's value
+        // Delete the previous node from the old tree and update it's value
         delete previous_old;
         previous_old = op_stack.top();
         op_stack.pop();
@@ -657,6 +697,7 @@ expr_t* binop_expr_t::rewrite(expr_t* e) {
 
     // When the stack has been emptied set the rest of the current node in the new tree
     // to the term of the term of the last old node
+    current->left_assoc = true;
     current->rest = previous_old->term;
     delete previous_old;
     return new_tree;
