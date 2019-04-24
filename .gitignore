@@ -9,3 +9,4 @@ case_gen.cpp
 *.DSYM
 a.out
 test.txt
+output.a
