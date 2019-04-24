@@ -4,9 +4,11 @@
 #include "../include/translator.h"
 
 #include <stack>
+#include <iostream>
 
 void program_t::undo(parser_t* p) {
     decls->undo(p);
+    delete decls;
 }
 
 std::string program_t::get_string(parser_t* p) {
@@ -431,19 +433,59 @@ bool id_term_t::evaluate(int* result) {
 }
 
 bool add_binop_t::evaluate(int* result) {
-    return false;
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val + term_val;
+    return true;
 }
 
 bool sub_binop_t::evaluate(int* result) {
-    return false;
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val - term_val;
+    return true;
 }
 
 bool eq_binop_t::evaluate(int* result) {
-    return false;
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val == term_val;
+    return true;
 }
 
 bool neq_binop_t::evaluate(int* result) {
-    return false;
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val != term_val;
+    return true;
 }
 
 // ------------------ BINOP REWRITING ------------------
@@ -617,17 +659,20 @@ int params_t::translate(translator_t* t) {
 int var_decl_t::translate(translator_t* t) {
     
     if (t->symbol_table.is_global_scope()) {
-        
+        std::cout << "Found global variable!" << std::endl;
         // Global variable
         char buffer[100];
         memset(buffer, 0, sizeof(buffer));
         sprintf(buffer, "%s:\n", id.c_str());
         
-        int constant_value;
-        value->evaluate(&constant_value);
+        int constant_value = 0;
+        if (value != nullptr) value->evaluate(&constant_value);
+
+        global_addr_info_t* addr = new global_addr_info_t(id);
+        t->symbol_table.add(id, type, addr);
 
         type_descriptor_t* type_desc = t->type_table.at(type);
-        t->print_instruction_row(t->static_alloc(type_desc->size, constant_value));
+        t->static_alloc(id, type_desc->size, constant_value);
     } else {
         // Local variable (stack)
     }
