@@ -379,6 +379,8 @@ struct binop_expr_t : expr_t {
 
     void undo(parser_t* p) override;
     binop_expr_t() : left_assoc(false), term(nullptr), rest(nullptr) { }
+
+    // Note that this transfers tokens aswell
     virtual binop_expr_t* duplicate() = 0;
     
     static expr_t* rewrite(expr_t* e);
