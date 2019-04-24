@@ -32,8 +32,6 @@ struct return_stmt_t;
 struct expr_stmt_t;
 
 struct expr_t;
-struct arith_expr_t;
-struct rel_expr_t;
 struct neg_expr_t;
 struct term_expr_t;
 struct binop_expr_t;
@@ -43,18 +41,11 @@ struct lit_term_t;
 struct id_term_t;
 struct call_term_t;
 
-struct arithop_t;
-struct arithop_plus_t;
-struct arithop_minus_t;
-
 struct add_binop_t;
 struct sub_binop_t;
 struct eq_binop_t;
 struct neq_binop_t;
 
-struct relop_t;
-struct relop_equals_t;
-struct relop_not_equals_t;
 /* ----------------------------- */
 
 
@@ -177,8 +168,6 @@ private:
     static stmts_t* match_stmts(parser_t* p);
 
     static expr_t* match_expr(parser_t* p);
-    static arithop_t* match_arithop(parser_t* p);
-    static relop_t* match_relop(parser_t* p);
     static term_t* match_term(parser_t* p);
 
     // Production specific matching functions
@@ -204,16 +193,8 @@ private:
     static binop_expr_t* match_expr_binop(parser_t* p);
     static binop_expr_t* match_binop(parser_t* p);
 
-    static arith_expr_t* match_expr_arithop(parser_t* p);
     static neg_expr_t* match_expr_negated(parser_t* p);
-    static rel_expr_t* match_expr_relop(parser_t* p);
     static term_t* match_expr_term(parser_t* p);
-
-    static arithop_plus_t* match_arithop_plus(parser_t* p);
-    static arithop_minus_t* match_arithop_minus(parser_t* p);
-
-    static relop_equals_t* match_relop_equals(parser_t* p);
-    static relop_not_equals_t* match_relop_not_equals(parser_t* p);
 
     static id_term_t* match_term_identifier(parser_t* p);
     static lit_term_t* match_term_literal(parser_t* p);

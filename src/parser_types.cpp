@@ -274,37 +274,6 @@ std::string expr_stmt_t::get_string(parser_t* p) {
     return "(expr)[ " + e->get_string(p) + " ]";
 }
 
-void arith_expr_t::undo(parser_t* p) {
-    
-    right->undo(p);
-    op->undo(p);
-    left->undo(p);
-
-    delete right;
-    delete op;
-    delete left;
-}
-
-std::string arith_expr_t::get_string(parser_t* p) {
-    return left->get_string(p) + " " + op->get_string(p) + " " + right->get_string(p);
-}
-
-void rel_expr_t::undo(parser_t* p) {
-    
-    right->undo(p);
-    op->undo(p);
-    left->undo(p);
-    
-    delete right;
-    delete op;
-    delete left;
-
-}
-
-std::string rel_expr_t::get_string(parser_t* p) {
-    return left->get_string(p) + " " + op->get_string(p) + " " + right->get_string(p);
-}
-
 void neg_expr_t::undo(parser_t* p) {
     
     value->undo(p);
@@ -333,22 +302,6 @@ std::string term_expr_t::get_string(parser_t* p) {
 void term_t::undo(parser_t* p) {
     
     // Put back id or literal token
-    p->put_back_token(tokens.back());
-    tokens.pop_back();
-
-}
-
-void arithop_t::undo(parser_t* p) {
-    
-    // Put back + or - token
-    p->put_back_token(tokens.back());
-    tokens.pop_back();
-
-}
-
-void relop_t::undo(parser_t* p) {
-    
-    // Put back == or != token
     p->put_back_token(tokens.back());
     tokens.pop_back();
 
@@ -389,21 +342,6 @@ std::string call_term_t::get_string(parser_t* p) {
     return function_identifier + "(" + params_string + ")";
 }
 
-std::string arithop_plus_t::get_string(parser_t* p) {
-    return std::string("+");
-}
-
-std::string arithop_minus_t::get_string(parser_t* p) {
-    return std::string("-");
-}
-
-std::string relop_equals_t::get_string(parser_t* p) {
-    return std::string("==");
-}
-
-std::string relop_not_equals_t::get_string(parser_t* p) {
-    return std::string("!=");
-}
 
 void binop_expr_t::undo(parser_t* p) {
 
@@ -464,14 +402,6 @@ std::string neq_binop_t::get_string(parser_t* p) {
 //
 // -----------------------------------------------------
 
-bool arith_expr_t::evaluate(int* result) {
-    return op->evaluate(result, left, right);
-}
-
-bool rel_expr_t::evaluate(int* result) {
-    return op->evaluate(result, left, right);
-}
-
 bool neg_expr_t::evaluate(int* result) {
     
     int val;
@@ -498,61 +428,6 @@ bool call_term_t::evaluate(int* result) {
 
 bool id_term_t::evaluate(int* result) {
     return false;
-}
-
-bool arithop_plus_t::evaluate(int* result, term_t* left, expr_t* right) {
-
-    int left_val;
-    int right_val;
-
-    bool success;
-    success = left->evaluate(&left_val) && right->evaluate(&right_val);
-
-    if (!success) return false;
-
-    *result = left_val + right_val;
-    return true; 
-}
-
-bool arithop_minus_t::evaluate(int* result, term_t* left, expr_t* right) {
-
-    int left_val;
-    int right_val;
-
-    bool success;
-    success = left->evaluate(&left_val) && right->evaluate(&right_val);
-
-    if (!success) return false;
-
-    *result = left_val - right_val;
-    return true; 
-}
-
-bool relop_equals_t::evaluate(int* result, term_t* left, expr_t* right) {
-
-    int left_val;
-    int right_val;
-
-    bool success;
-    success = left->evaluate(&left_val) && right->evaluate(&right_val);
-
-    if (!success) return false;
-
-    *result = (left_val == right_val);
-    return true; 
-}
-
-bool relop_not_equals_t::evaluate(int* result, term_t* left, expr_t* right) {
-    int left_val;
-    int right_val;
-
-    bool success;
-    success = left->evaluate(&left_val) && right->evaluate(&right_val);
-
-    if (!success) return false;
-
-    *result = (left_val != right_val);
-    return true; 
 }
 
 bool add_binop_t::evaluate(int* result) {
@@ -782,14 +657,6 @@ int expr_stmt_t::translate(translator_t* t) {
     
 }
 
-int arith_expr_t::translate(translator_t* t) {
-    
-}
-
-int rel_expr_t::translate(translator_t* t) {
-    
-}
-
 int neg_expr_t::translate(translator_t* t) {
     
 }
@@ -807,22 +674,6 @@ int call_term_t::translate(translator_t* t) {
 }
 
 int lit_term_t::translate(translator_t* t) {
-    
-}
-
-int arithop_plus_t::translate(translator_t* t) {
-    
-}
-
-int arithop_minus_t::translate(translator_t* t) {
-    
-}
-
-int relop_equals_t::translate(translator_t* t) {
-    
-}
-
-int relop_not_equals_t::translate(translator_t* t) {
     
 }
 

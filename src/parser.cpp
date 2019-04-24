@@ -342,28 +342,6 @@ binop_expr_t* parser_t::match_binop(parser_t* p) {
     return result;
 }
 
-arithop_t* parser_t::match_arithop(parser_t* p) {
-    
-    arithop_t* op;
-
-    op = match_arithop_plus(p);
-    if (op != nullptr) return op;
-
-    op = match_arithop_minus(p);
-    return op;
-}
-
-relop_t* parser_t::match_relop(parser_t* p) {
-    
-    relop_t* op;
-
-    op = match_relop_equals(p);
-    if (op != nullptr) return op;
-
-    op = match_relop_not_equals(p);
-    return op;
-}
-
 term_t* parser_t::match_term(parser_t* p) {
     
     term_t* term;
@@ -997,49 +975,6 @@ stmts_t* parser_t::match_stmts_2(parser_t* p) {
     return nullptr;
 }
 
-// expr -> term arithop expr
-arith_expr_t* parser_t::match_expr_arithop(parser_t* p) {
-
-    term_t* left = match_term(p);
-
-    if (left == nullptr) {
-        std::cout << "term not found" << std::endl;
-        return nullptr;
-    }
-    std::cout << "term found" << std::endl;
-
-    arithop_t* op = match_arithop(p);
-
-    if (op == nullptr) {
-        std::cout << "operator not found" << std::endl;
-        left->undo(p);
-        delete left;
-        return nullptr;
-    }
-
-    std::cout << "operator found" << std::endl;
-
-    expr_t* right = match_expr(p);
-
-    if (right == nullptr) {
-        std::cout << "expr not found" << std::endl;
-        op->undo(p);
-        left->undo(p);
-        
-        delete op;
-        delete left;
-    }
-    std::cout << "expr found" << std::endl;
-
-    arith_expr_t* result = new arith_expr_t();
-
-    result->left  = left;
-    result->op    = op;
-    result->right = right;
-    
-    return result;
-}
-
 // expr -> "-" term
 neg_expr_t* parser_t::match_expr_negated(parser_t* p) {
     
@@ -1067,44 +1002,6 @@ neg_expr_t* parser_t::match_expr_negated(parser_t* p) {
     // Store token
     result->tokens.push_back(neg_token);
     
-    return result;
-}
-
-// expr -> term relop expr
-rel_expr_t* parser_t::match_expr_relop(parser_t* p) {
-
-    term_t* left = match_term(p);
-
-    if (left == nullptr) {
-        return nullptr;
-    }
-
-    relop_t* op = match_relop(p);
-
-    if (op == nullptr) {
-        left->undo(p);
-        delete left;
-        return nullptr;
-    }
-
-    expr_t* right = match_expr(p);
-
-    if (right == nullptr) {
-        op->undo(p);
-        left->undo(p);
-        delete left;
-        delete op;
-        return nullptr;
-    }
-
-    // If gotten this far, match was successful
-
-    // Build syntax object
-    rel_expr_t* result = new rel_expr_t();
-    result->left  = left;
-    result->op    = op;
-    result->right = right;
-
     return result;
 }
 
@@ -1150,90 +1047,6 @@ binop_expr_t* parser_t::match_expr_binop(parser_t* p) {
 term_t* parser_t::match_expr_term(parser_t* p) {
     
     return match_term(p);
-}
-
-// arithop -> "+"
-arithop_plus_t* parser_t::match_arithop_plus(parser_t* p) {
-
-    lex::token* plus_token = p->get_token();
-
-    if (plus_token->tag != lex::tag_t::PLUS) {
-        p->put_back_token(plus_token);
-        return nullptr;
-    }
-
-    // If gotten this far, match was successful
-
-    // Build syntax object
-    arithop_plus_t* result = new arithop_plus_t();
-
-    // Store token
-    result->tokens.push_back(plus_token);
-    
-    return result;
-}
-
-// arithop -> "-"
-arithop_minus_t* parser_t::match_arithop_minus(parser_t* p) {
-
-    lex::token* minus_token = p->get_token();
-
-    if (minus_token->tag != lex::tag_t::MINUS) {
-        p->put_back_token(minus_token);
-        return nullptr;
-    }
-
-    // If gotten this far, match was successful
-
-    // Build syntax object
-    arithop_minus_t* result = new arithop_minus_t();
-
-    // Store token
-    result->tokens.push_back(minus_token);
-    
-    return result;
-}
-
-// relop -> "=="
-relop_equals_t* parser_t::match_relop_equals(parser_t* p) {
-
-    lex::token* equals_token = p->get_token();
-
-    if (equals_token->tag != lex::tag_t::EQUALS) {
-        p->put_back_token(equals_token);
-        return nullptr;
-    }
-
-    // If gotten this far, match was successful
-
-    // Build syntax object
-    relop_equals_t* result = new relop_equals_t();
-
-    // Store token
-    result->tokens.push_back(equals_token);
-    
-    return result;
-}
-
-// relop -> "!="
-relop_not_equals_t* parser_t::match_relop_not_equals(parser_t* p) {
-    
-    lex::token* not_equals_token = p->get_token();
-
-    if (not_equals_token->tag != lex::tag_t::NOT_EQUALS) {
-        p->put_back_token(not_equals_token);
-        return nullptr;
-    }
-
-    // If gotten this far, match was successful
-
-    // Build syntax object
-    relop_not_equals_t* result = new relop_not_equals_t();
-
-    // Store token
-    result->tokens.push_back(not_equals_token);
-    
-    return result;
 }
 
 // term -> id

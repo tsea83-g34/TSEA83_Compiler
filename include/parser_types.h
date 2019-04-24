@@ -88,8 +88,6 @@ struct return_stmt_t;
 struct expr_stmt_t;
 
 struct expr_t;
-struct arith_expr_t;
-struct rel_expr_t;
 struct neg_expr_t;
 struct term_expr_t;
 
@@ -98,8 +96,6 @@ struct lit_term_t;
 struct id_term_t;
 struct call_term_t;
 
-struct arithop_t;
-struct relop_t;
 
 // New binary operation system
 
@@ -254,28 +250,6 @@ struct expr_t : undoable_t, printable_t, translateable_t {
     virtual bool evaluate(int* result) = 0;
 };
 
-struct arith_expr_t : expr_t {
-    term_t* left;
-    arithop_t* op;
-    expr_t* right;
-
-    void undo(parser_t* p) override;
-    std::string get_string(parser_t* p) override;
-    int translate(translator_t* t) override;
-    bool evaluate(int* result) override;
-};
-
-struct rel_expr_t : expr_t {
-    term_t* left;
-    relop_t* op;
-    expr_t* right;
-
-    void undo(parser_t* p) override;
-    std::string get_string(parser_t* p) override;
-    int translate(translator_t* t) override;
-    bool evaluate(int* result) override;
-};
-
 struct neg_expr_t : expr_t {
     term_t* value;
 
@@ -328,40 +302,6 @@ struct lit_term_t : term_t {
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
     bool evaluate(int* result) override;
-};
-
-struct arithop_t : undoable_t, printable_t, translateable_t {
-    void undo(parser_t* p) override;
-    virtual bool evaluate(int* result, term_t* left, expr_t* right) = 0;
-};
-
-struct arithop_plus_t : arithop_t {
-    std::string get_string(parser_t* p) override;
-    int translate(translator_t* t) override;
-    bool evaluate(int* result, term_t* left, expr_t* right) override;
-};
-
-struct arithop_minus_t : arithop_t {
-    std::string get_string(parser_t* p) override;
-    int translate(translator_t* t) override;
-    bool evaluate(int* result, term_t* left, expr_t* right) override;
-};
-
-struct relop_t : undoable_t, printable_t, translateable_t {
-    void undo(parser_t* p) override;
-    virtual bool evaluate(int* result, term_t* left, expr_t* right) = 0;
-};
-
-struct relop_equals_t : relop_t {
-    std::string get_string(parser_t* p) override;
-    int translate(translator_t* t) override;
-    bool evaluate(int* result, term_t* left, expr_t* right) override;
-};
-
-struct relop_not_equals_t : relop_t {
-    std::string get_string(parser_t* p) override;
-    int translate(translator_t* t) override;
-    bool evaluate(int* result, term_t* left, expr_t* right) override;
 };
 
 // New binary operation system
