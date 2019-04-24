@@ -222,6 +222,8 @@ param_decl_t* parser_t::match_param_decl(parser_t* p) {
     return result;
 }
 
+//  params      ->  expr params
+//              |   e
 params_t* parser_t::match_params(parser_t* p) {
 
     expr_t* first;
@@ -231,6 +233,10 @@ params_t* parser_t::match_params(parser_t* p) {
     } catch (syntax_error e) {
         return nullptr;
     }
+    
+    // Change associativity of expression if needed
+    first = binop_expr_t::rewrite(first);
+    
 
     params_t* result = new params_t();
     result->first = first;
@@ -294,12 +300,7 @@ expr_t* parser_t::match_expr(parser_t* p) {
 
     std::cout << "Matching expression..." << std::endl;
     expr = match_expr_binop(p);
-    if (expr != nullptr) {
-        std::cout << "Matched binary operation!" << std::endl;
-    // If successfully matched a binary operation, rewrite it to right associativity
-        //expr = binop_expr_t::rewrite(expr);    
-        return expr;
-    }
+    if (expr != nullptr) return expr;
 
     expr = match_expr_term(p);
     if (expr != nullptr) return expr;
@@ -484,6 +485,10 @@ var_decl_t* parser_t::match_decl_var_2(parser_t* p) {
     }
 
     // If everything is in order, build syntax object
+
+    // Change associativity of expression if needed
+    value = binop_expr_t::rewrite(value);
+
     // TODO: Add variable name to symbol table
     d->tokens.push_back(equals);
     
@@ -783,6 +788,10 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
 
     // If we got this far, we have a successful match, delete tokens and return result
     
+    // Change associativity of expression if needed
+    cond = binop_expr_t::rewrite(cond);
+    
+
     // Build syntax object
     if_stmt_t* result = new if_stmt_t();
     result->cond = cond;
@@ -833,6 +842,11 @@ return_stmt_t* parser_t::match_stmt_return(parser_t* p) {
     }
 
     // If gotten so far, match is successful
+
+
+    // Change associativity of expression if needed
+    return_value = binop_expr_t::rewrite(return_value);
+    
     
     // Build syntax object
     return_stmt_t* result = new return_stmt_t();
@@ -869,6 +883,10 @@ expr_stmt_t* parser_t::match_stmt_expr(parser_t* p) {
     }
 
     // If gotten this far, match was successful
+    
+    // Change associativity of expression if needed
+    e = binop_expr_t::rewrite(e);
+    
 
     // Build syntax object
     expr_stmt_t* result = new expr_stmt_t();
@@ -934,6 +952,11 @@ assignment_stmt_t* parser_t::match_stmt_assign(parser_t* p) {
     }
     
     // If gotten this far, match was successful
+
+
+    // Change associativity of expression if needed
+    rvalue = binop_expr_t::rewrite(rvalue);
+    
 
     // Build syntax object
     assignment_stmt_t* result = new assignment_stmt_t();
@@ -1102,7 +1125,6 @@ binop_expr_t* parser_t::match_expr_binop(parser_t* p) {
     }
 
     expr_t* right = match_expr(p);
-
     if (right == nullptr) {
         
         // Put back operator token
