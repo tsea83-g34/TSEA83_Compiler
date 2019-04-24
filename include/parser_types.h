@@ -41,21 +41,13 @@
 
     block_stmt  ->  { stmts }
 
-    expr        ->  term arithop expr
-                |   term binop expr
+    expr        ->  term binop expr
                 |   "-" term
-                |   term relop expr
                 |   term
 
     binop       ->  "+"
                 |   "-"
                 |   "=="
-                |   "!="
-
-    arithop     ->  "+"
-                |   "-"
-
-    relop       ->  "=="
                 |   "!="
 
     term        ->  id
