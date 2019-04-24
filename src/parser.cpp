@@ -8,6 +8,8 @@ parser_t::parser_t(lex::lexer *l) : lexical_analyzer(l) {
 
     type_map = std::unordered_map<std::string, int>();
     type_map.insert({"int", 0});
+    type_map.insert({"char", 1});
+    type_map.insert({"long", 2});
 
     type_name_map = std::unordered_map<int, std::string>();
     type_name_map.insert({0, "int"});
