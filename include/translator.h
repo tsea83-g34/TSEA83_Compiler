@@ -2,7 +2,8 @@
 #define COM_TRANSLATOR_H
 
 #include <sstream>
-
+#include <string>
+#include <fstream>
 #include "symbol_table.h"
 #include "type_table.h"
 #include "register_allocation.h"
@@ -17,8 +18,13 @@ public:
     type_table_t            type_table;
     long instr_cnt;
 
+    translator_t() = default;
+    ~translator_t() = default;
+
+    void print_to_file(std::ofstream& file);
+
     void print_instruction_row(const std::string& instr);
-    std::string static_alloc(int size, int value);
+    void static_alloc(std::string name, int size, int value);
 };
 
 #endif

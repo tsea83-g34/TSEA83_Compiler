@@ -8,23 +8,34 @@ void translator_t::print_instruction_row(const std::string& instr) {
     instr_cnt++;
 }
 
-std::string translator_t::static_alloc(int size, int value) {
-    std::string result;
+void translator_t::static_alloc(std::string name, int size, int value) {
+    
+    std::string label = name;
+    label += ":";
+
+    std::string allocation = "\t";
 
     switch (size) {
         case 1:
-            result += ".db ";
+            allocation += ".db ";
             break;
         case 2:
-            result += ".dh ";
+            allocation += ".dh ";
             break;
         case 4:
-            result += ".dw ";
+            allocation += ".dw ";
             break;
         default:
             break;
     }
 
-    result += std::to_string(value);
-    return result;
+    allocation += std::to_string(value);
+
+    print_instruction_row(label);
+    print_instruction_row(allocation);
+}
+
+void translator_t::print_to_file(std::ofstream& file) {
+
+    file << output.str();
 }
