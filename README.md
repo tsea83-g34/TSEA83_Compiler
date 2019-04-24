@@ -40,6 +40,59 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
 ## C-- Specification
 
+### Grammar
+
+    e denotes empty string
+
+    program     ->  decls                       PROGRAM::1
+
+    decls       ->  decl decls                  DECLS::1
+                |   e                           DECLS::2
+
+    decl        ->  func_decl
+                |   var_decl
+    
+    var_decl    ->  type id ;
+                |   type id "=" expr ;
+
+    func_decl   ->  type id ( param_decls ) ;
+                |   type id ( param_decls ) block_stmt
+
+    param_decls ->  param_decl param_decls
+                |   e
+
+    param_decl  ->  type id
+
+    stmt        ->  block_stmt
+                |   if ( expr ) stmt // This could lead to great errors if expr is matched but not stmt?
+                |   var_decl ;
+                |   id "=" expr ;   // assignment
+                |   return expr ;
+                |   expr ;
+    
+    stmts       ->  stmt stmts
+                |   e
+
+    block_stmt  ->  { stmts }
+
+    expr        ->  term binop expr
+                |   "-" term
+                |   term
+
+    binop       ->  "+"
+                |   "-"
+                |   "=="
+                |   "!="
+
+    term        ->  id
+                |   literal
+                |   id ( params )  // Function call
+    
+    params      ->  expr params
+                |   e
+
+
+
 ### Types
 
 
