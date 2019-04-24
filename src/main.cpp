@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <fstream>
 
 #ifdef WINDOWS
     #include <direct.h>
@@ -12,12 +13,14 @@
 #include "../include/parser_types.h"
 #include "../include/lexer.h"
 #include "../include/parser.h"
+#include "../include/translator.h"
 
 using namespace std;
 
-#define PARSE_DEBUG
-//#define LEX_DEBUG
 
+//#define LEX_DEBUG
+#define PARSE_DEBUG
+#define TRANSLATE_DEBUG
 
 int main(int argc, char const *argv[]) {
 
@@ -58,9 +61,25 @@ int main(int argc, char const *argv[]) {
     cout << "Finished parsing" << endl;
     if (program != nullptr) {
         cout << program->get_string(&parser) << endl;
+        
+        #ifndef TRANSLATE_DEBUG
         program->undo(&parser);
         delete program;
+        #endif
     }
+
+    #endif
+
+    #ifdef TRANSLATE_DEBUG
+
+    std::cout << "Creating translator..." << std::endl;
+    translator_t translator = translator_t();
+    std::cout << "Translator created!" << std::endl;
+
+    program->translate(&translator);
+
+    std::ofstream output_file("output.a");
+    translator.print_to_file(output_file);
 
     #endif
 
