@@ -3,8 +3,8 @@
 
 type_table_t::type_table_t() {
     type_map = std::unordered_map<int, type_descriptor_t>();
-    insert(0, (type_descriptor_t){"char", 1});
-    insert(1, (type_descriptor_t){"int", 2});
+    insert(0, (type_descriptor_t){"int", 2});
+    insert(1, (type_descriptor_t){"char", 1});
     insert(2, (type_descriptor_t){"long", 4});
 }
 
