@@ -2,6 +2,7 @@
 #include "../include/parser_types.h"
 #include "../include/parser.h"
 #include "../include/translator.h"
+#include "../include/symbol_table.h"
 
 #include <stack>
 #include <iostream>
@@ -642,14 +643,31 @@ int decls_t::translate(translator_t* t) {
 
 int func_decl_t::translate(translator_t* t) {
     
+    // TODO: Add scope with parameters
+    func_info_t* info = new func_info_t(this, t);
+
+    if (stmt == nullptr) return 0;
+
+    std::string label = info->identifier + ":";
+    
+    t->print_instruction_row(label, false);
+    
+    stmt->translate(t);
+
+    t->print_instruction_row("ret", true);
 }
 
-int param_decls_t::translate(translator_t* t) {
+int param_decls_t::translate(translator_t* t, func_info_t* f) {
     
+    first->translate(t, f);
+
+    if (rest != nullptr) rest->translate(t, f);
 }
 
-int param_decl_t::translate(translator_t* t) {
+int param_decl_t::translate(translator_t* t, func_info_t* f) {
     
+    // Starts at 2 to accomodate for return address pointer
+    int current_base_offset = 2;
 }
 
 int params_t::translate(translator_t* t) {
@@ -659,31 +677,129 @@ int params_t::translate(translator_t* t) {
 int var_decl_t::translate(translator_t* t) {
     
     if (t->symbol_table.is_global_scope()) {
+        
         std::cout << "Found global variable!" << std::endl;
+        
         // Global variable
-        char buffer[100];
-        memset(buffer, 0, sizeof(buffer));
-        sprintf(buffer, "%s:\n", id.c_str());
         
         int constant_value = 0;
         if (value != nullptr) value->evaluate(&constant_value);
 
-        global_addr_info_t* addr = new global_addr_info_t(id);
-        t->symbol_table.add(id, type, addr);
-
         type_descriptor_t* type_desc = t->type_table.at(type);
+        
+        global_addr_info_t* addr = new global_addr_info_t(id);
+        t->symbol_table.add_var(id, type, type_desc->size, addr);
+
         t->static_alloc(id, type_desc->size, constant_value);
+
     } else {
-        // Local variable (stack)
+        
+        std::cout << "Found local variable!" << std::endl;
+
+        // Local variable
+
+        int constant_value = 0;
+        if (value != nullptr) value->evaluate(&constant_value);
+
+        // Get type descriptor of the type of the variable
+        type_descriptor_t* type_desc = t->type_table.at(type);
+
+        std::cout << "Type: " << type_desc->name << " size: " << type_desc->size << std::endl;
+
+        // Acquire current scope
+        scope_t* current_scope = t->symbol_table.get_current_scope();
+        
+        // Calculate the offset of the variables adress from the base pointer
+        // TODO: currently allocates 4 bytes for every type, type_desc->size
+        
+        int variable_base_offset = 0;
+        int size_to_allocate = 0;
+        int alignment = 0;
+
+        if (type_desc->size <= 2) {
+            // If the variable size is 2 or less, allocate 2 bytes
+            size_to_allocate = 2;
+        } else {
+            // If the variable size is more than 2 align the stack to 4 and allocate a multiple of 4 bytes
+            alignment = current_scope->align(4);
+
+            // If the size is already a multiple of 4, allocate that many bytes, otherwise round it up to the nearest multiple
+            size_to_allocate = (type_desc->size % 4 == 0) ? type_desc->size : type_desc->size + (4 - type_desc->size % 4);
+
+            std::cout << "size to alloc: " << size_to_allocate << std::endl;
+            std::cout << "Alignment: " << alignment << std::endl;
+        }
+
+        variable_base_offset = -(current_scope->get_end_offset() + size_to_allocate);
+        
+        local_addr_info_t* addr = new local_addr_info_t(variable_base_offset);
+        var_info_t* var = t->symbol_table.add_var(id, type, size_to_allocate, addr);
+
+        // Print instructions
+        std::stringstream output;
+        if (value != nullptr) {
+            int register_index = t->reg_alloc.allocate(var, true);
+            
+            if (size_to_allocate == 4) {
+                
+                int hi = (constant_value & 0xFFFF0000) >> 16;
+                output << "movhi ";
+                output << t->reg_alloc.get_register_string(register_index);
+                output << ", " << hi;
+                t->print_instruction_row(output.str(), true);
+                output = std::stringstream();
+            }
+
+            int lo = constant_value & 0x0000FFFF;
+            output << "movlo ";
+            output << t->reg_alloc.get_register_string(register_index);
+            output << ", " << lo;
+            t->print_instruction_row(output.str(), true);
+            output = std::stringstream();
+
+            if (alignment) { 
+                output << "subi " << "SP, " << "SP, " << alignment;
+                t->print_instruction_row(output.str(), true);
+                output = std::stringstream();
+            }
+
+            output << "push" << "[" << size_to_allocate << "] ";
+            output << t->reg_alloc.get_register_string(register_index);
+            t->print_instruction_row(output.str(), true);
+            output = std::stringstream();
+        
+        } else {
+
+            output << "subi " << "SP, " << "SP, " << alignment+size_to_allocate;
+            t->print_instruction_row(output.str(), true);
+
+        }
     }
 }
 
 int stmts_t::translate(translator_t* t) {
     
+    first->translate(t);
+
+    if (rest != nullptr) rest->translate(t);
+
 }
 
 int block_stmt_t::translate(translator_t* t) {
     
+    t->symbol_table.push_scope(true);
+
+    if (statements != nullptr) statements->translate(t);
+    
+    // Throw away variables
+    int scope_size = t->symbol_table.get_current_scope()->size();
+
+    std::stringstream output;
+    output << "subi SP, SP, " << scope_size;
+    t->print_instruction_row(output.str(), true);
+    // --------------------
+
+    t->symbol_table.pop_scope();
 }
 
 int if_stmt_t::translate(translator_t* t) {
