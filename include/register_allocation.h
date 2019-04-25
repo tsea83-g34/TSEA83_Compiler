@@ -8,7 +8,7 @@
 class translator_t;
 
 #define REGISTER_COUNT  16
-#define RESERVE_COUNT   1
+#define RESERVE_COUNT   4
 
 struct reg_t {
     int index;

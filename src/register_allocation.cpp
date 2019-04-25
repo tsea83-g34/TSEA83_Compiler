@@ -77,6 +77,12 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool temp = false) 
     reg_t* front = registers.front();
     std::pop_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
 
+    // Memory writeback
+
+
+
+    // ----------------
+
     // Update the register
     front->content = var_to_alloc;
     front->last_changed = (temp) ? 0 : parent->instr_cnt;
