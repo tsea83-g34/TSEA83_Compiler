@@ -795,7 +795,7 @@ int block_stmt_t::translate(translator_t* t) {
     int scope_size = t->symbol_table.get_current_scope()->size();
 
     std::stringstream output;
-    output << "subi SP, SP, " << scope_size;
+    output << "addi SP, SP, " << scope_size;
     t->print_instruction_row(output.str(), true);
     // --------------------
 
