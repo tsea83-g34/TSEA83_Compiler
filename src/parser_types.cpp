@@ -737,8 +737,10 @@ int var_decl_t::translate(translator_t* t) {
 
         // Print instructions
         std::stringstream output;
+
+        // If a value was given, load it into a register
         if (value != nullptr) {
-            int register_index = t->reg_alloc.allocate(var, true);
+            int register_index = t->reg_alloc.allocate(var, false);
             
             if (size_to_allocate == 4) {
                 
@@ -757,23 +759,19 @@ int var_decl_t::translate(translator_t* t) {
             t->print_instruction_row(output.str(), true);
             output = std::stringstream();
 
-            if (alignment) { 
-                output << "subi " << "SP, " << "SP, " << alignment;
-                t->print_instruction_row(output.str(), true);
-                output = std::stringstream();
-            }
-
+            /*
             output << "push" << "[" << size_to_allocate << "] ";
             output << t->reg_alloc.get_register_string(register_index);
             t->print_instruction_row(output.str(), true);
             output = std::stringstream();
-        
-        } else {
+            */
+        } 
 
-            output << "subi " << "SP, " << "SP, " << alignment+size_to_allocate;
-            t->print_instruction_row(output.str(), true);
+        // Allocate memory for the variable
+        output << "subi " << "SP, " << "SP, " << alignment+size_to_allocate;
+        t->print_instruction_row(output.str(), true);
 
-        }
+
     }
 }
 
