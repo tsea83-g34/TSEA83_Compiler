@@ -18,7 +18,7 @@ public:
     type_table_t            type_table;
     long instr_cnt;
 
-    translator_t() = default;
+    translator_t();
     ~translator_t() = default;
 
     void print_to_file(std::ofstream& file);

@@ -3,6 +3,25 @@
 
 #include <ostream>
 
+translator_t::translator_t() {
+    // print standard defines into file
+    
+    // Stack pointer
+    print_instruction_row("const SP r15", false);
+    
+    // Base pointer
+    print_instruction_row("const BP r14", false);
+    
+    // Return register
+    print_instruction_row("const RR r13", false);
+
+    // Register allocation
+    print_instruction_row("const RA r12", false);
+
+    // Print an empty row
+    print_instruction_row("", false);
+}
+
 void translator_t::print_instruction_row(const std::string& instr, bool tab = true) {
     
     if (tab) output << "\t";
