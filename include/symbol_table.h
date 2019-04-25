@@ -36,11 +36,14 @@ public:
     std::string get_name(const std::string& id);
 };
 
+class scope_t;
+
 struct var_info_t {
     std::string name;
     std::string id;
     int type;
     addr_info_t* address; // Relative address to the base pointer ?
+    scope_t* scope;
 
     var_info_t() = default;
     ~var_info_t() = default;
@@ -107,6 +110,7 @@ public:
     // Add function to the global scope
     std::string add_func(const std::string& name, func_info_t* f);
     
+    bool is_scope_reachable(scope_t* scope);
     bool is_global_scope();
     scope_t* get_current_scope();
 
