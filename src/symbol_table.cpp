@@ -11,7 +11,7 @@ std::string global_addr_info_t::get_address_string() {
 
 std::string local_addr_info_t::get_address_string() {
     
-    return "BP+" + std::to_string(base_offset);
+    return std::to_string(base_offset);
 }
 
 
@@ -178,6 +178,7 @@ var_info_t* symbol_table_t::add_var(const std::string& name, const int type, con
     var_info_t* varinfo = new var_info_t();
     varinfo->name = name;
     varinfo->type = type;
+    varinfo->scope = get_current_scope();
     varinfo->address = addr;
 
     if (is_global_scope()) {
@@ -186,7 +187,7 @@ var_info_t* symbol_table_t::add_var(const std::string& name, const int type, con
         varinfo->id = name_alloc.get_name(name);
     }
 
-    scope_stack.back()->add(name, size, varinfo);
+    get_current_scope()->add(name, size, varinfo);
     return varinfo;
 }
 
@@ -201,6 +202,17 @@ func_info_t* symbol_table_t::get_func(const std::string& name) {
 std::string symbol_table_t::add_func(const std::string& name, func_info_t* f) {
     // TODO: Check if a function with that name already exists
     function_table.insert({name, f});
+}
+
+bool symbol_table_t::is_scope_reachable(scope_t* scope) {
+
+    for (int i = scope_stack.size(); i >= 1; i++) {
+        
+        if (scope_stack[i] == scope) return true;
+
+        if (!scope_stack[i]->inherit_scope) break; // If outer scope is not inherited, break
+    }
+    return false;
 }
 
 bool symbol_table_t::is_global_scope() {
