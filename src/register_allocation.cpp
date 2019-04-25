@@ -78,7 +78,8 @@ void register_allocator_t::free(reg_t* reg, bool sort) {
 
     // Store variable
     output << "store[" << size << "] BP, " << get_register_string(reg->index) << ", " << old_data->address->get_address_string(); 
-
+    parent->print_instruction_row(output.str(), true);
+    
     // Update register
     reg->content = nullptr;
     reg->last_changed = 0;
