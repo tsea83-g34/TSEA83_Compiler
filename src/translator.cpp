@@ -3,8 +3,10 @@
 
 #include <ostream>
 
-void translator_t::print_instruction_row(const std::string& instr) {
-    output << instr << std::endl;
+void translator_t::print_instruction_row(const std::string& instr, bool tab = true) {
+    
+    if (tab) output << "\t";
+    output << instr << "\n";
     instr_cnt++;
 }
 
@@ -13,7 +15,7 @@ void translator_t::static_alloc(std::string name, int size, int value) {
     std::string label = name;
     label += ":";
 
-    std::string allocation = "\t";
+    std::string allocation;
 
     switch (size) {
         case 1:
@@ -31,8 +33,8 @@ void translator_t::static_alloc(std::string name, int size, int value) {
 
     allocation += std::to_string(value);
 
-    print_instruction_row(label);
-    print_instruction_row(allocation);
+    print_instruction_row(label, false);
+    print_instruction_row(allocation, true);
 }
 
 void translator_t::print_to_file(std::ofstream& file) {

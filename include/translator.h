@@ -23,7 +23,7 @@ public:
 
     void print_to_file(std::ofstream& file);
 
-    void print_instruction_row(const std::string& instr);
+    void print_instruction_row(const std::string& instr, bool tab);
     void static_alloc(std::string name, int size, int value);
 };
 
