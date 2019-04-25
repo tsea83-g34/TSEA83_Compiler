@@ -35,6 +35,8 @@ public:
     register_allocator_t(); 
     ~register_allocator_t();
 
+    void set_parent(translator_t* _parent);
+
     int allocate(var_info_t* var_to_alloc, bool temp);
     void free(int index);
 

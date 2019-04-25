@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <functional>
 #include <sstream>
+#include <iostream>
 
 reg_t::reg_t() {
     index        = 0;
@@ -35,7 +36,7 @@ register_allocator_t::register_allocator_t() {
         reg_t* reg = new reg_t();
         reg->index = i;
         registers[i] = reg;
-        if (i < RESERVE_COUNT) {
+        if (i >= REGISTER_COUNT - RESERVE_COUNT) {
             reg->reserved = true;
             reg->last_changed = std::numeric_limits<long>::max();
         }
@@ -52,6 +53,10 @@ register_allocator_t::~register_allocator_t() {
     registers.clear();
 }
 
+void register_allocator_t::set_parent(translator_t* _parent) {
+    parent = _parent;
+}
+
 reg_t* register_allocator_t::get_register(int index) {
 
     for (int i = 0; i < registers.size(); i++) {
@@ -63,6 +68,10 @@ reg_t* register_allocator_t::get_register(int index) {
 void register_allocator_t::free(reg_t* reg, bool sort) {
 
     std::stringstream output;
+
+    // If the register has no content, there is nothing to free
+    if (reg->content == nullptr) return;
+
 
     var_info_t* old_data = reg->content;
     int size = parent->type_table.at(old_data->type)->size;
@@ -92,10 +101,14 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool temp = false) 
         }
     }
 
+    std::cout << "Allocating register..." << std::endl;
+
     // Pop the least recently changed register from the heap to modify
     reg_t* front = registers.front();
     std::pop_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
 
+    std::cout << "Allocated register " << front->index << ", last changed: " << front->last_changed << std::endl;
+    
     // Deallocate the register
     free(front, false);
 
@@ -106,7 +119,7 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool temp = false) 
     // Push the updated register back to the heap
     std::push_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
     
-    // TODO print instructions
+    return front->index;
 }
 
 void register_allocator_t::free(int index) {
