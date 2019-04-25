@@ -15,9 +15,6 @@ translator_t::translator_t() {
     // Return register
     print_instruction_row("const RR r13", false);
 
-    // Register allocation
-    print_instruction_row("const RA r12", false);
-
     // Print an empty row
     print_instruction_row("", false);
 }
