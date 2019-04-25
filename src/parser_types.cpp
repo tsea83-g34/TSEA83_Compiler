@@ -649,25 +649,65 @@ int func_decl_t::translate(translator_t* t) {
     if (stmt == nullptr) return 0;
 
     std::string label = info->identifier + ":";
-    
     t->print_instruction_row(label, false);
+
+    t->symbol_table.push_scope(false);
+
+    if (param_list != nullptr) {
+        // Starts at 2 to accomodate for return address pointer
+        info->params_size = 2;
+        param_list->translate(t, info);
+    }
     
     stmt->translate(t);
 
     t->print_instruction_row("ret", true);
+
+    t->symbol_table.pop_scope();
 }
 
 int param_decls_t::translate(translator_t* t, func_info_t* f) {
     
     first->translate(t, f);
+    if (rest != nullptr) {
+        
+        rest->translate(t, f);
 
-    if (rest != nullptr) rest->translate(t, f);
+    } else {
+
+        // If this is the last param, align the stack to 4
+        if (f->params_size % 4 != 0) {
+                f->params_size += (-f->params_size) % 4;
+        }
+
+        // remove return pointer offset from params_size
+        f->params_size -= 2;
+    }
+    
 }
 
 int param_decl_t::translate(translator_t* t, func_info_t* f) {
     
-    // Starts at 2 to accomodate for return address pointer
-    int current_base_offset = 2;
+    int size = t->type_table.at(type)->size;
+
+    // If the current base offset is mis-aligned in relation to the size of this parameter
+    // adjust it 
+    if (f->params_size % size != 0) {
+        f->params_size += (-f->params_size) % size;
+    }
+    
+    // Create address structure for parameter
+    local_addr_info_t* addr = new local_addr_info_t(f->params_size);
+
+    // Size is zero since allocation happens on function call, right now, we simply
+    // want to add the variables to the namespace
+    var_info_t* var = t->symbol_table.add_var(id, type, 0, addr);
+    
+    // Allocate a register for the variable
+    t->reg_alloc.allocate(var, false);
+
+    // Update parameter size with the size of the new variable
+    f->params_size += size;
 }
 
 int params_t::translate(translator_t* t) {
@@ -688,7 +728,9 @@ int var_decl_t::translate(translator_t* t) {
         type_descriptor_t* type_desc = t->type_table.at(type);
         
         global_addr_info_t* addr = new global_addr_info_t(id);
-        t->symbol_table.add_var(id, type, type_desc->size, addr);
+
+        // Size is zero since the variable is allocated statically
+        t->symbol_table.add_var(id, type, 0, addr);
 
         t->static_alloc(id, type_desc->size, constant_value);
 
@@ -725,9 +767,6 @@ int var_decl_t::translate(translator_t* t) {
 
             // If the size is already a multiple of 4, allocate that many bytes, otherwise round it up to the nearest multiple
             size_to_allocate = (type_desc->size % 4 == 0) ? type_desc->size : type_desc->size + (4 - type_desc->size % 4);
-
-            std::cout << "size to alloc: " << size_to_allocate << std::endl;
-            std::cout << "Alignment: " << alignment << std::endl;
         }
 
         variable_base_offset = -(current_scope->get_end_offset() + size_to_allocate);

@@ -4,7 +4,6 @@
 #include <string>
 
 #include "interfaces.h"
-#include "translator.h"
 
 /* First tier C-- grammar
 
@@ -100,6 +99,8 @@ struct neq_binop_t;
 
 /* ----------------------------- */
 class parser_t;
+class translator_t;
+struct func_info_t;
 
 struct program_t : undoable_t, printable_t, translateable_t {
     decls_t* decls;
@@ -142,22 +143,22 @@ struct func_decl_t : decl_t {
 
 /*       Parameters       */
 
-struct param_decls_t : undoable_t, virtual printable_t, virtual translateable_t {
+struct param_decls_t : undoable_t, virtual printable_t {
     param_decl_t* first;
     param_decls_t* rest;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
-    int translate(translator_t* t) override;
+    int translate(translator_t* t, func_info_t* f);
 };
 
-struct param_decl_t : undoable_t, virtual printable_t, virtual translateable_t {
+struct param_decl_t : undoable_t, virtual printable_t {
     int type;
     std::string id;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
-    int translate(translator_t* t) override;
+    int translate(translator_t* t, func_info_t* f);
 };
 
 struct params_t : undoable_t, virtual printable_t, virtual translateable_t {
