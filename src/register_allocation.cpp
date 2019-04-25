@@ -59,7 +59,7 @@ reg_t* register_allocator_t::get_register(int index) {
     return nullptr;
 }
 
-int register_allocator_t::allocate(var_info_t* var_to_alloc, bool lock = false) {
+int register_allocator_t::allocate(var_info_t* var_to_alloc, bool temp = false) {
 
     if (var_to_alloc == nullptr) return -1;
 
@@ -67,7 +67,8 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool lock = false) 
         reg_t* reg = registers[i];
         
         if (reg->content == var_to_alloc) {
-            reg->last_changed = parent->instr_cnt;
+            // If the allocation is temporary, make it available instantly
+            reg->last_changed = (temp) ? 0 : parent->instr_cnt;
             return reg->index;
         }
     }
@@ -78,7 +79,7 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool lock = false) 
 
     // Update the register
     front->content = var_to_alloc;
-    front->last_changed = parent->instr_cnt;
+    front->last_changed = (temp) ? 0 : parent->instr_cnt;
 
     // Push the updated register back to the heap
     std::push_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
