@@ -5,6 +5,8 @@
 #include <string>
 #include <deque>
 
+#include "parser_types.h"
+
 struct addr_info_t {
     
     virtual std::string get_address_string() = 0;
@@ -44,6 +46,19 @@ struct var_info_t {
     ~var_info_t() = default;
 };
 
+struct func_info_t {
+    std::string identifier;
+    int return_type;
+
+    std::vector<var_info_t> param_vector;
+    
+    // Size occupied by parameters in bytes
+    int params_size;
+
+    func_info_t() = default;
+    func_info_t(func_decl_t* decl, translator_t* t);
+};
+
 class scope_t {
     std::unordered_map<std::string, var_info_t*> data;
 
@@ -59,16 +74,21 @@ public:
     scope_t(bool _inherit_scope, int _base_offset);
     
     int size();
+    int get_base_offset();
     int get_end_offset();
+
+    int align(int size_to_align_to);
     
     var_info_t* at(const std::string& key);
     var_info_t* operator[](const std::string& key);
 
-    void add(const std::string& name, var_info_t* varinfo);
+    void add(const std::string& name, int size, var_info_t* varinfo);
 };
 
 class symbol_table_t {
     std::deque<scope_t*> scope_stack;
+    std::unordered_map<std::string, func_info_t*> function_table;
+
     scope_name_allocator_t name_alloc;
 
 public:
@@ -76,13 +96,19 @@ public:
     ~symbol_table_t();
 
     // Get variable info
-    var_info_t* get(const std::string& key);
-    var_info_t* operator[](const std::string& key);
+    var_info_t* get_var(const std::string& key);
 
     // Add a variable to the current scope
-    std::string add(const std::string& name, const int type, addr_info_t* addr);
+    var_info_t* add_var(const std::string& name, const int type, const int size, addr_info_t* addr);
+
+    // Get function info
+    func_info_t* get_func(const std::string& name);
+
+    // Add function to the global scope
+    std::string add_func(const std::string& name, func_info_t* f);
     
     bool is_global_scope();
+    scope_t* get_current_scope();
 
     void push_scope(bool inherit_scope);
     void pop_scope();
