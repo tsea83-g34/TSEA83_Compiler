@@ -4,6 +4,8 @@
 #include <ostream>
 
 translator_t::translator_t() {
+
+    reg_alloc.set_parent(this);
     // print standard defines into file
     
     // Stack pointer
