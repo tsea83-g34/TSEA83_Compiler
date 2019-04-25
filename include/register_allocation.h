@@ -8,7 +8,7 @@
 class translator_t;
 
 #define REGISTER_COUNT  16
-#define RESERVE_COUNT   4
+#define RESERVE_COUNT   3
 
 struct reg_t {
     int index;
@@ -25,9 +25,10 @@ struct reg_t {
 class register_allocator_t {
 
     std::vector<reg_t*> registers;
-    const translator_t* parent;
+    translator_t* parent;
 
     reg_t* get_register(int index);
+    void free(reg_t* reg, bool sort = true);
 
 public:
 
@@ -36,6 +37,8 @@ public:
 
     int allocate(var_info_t* var_to_alloc, bool temp);
     void free(int index);
+
+    void store_context();
 
     static std::string get_register_string(int index);
 };

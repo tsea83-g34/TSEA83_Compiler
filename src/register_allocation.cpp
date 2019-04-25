@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <sstream>
 
 reg_t::reg_t() {
     index        = 0;
@@ -59,6 +60,24 @@ reg_t* register_allocator_t::get_register(int index) {
     return nullptr;
 }
 
+void register_allocator_t::free(reg_t* reg, bool sort) {
+
+    std::stringstream output;
+
+    var_info_t* old_data = reg->content;
+    int size = parent->type_table.at(old_data->type)->size;
+
+    // Store variable
+    output << "store[" << size << "] BP, " << get_register_string(reg->index) << ", " << old_data->address->get_address_string(); 
+
+    // Update register
+    reg->content = nullptr;
+    reg->last_changed = 0;
+    
+    // re-heapify the vector
+    if (sort) std::make_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
+}
+
 int register_allocator_t::allocate(var_info_t* var_to_alloc, bool temp = false) {
 
     if (var_to_alloc == nullptr) return -1;
@@ -77,11 +96,8 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool temp = false) 
     reg_t* front = registers.front();
     std::pop_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
 
-    // Memory writeback
-
-
-
-    // ----------------
+    // Deallocate the register
+    free(front, false);
 
     // Update the register
     front->content = var_to_alloc;
@@ -98,12 +114,22 @@ void register_allocator_t::free(int index) {
     // Get register
     reg_t* reg = get_register(index);
     
-    // Update register
-    reg->content = nullptr;
-    reg->last_changed = 0;
-    
+    free(reg, true);
+}
+
+void register_allocator_t::store_context() {
+
+    for (reg_t* reg : registers) {
+
+        if (!parent->symbol_table.is_scope_reachable(reg->content->scope)) continue;
+
+        free(reg, false);
+
+    }
+
     // re-heapify the vector
     std::make_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
+
 }
 
 std::string register_allocator_t::get_register_string(int index) {
