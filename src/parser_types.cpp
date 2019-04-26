@@ -4,6 +4,8 @@
 #include "../include/translator.h"
 #include "../include/symbol_table.h"
 
+#include "../include/instructions.h"
+
 #include <stack>
 #include <iostream>
 
@@ -661,7 +663,7 @@ int func_decl_t::translate(translator_t* t) {
     
     stmt->translate(t);
 
-    t->print_instruction_row("ret", true);
+    t->print_instruction_row(RETURN_INSTR, true);
 
     t->symbol_table.pop_scope();
 }
@@ -784,7 +786,7 @@ int var_decl_t::translate(translator_t* t) {
             if (size_to_allocate == 4) {
                 
                 int hi = (constant_value & 0xFFFF0000) >> 16;
-                output << "movhi ";
+                output << MOVHI_INSTR << " ";
                 output << t->reg_alloc.get_register_string(register_index);
                 output << ", " << hi;
                 t->print_instruction_row(output.str(), true);
@@ -792,7 +794,7 @@ int var_decl_t::translate(translator_t* t) {
             }
 
             int lo = constant_value & 0x0000FFFF;
-            output << "movlo ";
+            output << MOVLO_INSTR << " ";
             output << t->reg_alloc.get_register_string(register_index);
             output << ", " << lo;
             t->print_instruction_row(output.str(), true);
@@ -807,7 +809,7 @@ int var_decl_t::translate(translator_t* t) {
         } 
 
         // Allocate memory for the variable
-        output << "subi " << "SP, " << "SP, " << alignment+size_to_allocate;
+        output << SUB_IMM_INSTR << " SP, " << "SP, " << alignment+size_to_allocate;
         t->print_instruction_row(output.str(), true);
 
 
@@ -832,7 +834,7 @@ int block_stmt_t::translate(translator_t* t) {
     int scope_size = t->symbol_table.get_current_scope()->size();
 
     std::stringstream output;
-    output << "addi SP, SP, " << scope_size;
+    output << ADD_IMM_INSTR << " SP, SP, " << scope_size;
     t->print_instruction_row(output.str(), true);
     // --------------------
 
