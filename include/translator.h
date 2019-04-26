@@ -8,6 +8,16 @@
 #include "type_table.h"
 #include "register_allocation.h"
 
+class translation_error : public std::exception {
+private:
+    std::string msg;
+public:
+    translation_error(std::string _msg) : msg(_msg) {}
+    ~translation_error() {}
+
+    const char* what() const noexcept { return msg.c_str(); }
+};
+
 class translator_t {
 
     std::stringstream output;

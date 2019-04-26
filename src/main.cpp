@@ -76,7 +76,11 @@ int main(int argc, char const *argv[]) {
     translator_t translator = translator_t();
     std::cout << "Translator created!" << std::endl;
 
-    program->translate(&translator);
+    try {
+        program->translate(&translator);
+    } catch (translation_error e) {
+        cout << "--- Translation Error: " << e.what() << std::endl;
+    }
 
     std::ofstream output_file("output.a");
     translator.print_to_file(output_file);
