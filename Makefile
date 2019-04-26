@@ -1,5 +1,5 @@
 CCX=g++-7
-CCXFLAGS = -std=c++17 -g
+CCXFLAGS = -std=c++17 -g -O0 -ggdb3
 
 SRCDIR  = ./src
 OBJSDIR = ./build
@@ -18,4 +18,6 @@ $(OBJECTS): $(OBJSDIR)/%.o: $(SRCDIR)/%.cpp $(HEADERS)
 
 clean:
 	rm -f compiler 
+	rm -r compiler.dSYM
 	find $(OBJSDIR)/ -name '*.o' -delete
+	find $(DEPDIR)/ -name '*.h.gch' -delete
