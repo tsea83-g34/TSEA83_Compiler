@@ -14,7 +14,7 @@
 #define STORE_INSTR     "store"
 
 
-#defien CALL_INSTR      "call"
+#define CALL_INSTR      "call"
 #define RETURN_INSTR    "ret"
 
 #endif
