@@ -2,6 +2,8 @@
 #include "../include/register_allocation.h"
 
 #include "../include/translator.h"
+#include "../include/instructions.h"
+
 
 #include <algorithm>
 #include <functional>
@@ -77,7 +79,7 @@ void register_allocator_t::free(reg_t* reg, bool sort) {
     int size = parent->type_table.at(old_data->type)->size;
 
     // Store variable
-    output << "store[" << size << "] BP, " << get_register_string(reg->index) << ", " << old_data->address->get_address_string(); 
+    output << STORE_INSTR << "[" << size << "] BP, " << get_register_string(reg->index) << ", " << old_data->address->get_address_string(); 
     parent->print_instruction_row(output.str(), true);
     
     // Update register
@@ -112,6 +114,30 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool temp = false) 
     
     // Deallocate the register
     free(front, false);
+
+    // ----- Variable loading -----
+    
+    // Load the variable into the register
+    std::stringstream output;
+    output << LOAD_INSTR << "[" << parent->type_table.at(var_to_alloc->type)->size << "] ";
+    output << get_register_string(front->index);
+
+    if (dynamic_cast<global_addr_info_t*>(var_to_alloc->address) != nullptr) {
+        // If the variable is global use null register
+        output << ", NULL, ";
+
+    } else {
+        // If the variable is local use base pointer
+        output << ", BP, "; 
+    }
+
+    // Use variable adress as offset
+    output << var_to_alloc->address->get_address_string();
+    
+    // Print instruction
+    parent->print_instruction_row(output.str(), true);
+
+    // ----------------------------
 
     // Update the register
     front->content = var_to_alloc;

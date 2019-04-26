@@ -11,11 +11,14 @@ translator_t::translator_t() {
     // Stack pointer
     print_instruction_row("const SP r15", false);
     
+    // Null register
+    print_instruction_row("const NULL r14", false);
+    
     // Base pointer
-    print_instruction_row("const BP r14", false);
+    print_instruction_row("const BP r13", false);
     
     // Return register
-    print_instruction_row("const RR r13", false);
+    print_instruction_row("const RR r12", false);
 
     // Print an empty row
     print_instruction_row("", false);
