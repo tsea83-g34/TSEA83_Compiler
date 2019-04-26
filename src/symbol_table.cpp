@@ -3,6 +3,7 @@
 #include "../include/translator.h"
 
 #include <iostream>
+#include <utility>
 
 
 std::string global_addr_info_t::get_address_string() {
@@ -29,11 +30,19 @@ std::string scope_name_allocator_t::get_name(const std::string& id) {
     }
 }
 
-func_info_t::func_info_t(func_decl_t* decl, translator_t* t) {
+bool var_info_t::operator==(const var_info_t& other) {
+
+    return  name    == other.name &&
+            type    == other.type &&
+            address->get_address_string() == other.address->get_address_string();
+}
+
+func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
     
     identifier = decl->id;
     return_type = decl->type;
     params_size = 0;
+    defined = false;
 
     // If the function has no parameters, finish
     if (decl->param_list == nullptr) return;
@@ -77,6 +86,25 @@ func_info_t::func_info_t(func_decl_t* decl, translator_t* t) {
 
     // params_size equals the current base offset minus the return pointer
     params_size = current_base_offset - 2;
+}
+
+bool func_info_t::operator==(const func_info_t& other) {
+
+    if (params_size != other.params_size) return false;
+    if (param_vector.size() != other.param_vector.size()) return false;
+
+    bool params_equal = true;
+
+    for (int i = 0; i < params_size; i++) {
+        params_equal &= param_vector[i] == other.param_vector[i];
+    }
+
+    return  identifier      == other.identifier &&
+            return_type     == other.return_type && params_equal;
+}
+
+bool func_info_t::operator!=(const func_info_t& other) {
+    return !(*this == other);
 }
 
 scope_t::scope_t() : inherit_scope(false), base_offset(0) {
@@ -199,9 +227,21 @@ func_info_t* symbol_table_t::get_func(const std::string& name) {
     }
 }
 
-std::string symbol_table_t::add_func(const std::string& name, func_info_t* f) {
+void symbol_table_t::add_func(const std::string& name, func_info_t* f) {
+
     // TODO: Check if a function with that name already exists
-    function_table.insert({name, f});
+    function_table.insert(std::make_pair(name, f));
+}
+
+void symbol_table_t::remove_func(const std::string& name) {
+    
+    func_info_t* info = get_func(name);
+
+    if (info == nullptr) return;
+
+    function_table.erase(name);
+
+    delete info;
 }
 
 bool symbol_table_t::is_scope_reachable(scope_t* scope) {

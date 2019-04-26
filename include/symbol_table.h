@@ -10,11 +10,14 @@
 struct addr_info_t {
     
     virtual std::string get_address_string() = 0;
+    virtual ~addr_info_t() = default;
 };
 
 struct global_addr_info_t : addr_info_t {
     
     std::string label;
+
+    ~global_addr_info_t() = default;
     
     global_addr_info_t(const std::string& _label) : label(_label) { }
     std::string get_address_string() override;
@@ -24,6 +27,8 @@ struct local_addr_info_t : addr_info_t {
 
     int base_offset;
     
+    ~local_addr_info_t() = default;
+
     local_addr_info_t(int _base_offset) : base_offset(_base_offset) { }
     std::string get_address_string() override;
 };
@@ -47,19 +52,24 @@ struct var_info_t {
 
     var_info_t() = default;
     ~var_info_t() = default;
+
+    bool operator==(const var_info_t& other);
 };
 
 struct func_info_t {
     std::string identifier;
     int return_type;
-
+    bool defined;
     std::vector<var_info_t> param_vector;
     
     // Size occupied by parameters in bytes
     int params_size;
 
     func_info_t() = default;
-    func_info_t(func_decl_t* decl, translator_t* t);
+    func_info_t(const func_decl_t* decl, translator_t* t);
+
+    bool operator==(const func_info_t& other);
+    bool operator!=(const func_info_t& other);
 };
 
 class scope_t {
@@ -107,8 +117,11 @@ public:
     // Get function info
     func_info_t* get_func(const std::string& name);
 
+    // Remove a function declaration/definition
+    void remove_func(const std::string& name);
+
     // Add function to the global scope
-    std::string add_func(const std::string& name, func_info_t* f);
+    void add_func(const std::string& name, func_info_t* f);
     
     bool is_scope_reachable(scope_t* scope);
     bool is_global_scope();
