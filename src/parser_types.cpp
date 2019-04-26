@@ -665,6 +665,9 @@ int func_decl_t::translate(translator_t* t) {
 
     t->print_instruction_row(RETURN_INSTR, true);
 
+    // Free the registers containing local variables in the current scope
+    t->reg_alloc.free_scope(t->symbol_table.get_current_scope());
+    
     t->symbol_table.pop_scope();
 }
 
@@ -705,8 +708,8 @@ int param_decl_t::translate(translator_t* t, func_info_t* f) {
     // want to add the variables to the namespace
     var_info_t* var = t->symbol_table.add_var(id, type, 0, addr);
     
-    // Allocate a register for the variable
-    t->reg_alloc.allocate(var, false);
+    // Allocate a register for the variable and load it
+    t->reg_alloc.allocate(var, true, false);
 
     // Update parameter size with the size of the new variable
     f->params_size += size;
@@ -781,7 +784,8 @@ int var_decl_t::translate(translator_t* t) {
 
         // If a value was given, load it into a register
         if (value != nullptr) {
-            int register_index = t->reg_alloc.allocate(var, false);
+            // Allocate register, but dont load value since we are solving that locally
+            int register_index = t->reg_alloc.allocate(var, false, false);
             
             if (size_to_allocate == 4) {
                 
@@ -838,6 +842,9 @@ int block_stmt_t::translate(translator_t* t) {
     t->print_instruction_row(output.str(), true);
     // --------------------
 
+    // Free the registers containing local variables in the current scope
+    t->reg_alloc.free_scope(t->symbol_table.get_current_scope());
+    
     t->symbol_table.pop_scope();
 }
 
