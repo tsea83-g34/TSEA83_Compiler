@@ -645,20 +645,53 @@ int decls_t::translate(translator_t* t) {
 
 int func_decl_t::translate(translator_t* t) {
     
-    // TODO: Add scope with parameters
-    func_info_t* info = new func_info_t(this, t);
+    std::cout << "Translating function declaration..." << std::endl;
+
+    // If a function with that name already exists
+    func_info_t* potential_old_function = t->symbol_table.get_func(id);
+    func_info_t* current_function = new func_info_t(this, t);
+
+    if (potential_old_function != nullptr) {
+
+        // If the existing function with the same name as this have the same signature
+        if ((*potential_old_function) != (*current_function)) {
+            delete current_function;
+            throw translation_error("Mismatching declarations of function \"" + id + "\"");
+        }
+        
+        // If it is defined and this is also a definition we have multiple definitions
+        if (potential_old_function->defined && stmt != nullptr) {
+            delete current_function;
+            throw translation_error("Multiple definition of function \"" + id + "\"");
+        }
+        
+        // If it is only declared
+            
+        // If this is also just a declaration, we are done here.
+        if (stmt == nullptr) {
+            delete current_function;
+            return 0;
+        }
+
+        // Otherwise remove previous declaration
+        t->symbol_table.remove_func(id);
+    }
+    
+    t->symbol_table.add_func(id, current_function);
 
     if (stmt == nullptr) return 0;
 
-    std::string label = info->identifier + ":";
+    current_function->defined = true;
+
+    std::string label = current_function->identifier + ":";
     t->print_instruction_row(label, false);
 
     t->symbol_table.push_scope(false);
 
     if (param_list != nullptr) {
         // Starts at 2 to accomodate for return address pointer
-        info->params_size = 2;
-        param_list->translate(t, info);
+        current_function->params_size = 2;
+        param_list->translate(t, current_function);
     }
     
     stmt->translate(t);
@@ -692,6 +725,11 @@ int param_decls_t::translate(translator_t* t, func_info_t* f) {
 }
 
 int param_decl_t::translate(translator_t* t, func_info_t* f) {
+
+    // If a parameter with that name already exists
+    if (t->symbol_table.get_current_scope()->at(id)) {
+        throw translation_error("A parameter with name \"" + id + "\" already exists!");
+    }
     
     int size = t->type_table.at(type)->size;
 
@@ -723,8 +761,12 @@ int var_decl_t::translate(translator_t* t) {
     
     if (t->symbol_table.is_global_scope()) {
         
-        std::cout << "Found global variable!" << std::endl;
+        std::cout << "Found global variable declaration!" << std::endl;
         
+        if (t->symbol_table.get_current_scope()->at(id)) {
+            throw translation_error("Multiple definition of global symbol \"" + id + "\"");
+        }
+
         // Global variable
         
         int constant_value = 0;
@@ -744,6 +786,10 @@ int var_decl_t::translate(translator_t* t) {
         std::cout << "Found local variable!" << std::endl;
 
         // Local variable
+
+        if (t->symbol_table.get_current_scope()->at(id)) {
+            throw translation_error("Multiple definition of local symbol \"" + id + "\"");
+        }
 
         int constant_value = 0;
         if (value != nullptr) value->evaluate(&constant_value);
