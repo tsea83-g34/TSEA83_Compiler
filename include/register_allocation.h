@@ -28,7 +28,7 @@ class register_allocator_t {
     translator_t* parent;
 
     reg_t* get_register(int index);
-    void free(reg_t* reg, bool sort = true);
+    void free(reg_t* reg, bool store, bool sort = true);
 
 public:
 
@@ -37,10 +37,11 @@ public:
 
     void set_parent(translator_t* _parent);
 
-    int allocate(var_info_t* var_to_alloc, bool temp);
+    int allocate(var_info_t* var_to_alloc, bool load_variable, bool temp);
     void free(int index);
 
     void store_context();
+    void free_scope(scope_t* scope_to_free);
 
     static std::string get_register_string(int index);
 };
