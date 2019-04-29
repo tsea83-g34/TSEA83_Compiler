@@ -273,6 +273,7 @@ var_info_t* register_allocator_t::give_ownership(int register_index, var_info_t*
 
 bool register_allocator_t::is_temporary(int register_index) {
     reg_t* reg = get_register(register_index);
+    if (reg == nullptr) return false;
     return reg->temp;
 }
 
