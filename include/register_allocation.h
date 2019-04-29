@@ -39,7 +39,9 @@ public:
     void set_parent(translator_t* _parent);
 
     int allocate(var_info_t* var_to_alloc, bool load_variable, bool temp);
-    void free(int index);
+
+    // Frees the given register and returns the content descriptor
+    var_info_t* free(int index);
 
     void store_context();
     void free_scope(scope_t* scope_to_free);

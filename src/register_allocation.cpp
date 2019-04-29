@@ -171,13 +171,15 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable,
     return front->index;
 }
 
-void register_allocator_t::free(int index) {
+var_info_t* register_allocator_t::free(int index) {
 
     // Get register
     reg_t* reg = get_register(index);
+    var_info_t* old_content = reg->content;
     
     // Free the register, store the variable and sort the heap
     free(reg, true, true);
+    return old_content;
 }
 
 void register_allocator_t::store_context() {
@@ -185,7 +187,8 @@ void register_allocator_t::store_context() {
     for (reg_t* reg : registers) {
 
         if (!parent->symbol_table.is_scope_reachable(reg->content->scope)) continue;
-
+        if (!reg->changed) continue;
+        
         // Free the register, store the variable and dont sort the heap
         free(reg, true, false);
 
