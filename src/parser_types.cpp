@@ -791,8 +791,10 @@ int var_decl_t::translate(translator_t* t) {
             throw translation_error("Multiple definition of local symbol \"" + id + "\"");
         }
 
+        // Try to evaluate the expression
         int constant_value = 0;
-        if (value != nullptr) value->evaluate(&constant_value);
+        bool is_constant = false;
+        if (value != nullptr) is_constant = value->evaluate(&constant_value);
 
         // Get type descriptor of the type of the variable
         type_descriptor_t* type_desc = t->type_table.at(type);
@@ -830,38 +832,32 @@ int var_decl_t::translate(translator_t* t) {
 
         // If a value was given, load it into a register
         if (value != nullptr) {
-            // Allocate register, but dont load value since we are solving that locally
-            int register_index = t->reg_alloc.allocate(var, false, false);
-            
-            if (size_to_allocate == 4) {
+
+            if (is_constant) {
+                // Allocate register, but dont load value since we are solving that locally
+                int register_index = t->reg_alloc.allocate(var, false, false);
                 
-                int hi = (constant_value & 0xFFFF0000) >> 16;
-                output << MOVHI_INSTR << " ";
-                output << t->reg_alloc.get_register_string(register_index);
-                output << ", " << hi;
-                t->print_instruction_row(output.str(), true);
-                output = std::stringstream();
+                t->reg_alloc.load_immediate(register_index, constant_value);
+            } else {
+                
+                // Give ownership of the register to the new variable
+                int register_index = value->translate(t);
+                bool was_temp = t->reg_alloc.is_temporary(register_index);
+
+                var_info_t* temp_info = t->reg_alloc.give_ownership(register_index, var);
+                
+                // Remove and deallocate the temporary variable
+                if (was_temp) {
+                    std::cout << "Removing " << temp_info->name << std::endl;
+                    t->symbol_table.get_current_scope()->remove(temp_info->name);
+                    delete temp_info;
+                }
             }
-
-            int lo = constant_value & 0x0000FFFF;
-            output << MOVLO_INSTR << " ";
-            output << t->reg_alloc.get_register_string(register_index);
-            output << ", " << lo;
-            t->print_instruction_row(output.str(), true);
-            output = std::stringstream();
-
-            /*
-            output << "push" << "[" << size_to_allocate << "] ";
-            output << t->reg_alloc.get_register_string(register_index);
-            t->print_instruction_row(output.str(), true);
-            output = std::stringstream();
-            */
         } 
 
         // Allocate memory for the variable
         output << SUB_IMM_INSTR << " SP, " << "SP, " << alignment+size_to_allocate;
         t->print_instruction_row(output.str(), true);
-
 
     }
 }
@@ -908,6 +904,8 @@ int return_stmt_t::translate(translator_t* t) {
 
 int expr_stmt_t::translate(translator_t* t) {
     
+    return e->translate(t);
+
 }
 
 int neg_expr_t::translate(translator_t* t) {
@@ -916,14 +914,26 @@ int neg_expr_t::translate(translator_t* t) {
 
 int term_expr_t::translate(translator_t* t) {
     
+    return this->t->translate(t);
 }
 
 int id_term_t::translate(translator_t* t) {
     
+    // Find variable, allocate register, return index
+    var_info_t* var = t->symbol_table.get_var(identifier);
+
+    // Load variable into a register, not marked as temporary
+    int register_index = t->reg_alloc.allocate(var, true, false);
+
+    // Return the register index of the allocated register
+    return register_index;
 }
 
 int call_term_t::translate(translator_t* t) {
     
+    // Push base pointer to stack
+    // Push parameters to stack
+    // Call function
 }
 
 int lit_term_t::translate(translator_t* t) {
@@ -931,7 +941,83 @@ int lit_term_t::translate(translator_t* t) {
 }
 
 int add_binop_t::translate(translator_t* t) {
+
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
     
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    std::stringstream output;
+
+    int left_register;
+    std::string left_temp_name;
+    std::string left_register_string;
+
+    int right_register;
+
+
+    if (left_success) {
+
+        std::cout << "Evaluated left: " << left_value << std::endl;
+        // Means left was a constant, allocate a register and load the immediate value into it
+
+        std::string left_temp_name = t->name_allocator.get_name("temp");
+
+        // Add temporary variable to scope to allow register allocation
+        var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
+
+        left_register = t->reg_alloc.allocate(temp_var, false, true);
+        left_register_string = t->reg_alloc.get_register_string(left_register);
+
+        t->reg_alloc.load_immediate(left_register, left_value);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        if (!t->reg_alloc.is_temporary(left_register)) {
+            
+            std::string left_temp_name = t->name_allocator.get_name("temp");
+
+            // Add temporary variable to scope to allow register allocation
+            var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
+            t->reg_alloc.give_ownership(left_register, temp_var);
+        }
+
+        left_register_string = t->reg_alloc.get_register_string(left_register);
+
+    }
+
+    if (right_success) {
+        std::cout << "Evaluated right: " << right_value << std::endl;
+        // If right value is larger than 16 bits
+        if (right_value > std::numeric_limits<int16_t>().max()) {
+            // TODO: This is not very good...
+            throw translation_error("Constant cant be larger than 16-bits");
+        }
+
+        // Print add immediate instruction
+        output << ADD_IMM_INSTR << " " << left_register_string << ", " << left_register_string << ", " << right_value;
+        t->print_instruction_row(output.str(), true);
+        output = std::stringstream();
+
+    } else {
+
+        // Print add instruction
+        right_register = term->translate(t);
+        std::string right_register_string = t->reg_alloc.get_register_string(right_register);
+
+        output << ADD_INSTR << " " << left_register_string << ", " << left_register_string << ", " << right_register_string;
+        t->print_instruction_row(output.str(), true);
+        output = std::stringstream();
+
+    }
+    return left_register;
 }
 
 int sub_binop_t::translate(translator_t* t) {
