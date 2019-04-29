@@ -15,9 +15,10 @@ struct reg_t {
     var_info_t* content;
     long last_changed;
     
-    bool locked;    // The register is temporarily locked and cannot be modified
-    bool temp;      // The register contains a temporary value and can be used as soon as possible
-    bool reserved;  // The register can never be allocated
+    bool locked;        // The register is temporarily locked and cannot be modified
+    bool changed;       // Keeps track of if the register value has changed since loading the variable
+    bool temp;          // The register contains a temporary value
+    bool reserved;      // The register can never be allocated
 
     reg_t();
 };
@@ -43,8 +44,14 @@ public:
     void store_context();
     void free_scope(scope_t* scope_to_free);
 
-    void touch(int register_index);
+    void touch(int register_index, bool has_changed);
     void load_immediate(int register_index, int value);
+    bool is_temporary(int register_index);
+
+    // Changes the content of the register, without loading or storing anything
+    // used when a register already has the desired value but the value changes variable
+    // ie. a temporary expression is assigned to a variable. Returns the old variable
+    var_info_t* give_ownership(int register_index, var_info_t* new_owner);
 
     static std::string get_register_string(int index);
 };
