@@ -1091,7 +1091,109 @@ int add_binop_t::translate(translator_t* t) {
 }
 
 int sub_binop_t::translate(translator_t* t) {
+
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
     
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    std::stringstream output;
+
+    int left_register;
+    std::string left_temp_name;
+    std::string left_register_string;
+
+    int right_register;
+
+
+    if (left_success) {
+
+        // Means left was a constant, allocate a register and load the immediate value into it
+
+        std::string left_temp_name = t->name_allocator.get_name("temp");
+
+        // Add temporary variable to scope to allow register allocation
+        var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
+
+        left_register = t->reg_alloc.allocate(temp_var, false, true);
+        left_register_string = t->reg_alloc.get_register_string(left_register);
+
+        t->reg_alloc.load_immediate(left_register, left_value);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        if (!t->reg_alloc.is_temporary(left_register)) {
+            
+            std::string left_temp_name = t->name_allocator.get_name("temp");
+
+            // Add temporary variable to scope to allow register allocation
+            var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
+            t->reg_alloc.give_ownership(left_register, temp_var);
+        }
+
+        left_register_string = t->reg_alloc.get_register_string(left_register);
+
+    }
+
+    if (right_success) {
+        // If right value is larger than 16 bits
+        if (right_value > std::numeric_limits<int16_t>().max()) {
+            // TODO: This is not very good...
+            throw translation_error("Constant cant be larger than 16-bits");
+        }
+
+        // Print add immediate instruction
+        output << SUB_IMM_INSTR << " " << left_register_string << ", " << left_register_string << ", " << right_value;
+        t->print_instruction_row(output.str(), true);
+        output = std::stringstream();
+
+    } else {
+
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+        int var_size;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = t->reg_alloc.free(left_register);
+            var_size = t->type_table.at(var->type)->size;
+            
+            t->symbol_table.get_current_scope()->push(var_size);
+
+            output << "push[" << var_size << "] " << left_register_string; 
+            t->print_instruction_row(output.str(), true);
+            output = std::stringstream();
+        }
+
+        // Print add instruction
+        right_register = term->translate(t);
+        std::string right_register_string = t->reg_alloc.get_register_string(right_register);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = t->reg_alloc.allocate(var, false, true);
+            left_register_string = t->reg_alloc.get_register_string(left_register);
+
+            t->symbol_table.get_current_scope()->pop(var_size);
+
+            output << "pop[" << var_size << "] " << left_register_string; 
+            t->print_instruction_row(output.str(), true);
+            output = std::stringstream();
+        }
+
+        output << SUB_INSTR << " " << left_register_string << ", " << left_register_string << ", " << right_register_string;
+        t->print_instruction_row(output.str(), true);
+        output = std::stringstream();
+
+    }
+    return left_register;
 }
 
 int eq_binop_t::translate(translator_t* t) {
