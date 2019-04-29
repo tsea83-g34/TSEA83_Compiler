@@ -8,6 +8,11 @@
 #include "type_table.h"
 #include "register_allocation.h"
 
+#define STACK_POINTER   15
+#define NULL_REGISTER   14
+#define BASE_POINTER    13
+#define RETURN_REGISTER 12
+
 class translation_error : public std::exception {
 private:
     std::string msg;
