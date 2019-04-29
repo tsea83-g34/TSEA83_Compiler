@@ -43,6 +43,9 @@ public:
     void store_context();
     void free_scope(scope_t* scope_to_free);
 
+    void touch(int register_index);
+    void load_immediate(int register_index, int value);
+
     static std::string get_register_string(int index);
 };
 

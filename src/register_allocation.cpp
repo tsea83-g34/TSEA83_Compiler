@@ -96,6 +96,7 @@ void register_allocator_t::free(reg_t* reg, bool store, bool sort) {
     }
     
     // Update register
+    reg->temp = false;
     reg->content = nullptr;
     reg->last_changed = 0;
     
@@ -126,7 +127,8 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable,
     std::cout << "Allocated register " << front->index << ", last changed: " << front->last_changed << std::endl;
     
     // Free the register, store the variable and dont sort the heap
-    free(front, true, false);
+    // if the variable contained is temporary, don't store
+    free(front, !(front->temp), false);
 
     // ----- Variable loading -----
     
@@ -155,6 +157,7 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable,
     // ----------------------------
 
     // Update the register
+    front->temp = temp;
     front->content = var_to_alloc;
     front->last_changed = (temp) ? 0 : parent->instr_cnt;
 
@@ -203,6 +206,37 @@ void register_allocator_t::free_scope(scope_t* scope_to_free) {
 
     // re-heapify the vector
     std::make_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
+
+}
+
+void register_allocator_t::touch(int register_index) {
+
+    // Acquire register
+    reg_t* reg = get_register(register_index);
+
+    // Update timer
+    reg->last_changed = parent->instr_cnt;
+
+    // Re-heapify the vector
+    std::make_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
+} 
+
+void register_allocator_t::load_immediate(int register_index, int value) {
+
+            std::stringstream output;
+            
+            int hi = (value & 0xFFFF0000) >> 16;
+            output << MOVHI_INSTR << " ";
+            output << get_register_string(register_index);
+            output << ", " << hi;
+            parent->print_instruction_row(output.str(), true);
+            output = std::stringstream();
+            
+            int lo = value & 0x0000FFFF;
+            output << MOVLO_INSTR << " ";
+            output << get_register_string(register_index);
+            output << ", " << lo;
+            parent->print_instruction_row(output.str(), true);
 
 }
 
