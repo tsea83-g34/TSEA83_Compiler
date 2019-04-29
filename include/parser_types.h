@@ -311,7 +311,7 @@ struct binop_expr_t : expr_t {
     bool left_assoc;
 
     void undo(parser_t* p) override;
-    binop_expr_t() : left_assoc(false), term(nullptr), rest(nullptr) { }
+    binop_expr_t() : term(nullptr), rest(nullptr), left_assoc(false) { }
 
     // Note that this transfers tokens aswell
     virtual binop_expr_t* duplicate() = 0;
