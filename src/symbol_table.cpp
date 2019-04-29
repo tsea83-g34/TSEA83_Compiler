@@ -107,7 +107,11 @@ bool func_info_t::operator!=(const func_info_t& other) {
     return !(*this == other);
 }
 
-scope_t::scope_t() : inherit_scope(false), base_offset(0) {
+scope_t::scope_t() : total_size(0), base_offset(0), inherit_scope(false) {
+    data = std::unordered_map<std::string, var_info_t*>();
+}
+
+scope_t::scope_t(bool _inherit_scope, int _base_offset) : total_size(0), base_offset(_base_offset), inherit_scope(_inherit_scope) {
     data = std::unordered_map<std::string, var_info_t*>();
 }
 
@@ -119,12 +123,6 @@ scope_t::~scope_t() {
         delete kv_pair.second;
     }
     data.clear();
-}
-
-scope_t::scope_t(bool _inherit_scope, int _base_offset) : inherit_scope(_inherit_scope) {
-    
-    data = std::unordered_map<std::string, var_info_t*>();
-    base_offset = _base_offset;
 }
 
 int scope_t::size() {
@@ -167,9 +165,12 @@ void scope_t::add(const std::string& name, int size, var_info_t* varinfo) {
     data.insert({name, varinfo});
 }
 
+void scope_t::remove(const std::string& name) {
+    data.erase(name);
+}
+
 
 symbol_table_t::symbol_table_t() {
-    scope_stack = std::deque<scope_t*>();
     name_alloc = scope_name_allocator_t(); 
 
     // Create global scope
@@ -188,7 +189,7 @@ var_info_t* symbol_table_t::get_var(const std::string& key) {
     var_info_t* result = nullptr;
 
     // Loop goes until second scope because global scope is handled separately
-    for (int i = scope_stack.size(); i >= 1; i++) {
+    for (int i = scope_stack.size() - 1; i >= 1; i--) {
         result = scope_stack[i]->at(key);
         if (result != nullptr) return result;
 

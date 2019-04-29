@@ -96,6 +96,8 @@ public:
     var_info_t* operator[](const std::string& key);
 
     void add(const std::string& name, int size, var_info_t* varinfo);
+
+    void remove(const std::string &name);
 };
 
 class symbol_table_t {
