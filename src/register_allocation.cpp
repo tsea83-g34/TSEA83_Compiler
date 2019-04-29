@@ -185,7 +185,7 @@ var_info_t* register_allocator_t::free(int index) {
 void register_allocator_t::store_context() {
 
     for (reg_t* reg : registers) {
-
+        if (reg->content == nullptr) continue;
         if (!parent->symbol_table.is_scope_reachable(reg->content->scope)) continue;
 
         // Free the register, store the variable and dont sort the heap
