@@ -18,6 +18,6 @@ $(OBJECTS): $(OBJSDIR)/%.o: $(SRCDIR)/%.cpp $(HEADERS)
 
 clean:
 	rm -f compiler 
-	rm -r compiler.dSYM
 	find $(OBJSDIR)/ -name '*.o' -delete
 	find $(DEPDIR)/ -name '*.h.gch' -delete
+	rm -r compiler.dSYM
