@@ -187,8 +187,7 @@ void register_allocator_t::store_context() {
     for (reg_t* reg : registers) {
 
         if (!parent->symbol_table.is_scope_reachable(reg->content->scope)) continue;
-        if (!reg->changed) continue;
-        
+
         // Free the register, store the variable and dont sort the heap
         free(reg, true, false);
 
