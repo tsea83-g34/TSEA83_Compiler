@@ -125,6 +125,14 @@ scope_t::~scope_t() {
     data.clear();
 }
 
+void scope_t::push(int size) {
+    total_size += size;
+}
+
+void scope_t::pop(int size) {
+    total_size -= size;
+}
+
 int scope_t::size() {
     return total_size;
 }
@@ -247,7 +255,7 @@ void symbol_table_t::remove_func(const std::string& name) {
 
 bool symbol_table_t::is_scope_reachable(scope_t* scope) {
 
-    for (int i = scope_stack.size(); i >= 1; i++) {
+    for (int i = scope_stack.size() - 1; i >= 1; i--) {
         
         if (scope_stack[i] == scope) return true;
 

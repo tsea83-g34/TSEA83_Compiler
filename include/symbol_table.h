@@ -85,6 +85,9 @@ public:
     scope_t();
     ~scope_t();
     scope_t(bool _inherit_scope, int _base_offset);
+
+    void pop(int size);
+    void push(int size);
     
     int size();
     int get_base_offset();
