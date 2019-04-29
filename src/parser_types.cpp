@@ -931,9 +931,53 @@ int id_term_t::translate(translator_t* t) {
 
 int call_term_t::translate(translator_t* t) {
     
+    // TODO: Fix alignment?
+
+    std::stringstream output;
+    func_info_t* func = t->symbol_table.get_func(function_identifier);
+
+    // Store current context
+    t->reg_alloc.store_context();
+    scope_t* current_scope = t->symbol_table.get_current_scope();
+    
+    int context_size = current_scope->get_end_offset() + 2; //+ func->params_size;
+    std::cout << "Context size: " << context_size << std::endl;
+    int alignment = 4 - (context_size % 4);
+    std::cout << "Alignment: " << alignment << std::endl;
+
+    // Align the stack to 4
+    if (alignment) {
+        current_scope->push(alignment);
+        output << "subi SP, SP, " << alignment;
+        t->print_instruction_row(output.str(), true);
+        output = std::stringstream();
+    }
+
     // Push base pointer to stack
+    output << "push[2] PB";
+    t->print_instruction_row(output.str(), true);
+    output = std::stringstream();
+
     // Push parameters to stack
+
     // Call function
+    output << "call " << function_identifier;
+    t->print_instruction_row(output.str(), true);
+    output = std::stringstream();
+    
+    // Pop parameters and alignment
+    current_scope->pop(alignment);
+
+    output << "addi SP, SP, " << alignment;
+    t->print_instruction_row(output.str(), true);
+    output = std::stringstream();
+
+    // Pop base pointer from stack
+    output << "pop[2] PB";
+    t->print_instruction_row(output.str(), true);
+    output = std::stringstream();
+
+    return RETURN_REGISTER; 
 }
 
 int lit_term_t::translate(translator_t* t) {
@@ -962,7 +1006,6 @@ int add_binop_t::translate(translator_t* t) {
 
     if (left_success) {
 
-        std::cout << "Evaluated left: " << left_value << std::endl;
         // Means left was a constant, allocate a register and load the immediate value into it
 
         std::string left_temp_name = t->name_allocator.get_name("temp");
@@ -994,7 +1037,6 @@ int add_binop_t::translate(translator_t* t) {
     }
 
     if (right_success) {
-        std::cout << "Evaluated right: " << right_value << std::endl;
         // If right value is larger than 16 bits
         if (right_value > std::numeric_limits<int16_t>().max()) {
             // TODO: This is not very good...
@@ -1008,9 +1050,37 @@ int add_binop_t::translate(translator_t* t) {
 
     } else {
 
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+        int var_size;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = t->reg_alloc.free(left_register);
+            var_size = t->type_table.at(var->type)->size;
+            
+            t->symbol_table.get_current_scope()->push(var_size);
+
+            output << "push[" << var_size << "] " << left_register_string; 
+            t->print_instruction_row(output.str(), true);
+            output = std::stringstream();
+        }
+
         // Print add instruction
         right_register = term->translate(t);
         std::string right_register_string = t->reg_alloc.get_register_string(right_register);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = t->reg_alloc.allocate(var, false, true);
+            left_register_string = t->reg_alloc.get_register_string(left_register);
+
+            t->symbol_table.get_current_scope()->pop(var_size);
+
+            output << "pop[" << var_size << "] " << left_register_string; 
+            t->print_instruction_row(output.str(), true);
+            output = std::stringstream();
+        }
 
         output << ADD_INSTR << " " << left_register_string << ", " << left_register_string << ", " << right_register_string;
         t->print_instruction_row(output.str(), true);
