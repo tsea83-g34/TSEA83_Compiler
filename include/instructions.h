@@ -8,12 +8,26 @@
 #define SUB_IMM_INSTR   "subi"
 #define NEG_INSTR       "neg"
 
+#define CMP_INSTR       "cmp"
+#define CMP_IMM_INSTR   "cmpi"
+
+// Branch
+
+#define BREQ_INSTR      "breq"
+#define BRNE_INSTR      "brne"
+#define BRLT_INSTR      "brlt"
+#define BRGT_INSTR      "brgt"
+#define BRLE_INSTR      "brle"
+#define BRGE_INSTR      "brge"
+#define JMP_INSTR       "rjmp"
+
+// Register
+
 #define MOVLO_INSTR     "movlo"
 #define MOVHI_INSTR     "movhi"
 
 #define LOAD_INSTR      "ld"
 #define STORE_INSTR     "str"
-
 
 #define CALL_INSTR      "call"
 #define RETURN_INSTR    "ret"
