@@ -236,12 +236,24 @@ token* lexer::get_next_token() {
                     lexeme_start++;
                     return new relop_token(tag_t::EQUALS);
                     break;
-                case '!':
+                default:
+                    return new token(tag_t::ASSIGNMENT);
+            }
+        }
+
+        if (*lexeme_start == '!') {
+            // Handle split
+            if (lexeme_start[1] == '\0') {
+                switch_buffer();
+            } else lexeme_start++;
+
+            switch(*lexeme_start) {
+                case '=':
                     lexeme_start++;
                     return new relop_token(tag_t::NOT_EQUALS);
                     break;
                 default:
-                    return new token(tag_t::ASSIGNMENT);
+                    return new token(tag_t::UNKNOWN);
             }
         }
 
