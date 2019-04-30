@@ -43,6 +43,14 @@ void movhi_instr(translator_t* t, int rd, int imm);
 
 void movlo_instr(translator_t* t, int rd, int imm);
 
+void cmp_instr(translator_t* t, int ra, int rb);
+
+void cmpi_instr(translator_t* t, int ra, int imm);
+
+void print_label(translator_t* t, const std::string& label);
+
+void branch_instr(translator_t* t, const std::string& instr, const std::string& label);
+
 std::string get_register_string(translator_t* t, int reg);
 
 #endif

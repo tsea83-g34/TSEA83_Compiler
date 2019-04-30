@@ -211,3 +211,41 @@ void movlo_instr(translator_t* t, int rd, int imm) {
     output << MOVLO_INSTR << " " << rd_str << ", " << imm;
     t->print_instruction_row(output.str(), true);
 }
+
+void cmp_instr(translator_t* t, int ra, int rb) {
+    
+    std::string ra_str = get_register_string(t, ra);
+    std::string rb_str = get_register_string(t, rb);
+
+    std::stringstream output;
+
+    output << CMP_INSTR << " " << ra_str << ", " << rb_str;
+    t->print_instruction_row(output.str(), true);
+}
+
+void cmpi_instr(translator_t* t, int ra, int imm) {
+    
+    std::string ra_str = get_register_string(t, ra);
+
+    std::stringstream output;
+
+    output << CMP_IMM_INSTR << " " << ra_str << ", " << imm;
+    t->print_instruction_row(output.str(), true);
+}
+
+void print_label(translator_t* t, const std::string& label) {
+
+    std::stringstream output;
+
+    output << label << ":";
+    t->print_instruction_row(output.str(), false);
+}
+
+void branch_instr(translator_t* t, const std::string& instr, const std::string& label) {
+    
+    std::stringstream output;
+
+    output << instr << " " << label;
+    t->print_instruction_row(output.str(), true);
+
+}
