@@ -11,11 +11,14 @@
 #define MOVLO_INSTR     "movlo"
 #define MOVHI_INSTR     "movhi"
 
-#define LOAD_INSTR      "load"
-#define STORE_INSTR     "store"
+#define LOAD_INSTR      "ld"
+#define STORE_INSTR     "str"
 
 
 #define CALL_INSTR      "call"
 #define RETURN_INSTR    "ret"
+
+#define PUSH_INSTR      "push"
+#define POP_INSTR       "pop"
 
 #endif
