@@ -196,7 +196,7 @@ void block_stmt_t::undo(parser_t* p) {
 }
 
 std::string block_stmt_t::get_string(parser_t* p) {
-    return "{ " + statements->get_string(p) + " }";
+    return "{ " + ((statements != nullptr) ? statements->get_string(p) : " ") + " }";
 }
 
 void if_stmt_t::undo(parser_t* p) {
@@ -877,6 +877,7 @@ int var_decl_t::translate(translator_t* t) {
                     
                     int reg = t->reg_alloc.allocate(var, false, false);
                     move_instr(t, reg, value_reg);
+                    t->reg_alloc.touch(reg, true);
 
                 // If it was another register give ownership of the register to the new variable
                 } else {
@@ -956,7 +957,44 @@ int if_stmt_t::translate(translator_t* t) {
 }
 
 int assignment_stmt_t::translate(translator_t* t) {
-    
+
+    var_info_t* var = t->symbol_table.get_var(identifier);
+
+    int constant_value = 0;
+    bool value_evaluated = rvalue->evaluate(&constant_value);
+
+    if (value_evaluated) {
+
+        int reg = t->reg_alloc.allocate(var, false, true);
+        load_immediate(t, reg, constant_value);
+        t->reg_alloc.touch(reg, true);
+
+    } else {
+        
+        int right_register = rvalue->translate(t);
+
+        if (t->reg_alloc.is_temporary(right_register)) {
+            // If right value is temporary, take ownership of the register
+            
+            // If the variable is already stored in a register, deallocate that register, without storing
+            t->reg_alloc.free(var, false);
+
+            var_info_t* temp_var = t->reg_alloc.give_ownership(right_register, var);
+            t->reg_alloc.touch(right_register, true);
+
+            // Remove old variable
+            t->symbol_table.get_current_scope()->remove(temp_var->name);
+            delete temp_var;
+
+        } else {
+
+            // If it is not temporary, allocate a register and move
+            // Could this steal the register of the variable being loaded?
+            int reg = t->reg_alloc.allocate(var, false, true);
+
+            move_instr(t, reg, right_register);
+        }
+    }
 }
 
 int return_stmt_t::translate(translator_t* t) {
