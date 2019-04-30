@@ -194,6 +194,19 @@ var_info_t* register_allocator_t::free(int index) {
     return old_content;
 }
 
+void register_allocator_t::free(var_info_t* var, bool store) {
+
+    for (auto* reg : registers) {
+
+        if (reg->content == var) {
+            free(reg, store, false);
+            return;
+        }
+        
+    }
+
+}
+
 void register_allocator_t::store_context() {
 
     std::cout << "Storing context" << std::endl;

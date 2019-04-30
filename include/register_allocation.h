@@ -42,6 +42,9 @@ public:
 
     // Frees the given register and returns the content descriptor
     var_info_t* free(int index);
+    
+    // If a given variable is stored in a register, frees it and potentially stores
+    void free(var_info_t* var, bool store);
 
     void store_context();
     void free_scope(scope_t* scope_to_free);
