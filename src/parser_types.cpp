@@ -735,6 +735,7 @@ int param_decl_t::translate(translator_t* t, func_info_t* f) {
 
     // If the current base offset is mis-aligned in relation to the size of this parameter
     // adjust it 
+    // TODO: This isn't accounted for...
     if (f->params_size % size != 0) {
         f->params_size += (-f->params_size) % size;
     }
@@ -753,8 +754,43 @@ int param_decl_t::translate(translator_t* t, func_info_t* f) {
     f->params_size += size;
 }
 
-int params_t::translate(translator_t* t) {
-    
+int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
+
+    std::stringstream output;
+    int first_value = 0;
+    bool first_evaluated = first->evaluate(&first_value);
+
+    if (first_evaluated) {
+        std::string temp_name = t->name_allocator.get_name("__param__");
+        
+        // Add temporary variable to scope to allow register allocation
+        var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
+        int reg = t->reg_alloc.allocate(temp_var, false, false);
+
+        t->reg_alloc.load_immediate(reg, first_value);
+
+        output << "push[" << t->type_table.at(func->param_vector[param_index].type)->size << "] "
+               << t->reg_alloc.get_register_string(reg);
+        t->print_instruction_row(output.str(), true);
+        output = std::stringstream();
+
+        t->reg_alloc.free(reg);
+        t->symbol_table.get_current_scope()->remove(temp_var->name);
+        delete temp_var;
+
+    } else {
+
+        int reg = first->translate(t);
+
+        output << "push[" << t->type_table.at(func->param_vector[param_index].type)->size << "] "
+               << t->reg_alloc.get_register_string(reg);
+        t->print_instruction_row(output.str(), true);
+        output = std::stringstream();
+
+    }
+
+    if (rest != nullptr) rest->translate(t, func, param_index + 1);
+    return -1;
 }
 
 int var_decl_t::translate(translator_t* t) {
@@ -936,8 +972,6 @@ int call_term_t::translate(translator_t* t) {
     std::stringstream output;
     func_info_t* func = t->symbol_table.get_func(function_identifier);
 
-    // Store current context
-    t->reg_alloc.store_context();
     scope_t* current_scope = t->symbol_table.get_current_scope();
     
     int context_size = current_scope->get_end_offset() + 2; //+ func->params_size;
@@ -959,6 +993,10 @@ int call_term_t::translate(translator_t* t) {
     output = std::stringstream();
 
     // Push parameters to stack
+    if (params != nullptr) params->translate(t, func, 0);
+
+    // Store current context
+    t->reg_alloc.store_context();
 
     // Call function
     output << "call " << function_identifier;
@@ -968,7 +1006,7 @@ int call_term_t::translate(translator_t* t) {
     // Pop parameters and alignment
     current_scope->pop(alignment);
 
-    output << "addi SP, SP, " << alignment;
+    output << "addi SP, SP, " << func->params_size + alignment;
     t->print_instruction_row(output.str(), true);
     output = std::stringstream();
 
@@ -1008,12 +1046,12 @@ int add_binop_t::translate(translator_t* t) {
 
         // Means left was a constant, allocate a register and load the immediate value into it
 
-        std::string left_temp_name = t->name_allocator.get_name("temp");
+        std::string left_temp_name = t->name_allocator.get_name("__temp__");
 
         // Add temporary variable to scope to allow register allocation
         var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
 
-        left_register = t->reg_alloc.allocate(temp_var, false, true);
+        left_register = t->reg_alloc.allocate(temp_var, false, false);
         left_register_string = t->reg_alloc.get_register_string(left_register);
 
         t->reg_alloc.load_immediate(left_register, left_value);
@@ -1025,7 +1063,7 @@ int add_binop_t::translate(translator_t* t) {
         // If the allocated register is not temporary, take ownership of it
         if (!t->reg_alloc.is_temporary(left_register)) {
             
-            std::string left_temp_name = t->name_allocator.get_name("temp");
+            std::string left_temp_name = t->name_allocator.get_name("__temp__");
 
             // Add temporary variable to scope to allow register allocation
             var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
@@ -1072,7 +1110,7 @@ int add_binop_t::translate(translator_t* t) {
 
         // If term is a function call restore temporary value
         if (is_function_call) {
-            left_register = t->reg_alloc.allocate(var, false, true);
+            left_register = t->reg_alloc.allocate(var, false, false);
             left_register_string = t->reg_alloc.get_register_string(left_register);
 
             t->symbol_table.get_current_scope()->pop(var_size);
@@ -1114,7 +1152,7 @@ int sub_binop_t::translate(translator_t* t) {
 
         // Means left was a constant, allocate a register and load the immediate value into it
 
-        std::string left_temp_name = t->name_allocator.get_name("temp");
+        std::string left_temp_name = t->name_allocator.get_name("__temp__");
 
         // Add temporary variable to scope to allow register allocation
         var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
@@ -1131,7 +1169,7 @@ int sub_binop_t::translate(translator_t* t) {
         // If the allocated register is not temporary, take ownership of it
         if (!t->reg_alloc.is_temporary(left_register)) {
             
-            std::string left_temp_name = t->name_allocator.get_name("temp");
+            std::string left_temp_name = t->name_allocator.get_name("__temp__");
 
             // Add temporary variable to scope to allow register allocation
             var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
