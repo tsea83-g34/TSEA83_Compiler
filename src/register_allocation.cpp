@@ -249,9 +249,6 @@ var_info_t* register_allocator_t::give_ownership(int register_index, var_info_t*
 
     reg_t* reg = get_register(register_index);
 
-    std::cout << "Giving ownership of reg " << register_index << " from variable " << reg->content->name
-              << " to variable " << new_owner->name << std::endl; 
-
     var_info_t* old_content = reg->content;
 
     // If variable is not temporary, store it
