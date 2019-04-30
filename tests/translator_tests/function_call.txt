@@ -1,9 +1,13 @@
 
 int f(int a int b int c) {
-    int d = 1;
+    int d = c;
+
+    if (d) {
+        int h = 1;
+    }
 }
 
 int main(int d int e) {
-    int c = -d;
-    f(d e c);
+    int g = 2;
+    int c = f(d e g) + d;
 }

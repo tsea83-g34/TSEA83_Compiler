@@ -11,6 +11,8 @@ int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_i
 
 var_info_t* give_ownership_temp(translator_t* t, const std::string& name, int reg);
 
+int take_ownership_or_allocate(translator_t* t, const std::string& name, int reg);
+
 var_info_t* push_temp(translator_t* t, int reg);
 
 int pop_temp(translator_t* t, var_info_t* var);

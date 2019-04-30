@@ -758,6 +758,9 @@ int param_decl_t::translate(translator_t* t, func_info_t* f) {
 }
 
 int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
+    
+    // Push params backwards
+    if (rest != nullptr) rest->translate(t, func, param_index + 1);
 
     std::stringstream output;
     int first_value = 0;
@@ -783,7 +786,6 @@ int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
 
     }
 
-    if (rest != nullptr) rest->translate(t, func, param_index + 1);
     return -1;
 }
 
@@ -1016,13 +1018,13 @@ int call_term_t::translate(translator_t* t) {
     int alignment = (context_size % 4) ? 4 - (context_size % 4) : 0;
     std::cout << "Alignment: " << alignment << std::endl;
 
+    // Push base pointer to stack
+    push_instr(t, BASE_POINTER, POINTER_SIZE);
+
     // Align the stack to 4
     if (alignment) {
         subi_instr(t, STACK_POINTER, STACK_POINTER, alignment);
     }
-
-    // Push base pointer to stack
-    push_instr(t, BASE_POINTER, POINTER_SIZE);
 
     // Push parameters to stack
     if (params != nullptr) params->translate(t, func, 0);
@@ -1075,10 +1077,7 @@ int add_binop_t::translate(translator_t* t) {
         left_register = rest->translate(t);
 
         // If the allocated register is not temporary, take ownership of it
-        if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
-            
-            give_ownership_temp(t, "__temp__", left_register);
-        }
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
 
     }
 
@@ -1141,11 +1140,7 @@ int sub_binop_t::translate(translator_t* t) {
         left_register = rest->translate(t);
 
         // If the allocated register is not temporary, take ownership of it
-        if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
-            
-            give_ownership_temp(t, "__temp__", left_register);
-
-        }
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
     }
 
     if (right_success) {
@@ -1208,11 +1203,7 @@ int eq_binop_t::translate(translator_t* t) {
         left_register = rest->translate(t);
 
         // If the allocated register is not temporary, take ownership of it
-        if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
-            
-            give_ownership_temp(t, "__temp__", left_register);
-
-        }
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
     }
 
     if (right_success) {
@@ -1296,11 +1287,7 @@ int neq_binop_t::translate(translator_t* t) {
         left_register = rest->translate(t);
 
         // If the allocated register is not temporary, take ownership of it
-        if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
-            
-            give_ownership_temp(t, "__temp__", left_register);
-
-        }
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
     }
 
     if (right_success) {

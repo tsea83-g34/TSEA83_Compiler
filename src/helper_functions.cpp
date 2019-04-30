@@ -28,7 +28,7 @@ int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_i
     // Add temporary variable to scope to allow register allocation
     var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
 
-    int reg = t->reg_alloc.allocate(temp_var, false, true);
+    int reg = t->reg_alloc.allocate(temp_var, false, false);
 
     load_immediate(t, reg, value);
     
@@ -44,7 +44,29 @@ var_info_t* give_ownership_temp(translator_t* t, const std::string& name, int re
 
     t->reg_alloc.give_ownership(reg, temp_var);
     return temp_var;
-}   
+}
+
+int take_ownership_or_allocate(translator_t* t, const std::string& name, int reg) {
+    
+    // If the allocated register is not temporary, take ownership of it
+    if (!t->reg_alloc.is_temporary(reg) && reg != RETURN_REGISTER) {
+        
+        give_ownership_temp(t, name, reg);
+
+    } else if (reg == RETURN_REGISTER) {
+
+        // Add temporary variable to scope to allow register allocation
+        std::string left_temp_name = t->name_allocator.get_name(name);
+        var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
+        
+        int new_reg = t->reg_alloc.allocate(temp_var, false, false);
+
+        move_instr(t, new_reg, RETURN_REGISTER);
+        return new_reg;
+
+    }
+    return reg;
+}
 
 var_info_t* push_temp(translator_t* t, int reg) {
 
