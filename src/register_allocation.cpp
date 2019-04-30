@@ -3,6 +3,7 @@
 
 #include "../include/translator.h"
 #include "../include/instructions.h"
+#include "../include/helper_functions.h"
 
 
 #include <algorithm>
@@ -82,20 +83,18 @@ void register_allocator_t::free(reg_t* reg, bool store, bool sort) {
 
     if (store && reg->changed) {
         
-        // Store variable
-        std::stringstream output;
-        output << STORE_INSTR << "[" << size << "]"; 
-        
+        int base_or_null;
+
         if (dynamic_cast<global_addr_info_t*>(reg->content->address) != nullptr) {
             // If variable is global is zero
-            output << " NULL, ";
+            base_or_null = NULL_REGISTER;
         } else {
             // If variable is local address is base pointer
-            output << " BP, ";
+            base_or_null = BASE_POINTER;
         }
-        
-        output << get_register_string(reg->index) << ", " << old_data->address->get_address_string(); 
-        parent->print_instruction_row(output.str(), true);    
+
+        // Store variable
+        store_instr(parent, base_or_null, reg->index, old_data->address, size);
     }
     
     // Update register
@@ -109,19 +108,6 @@ void register_allocator_t::free(reg_t* reg, bool store, bool sort) {
 }
 
 int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable, bool temp) {
-
-    std::cout << "Allocating register for variable " << var_to_alloc->name << std::endl;
-    std::cout << "-------------------------------------" << std::endl;
-    for (int i = 0; i < registers.size(); i++) {
-        reg_t* reg = registers[i];
-        std::cout << "Reg: " << reg->index << " Content: " << reg->content;
-        if (reg->content != nullptr) {
-            std::cout << " Variable: " << reg->content->name << std::endl;
-        } else {
-            std::cout << std::endl;
-        }
-    }
-    std::cout << "-------------------------------------" << std::endl;
 
     if (var_to_alloc == nullptr) return -1;
 
@@ -164,24 +150,21 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable,
     
     if (load_variable) {
         // Load the variable into the register
-        std::stringstream output;
-        output << LOAD_INSTR << "[" << parent->type_table.at(var_to_alloc->type)->size << "] ";
-        output << get_register_string(front->index);
-
+        
+        int base_or_null;
         if (dynamic_cast<global_addr_info_t*>(var_to_alloc->address) != nullptr) {
             // If the variable is global use null register
-            output << ", NULL, ";
+            base_or_null = NULL_REGISTER;
 
         } else {
             // If the variable is local use base pointer
-            output << ", BP, "; 
+            base_or_null = BASE_POINTER;
         }
 
-        // Use variable adress as offset
-        output << var_to_alloc->address->get_address_string();
+        int size = parent->type_table.at(var_to_alloc->type)->size;
         
         // Print instruction
-        parent->print_instruction_row(output.str(), true);
+        load_instr(parent, front->index, base_or_null, var_to_alloc->address, size);
     }
 
     // ----------------------------
@@ -267,17 +250,10 @@ void register_allocator_t::load_immediate(int register_index, int value) {
             reg->changed = true;
             
             int hi = (value & 0xFFFF0000) >> 16;
-            output << MOVHI_INSTR << " ";
-            output << get_register_string(register_index);
-            output << ", " << hi;
-            parent->print_instruction_row(output.str(), true);
-            output = std::stringstream();
+            movhi_instr(parent, register_index, hi);
             
             int lo = value & 0x0000FFFF;
-            output << MOVLO_INSTR << " ";
-            output << get_register_string(register_index);
-            output << ", " << lo;
-            parent->print_instruction_row(output.str(), true);
+            movlo_instr(parent, register_index, lo);
 
 }
 

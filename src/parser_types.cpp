@@ -5,6 +5,7 @@
 #include "../include/symbol_table.h"
 
 #include "../include/instructions.h"
+#include "../include/helper_functions.h"
 
 #include <stack>
 #include <iostream>
@@ -696,7 +697,8 @@ int func_decl_t::translate(translator_t* t) {
     
     stmt->translate(t);
 
-    t->print_instruction_row(RETURN_INSTR, true);
+    // Print ret instruction
+    ret_instr(t);
 
     // Free the registers containing local variables in the current scope
     t->reg_alloc.free_scope(t->symbol_table.get_current_scope());
@@ -761,31 +763,22 @@ int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
     bool first_evaluated = first->evaluate(&first_value);
 
     if (first_evaluated) {
-        std::string temp_name = t->name_allocator.get_name("__param__");
         
         // Add temporary variable to scope to allow register allocation
-        var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
-        int reg = t->reg_alloc.allocate(temp_var, false, false);
+        var_info_t* var;
+        int reg = allocate_temp_imm(t, "__param__", first_value, &var);
 
-        t->reg_alloc.load_immediate(reg, first_value);
-
-        output << "push[" << t->type_table.at(func->param_vector[param_index].type)->size << "] "
-               << t->reg_alloc.get_register_string(reg);
-        t->print_instruction_row(output.str(), true);
-        output = std::stringstream();
+        push_instr(t, reg, t->type_table.at(func->param_vector[param_index].type)->size);
 
         t->reg_alloc.free(reg);
-        t->symbol_table.get_current_scope()->remove(temp_var->name);
-        delete temp_var;
+        t->symbol_table.get_current_scope()->remove(var->name);
+        delete var;
 
     } else {
 
         int reg = first->translate(t);
 
-        output << "push[" << t->type_table.at(func->param_vector[param_index].type)->size << "] "
-               << t->reg_alloc.get_register_string(reg);
-        t->print_instruction_row(output.str(), true);
-        output = std::stringstream();
+        push_instr(t, reg, t->type_table.at(func->param_vector[param_index].type)->size);
 
     }
 
@@ -863,9 +856,6 @@ int var_decl_t::translate(translator_t* t) {
         local_addr_info_t* addr = new local_addr_info_t(variable_base_offset);
         var_info_t* var = t->symbol_table.add_var(id, type, size_to_allocate, addr);
 
-        // Print instructions
-        std::stringstream output;
-
         // If a value was given, load it into a register
         if (value != nullptr) {
 
@@ -893,8 +883,7 @@ int var_decl_t::translate(translator_t* t) {
         } 
 
         // Allocate memory for the variable
-        output << SUB_IMM_INSTR << " SP, " << "SP, " << alignment+size_to_allocate;
-        t->print_instruction_row(output.str(), true);
+        subi_instr(t, STACK_POINTER, STACK_POINTER, alignment + size_to_allocate);
 
     }
 }
@@ -916,10 +905,8 @@ int block_stmt_t::translate(translator_t* t) {
     // Throw away variables
     int scope_size = t->symbol_table.get_current_scope()->size();
 
-    std::stringstream output;
-    output << ADD_IMM_INSTR << " SP, SP, " << scope_size;
-    t->print_instruction_row(output.str(), true);
-    // --------------------
+    // Pop scope variables
+    addi_instr(t, STACK_POINTER, STACK_POINTER, scope_size);
 
     // Free the registers containing local variables in the current scope
     t->reg_alloc.free_scope(t->symbol_table.get_current_scope());
@@ -953,20 +940,14 @@ int neg_expr_t::translate(translator_t* t) {
     std::string register_string = t->reg_alloc.get_register_string(reg);
     
      // If the allocated register is not temporary, take ownership of it
-    if (!t->reg_alloc.is_temporary(reg) || reg != RETURN_REGISTER) {
+    if (!t->reg_alloc.is_temporary(reg) && reg != RETURN_REGISTER) {
         
-        std::string left_temp_name = t->name_allocator.get_name("__temp__");
-
-        // Add temporary variable to scope to allow register allocation
-        var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
-        t->reg_alloc.give_ownership(reg, temp_var);
+        give_ownership_temp(t, "__temp__", reg);
 
     }
     
-    output << NEG_INSTR << " " << register_string << ", " << register_string;
-    t->print_instruction_row(output.str(), true); 
-    // output = std::stringstream();
-
+    // Print neg instr
+    neg_instr(t, reg, reg);
     return reg;
 }
 
@@ -991,28 +972,22 @@ int call_term_t::translate(translator_t* t) {
     
     // TODO: Fix alignment?
 
-    std::stringstream output;
     func_info_t* func = t->symbol_table.get_func(function_identifier);
 
     scope_t* current_scope = t->symbol_table.get_current_scope();
     
     int context_size = current_scope->get_end_offset() + 2; //+ func->params_size;
     std::cout << "Context size: " << context_size << std::endl;
-    int alignment = 4 - (context_size % 4);
+    int alignment = (context_size % 4) ? 4 - (context_size % 4) : 0;
     std::cout << "Alignment: " << alignment << std::endl;
 
     // Align the stack to 4
     if (alignment) {
-        current_scope->push(alignment);
-        output << "subi SP, SP, " << alignment;
-        t->print_instruction_row(output.str(), true);
-        output = std::stringstream();
+        subi_instr(t, STACK_POINTER, STACK_POINTER, alignment);
     }
 
     // Push base pointer to stack
-    output << "push[2] PB";
-    t->print_instruction_row(output.str(), true);
-    output = std::stringstream();
+    push_instr(t, BASE_POINTER, POINTER_SIZE);
 
     // Push parameters to stack
     if (params != nullptr) params->translate(t, func, 0);
@@ -1021,21 +996,16 @@ int call_term_t::translate(translator_t* t) {
     t->reg_alloc.store_context();
 
     // Call function
-    output << "call " << function_identifier;
-    t->print_instruction_row(output.str(), true);
-    output = std::stringstream();
+    call_instr(t, function_identifier);
     
     // Pop parameters and alignment
     current_scope->pop(alignment);
 
-    output << "addi SP, SP, " << func->params_size + alignment;
-    t->print_instruction_row(output.str(), true);
-    output = std::stringstream();
+    // Pop parameters
+    addi_instr(t, STACK_POINTER, STACK_POINTER, func->params_size + alignment);
 
     // Pop base pointer from stack
-    output << "pop[2] PB";
-    t->print_instruction_row(output.str(), true);
-    output = std::stringstream();
+    pop_instr(t, BASE_POINTER, POINTER_SIZE);
 
     return RETURN_REGISTER; 
 }
@@ -1055,44 +1025,25 @@ int add_binop_t::translate(translator_t* t) {
     int right_value = 0;
     bool right_success = term->evaluate(&right_value);
 
-    std::stringstream output;
-
     int left_register;
-    std::string left_temp_name;
-    std::string left_register_string;
-
     int right_register;
 
 
     if (left_success) {
 
         // Means left was a constant, allocate a register and load the immediate value into it
-
-        std::string left_temp_name = t->name_allocator.get_name("__temp__");
-
-        // Add temporary variable to scope to allow register allocation
-        var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
-
-        left_register = t->reg_alloc.allocate(temp_var, false, false);
-        left_register_string = t->reg_alloc.get_register_string(left_register);
-
-        t->reg_alloc.load_immediate(left_register, left_value);
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
 
     } else {
 
         left_register = rest->translate(t);
 
         // If the allocated register is not temporary, take ownership of it
-        if (!t->reg_alloc.is_temporary(left_register) || left_register != RETURN_REGISTER) {
+        if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
             
-            std::string left_temp_name = t->name_allocator.get_name("__temp__");
-
-            // Add temporary variable to scope to allow register allocation
-            var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
-            t->reg_alloc.give_ownership(left_register, temp_var);
+            give_ownership_temp(t, "__temp__", left_register);
         }
-
-        left_register_string = t->reg_alloc.get_register_string(left_register);
 
     }
 
@@ -1103,48 +1054,28 @@ int add_binop_t::translate(translator_t* t) {
             throw translation_error("Constant cant be larger than 16-bits");
         }
 
-        // Print add immediate instruction
-        output << ADD_IMM_INSTR << " " << left_register_string << ", " << left_register_string << ", " << right_value;
-        t->print_instruction_row(output.str(), true);
-        output = std::stringstream();
+        addi_instr(t, left_register, left_register, right_value);
 
     } else {
 
         bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
         var_info_t* var;
-        int var_size;
 
         // If term is a function call save temporary value on stack
         if (is_function_call) {
-            var = t->reg_alloc.free(left_register);
-            var_size = t->type_table.at(var->type)->size;
-            
-            t->symbol_table.get_current_scope()->push(var_size);
-
-            output << "push[" << var_size << "] " << left_register_string; 
-            t->print_instruction_row(output.str(), true);
-            output = std::stringstream();
+            var = push_temp(t, left_register);
         }
 
-        // Print add instruction
+        // Translate term
         right_register = term->translate(t);
-        std::string right_register_string = t->reg_alloc.get_register_string(right_register);
 
         // If term is a function call restore temporary value
         if (is_function_call) {
-            left_register = t->reg_alloc.allocate(var, false, false);
-            left_register_string = t->reg_alloc.get_register_string(left_register);
-
-            t->symbol_table.get_current_scope()->pop(var_size);
-
-            output << "pop[" << var_size << "] " << left_register_string; 
-            t->print_instruction_row(output.str(), true);
-            output = std::stringstream();
+            left_register = pop_temp(t, var);
         }
 
-        output << ADD_INSTR << " " << left_register_string << ", " << left_register_string << ", " << right_register_string;
-        t->print_instruction_row(output.str(), true);
-        output = std::stringstream();
+        // Print add instruction
+        add_instr(t, left_register, left_register, right_register);
 
     }
     return left_register;
@@ -1161,45 +1092,25 @@ int sub_binop_t::translate(translator_t* t) {
     int right_value = 0;
     bool right_success = term->evaluate(&right_value);
 
-    std::stringstream output;
-
     int left_register;
-    std::string left_temp_name;
-    std::string left_register_string;
-
     int right_register;
-
 
     if (left_success) {
 
         // Means left was a constant, allocate a register and load the immediate value into it
-
-        std::string left_temp_name = t->name_allocator.get_name("__temp__");
-
-        // Add temporary variable to scope to allow register allocation
-        var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
-
-        left_register = t->reg_alloc.allocate(temp_var, false, true);
-        left_register_string = t->reg_alloc.get_register_string(left_register);
-
-        t->reg_alloc.load_immediate(left_register, left_value);
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
 
     } else {
 
         left_register = rest->translate(t);
 
         // If the allocated register is not temporary, take ownership of it
-        if (!t->reg_alloc.is_temporary(left_register)) {
+        if (!t->reg_alloc.is_temporary(left_register) &&  left_register != RETURN_REGISTER) {
             
-            std::string left_temp_name = t->name_allocator.get_name("__temp__");
+            give_ownership_temp(t, "__name__", left_register);
 
-            // Add temporary variable to scope to allow register allocation
-            var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
-            t->reg_alloc.give_ownership(left_register, temp_var);
         }
-
-        left_register_string = t->reg_alloc.get_register_string(left_register);
-
     }
 
     if (right_success) {
@@ -1209,48 +1120,29 @@ int sub_binop_t::translate(translator_t* t) {
             throw translation_error("Constant cant be larger than 16-bits");
         }
 
-        // Print add immediate instruction
-        output << SUB_IMM_INSTR << " " << left_register_string << ", " << left_register_string << ", " << right_value;
-        t->print_instruction_row(output.str(), true);
-        output = std::stringstream();
+        // Print sub immediate instruction
+        subi_instr(t, left_register, left_register, right_value);
 
     } else {
 
         bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
         var_info_t* var;
-        int var_size;
 
         // If term is a function call save temporary value on stack
         if (is_function_call) {
-            var = t->reg_alloc.free(left_register);
-            var_size = t->type_table.at(var->type)->size;
-            
-            t->symbol_table.get_current_scope()->push(var_size);
-
-            output << "push[" << var_size << "] " << left_register_string; 
-            t->print_instruction_row(output.str(), true);
-            output = std::stringstream();
+            var = push_temp(t, left_register);
         }
 
-        // Print add instruction
+        // Translate term
         right_register = term->translate(t);
-        std::string right_register_string = t->reg_alloc.get_register_string(right_register);
 
         // If term is a function call restore temporary value
         if (is_function_call) {
-            left_register = t->reg_alloc.allocate(var, false, true);
-            left_register_string = t->reg_alloc.get_register_string(left_register);
-
-            t->symbol_table.get_current_scope()->pop(var_size);
-
-            output << "pop[" << var_size << "] " << left_register_string; 
-            t->print_instruction_row(output.str(), true);
-            output = std::stringstream();
+            left_register = pop_temp(t, var);
         }
 
-        output << SUB_INSTR << " " << left_register_string << ", " << left_register_string << ", " << right_register_string;
-        t->print_instruction_row(output.str(), true);
-        output = std::stringstream();
+        // Print sub instruction
+        sub_instr(t, left_register, left_register, right_register);
 
     }
     return left_register;
