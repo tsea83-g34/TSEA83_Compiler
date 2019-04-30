@@ -5,6 +5,8 @@
 
 #define POINTER_SIZE 2
 
+void load_immediate(translator_t* t, int register_index, int value);
+
 int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_info_t** var);
 
 var_info_t* give_ownership_temp(translator_t* t, const std::string& name, int reg);
@@ -12,6 +14,8 @@ var_info_t* give_ownership_temp(translator_t* t, const std::string& name, int re
 var_info_t* push_temp(translator_t* t, int reg);
 
 int pop_temp(translator_t* t, var_info_t* var);
+
+// Instruction functions
 
 void add_instr(translator_t* t,int rd, int ra, int rb);
 

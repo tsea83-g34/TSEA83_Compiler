@@ -242,21 +242,6 @@ void register_allocator_t::touch(int register_index, bool has_changed) {
     //std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
 } 
 
-void register_allocator_t::load_immediate(int register_index, int value) {
-
-            std::stringstream output;
-
-            reg_t* reg = get_register(register_index);
-            reg->changed = true;
-            
-            int hi = (value & 0xFFFF0000) >> 16;
-            movhi_instr(parent, register_index, hi);
-            
-            int lo = value & 0x0000FFFF;
-            movlo_instr(parent, register_index, lo);
-
-}
-
 var_info_t* register_allocator_t::give_ownership(int register_index, var_info_t* new_owner) {
 
 

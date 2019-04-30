@@ -47,7 +47,6 @@ public:
     void free_scope(scope_t* scope_to_free);
 
     void touch(int register_index, bool has_changed);
-    void load_immediate(int register_index, int value);
     bool is_temporary(int register_index);
 
     // Changes the content of the register, without loading or storing anything

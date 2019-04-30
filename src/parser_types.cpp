@@ -863,7 +863,7 @@ int var_decl_t::translate(translator_t* t) {
                 // Allocate register, but dont load value since we are solving that locally
                 int register_index = t->reg_alloc.allocate(var, false, false);
                 
-                t->reg_alloc.load_immediate(register_index, constant_value);
+                load_immediate(t, register_index, constant_value);
             } else {
                 
                 // Give ownership of the register to the new variable

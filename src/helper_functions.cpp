@@ -4,6 +4,18 @@
 
 #include <sstream>
 
+void load_immediate(translator_t* t, int reg, int value) {
+    
+    std::stringstream output;
+    t->reg_alloc.touch(reg, true);
+
+    int hi = (value & 0xFFFF0000) >> 16;
+    movhi_instr(t, reg, hi);
+    
+    int lo = value & 0x0000FFFF;
+    movlo_instr(t, reg, lo);
+}
+
 int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_info_t** var) {
     
     std::string temp_name = t->name_allocator.get_name(name);
@@ -13,7 +25,7 @@ int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_i
 
     int reg = t->reg_alloc.allocate(temp_var, false, true);
 
-    t->reg_alloc.load_immediate(reg, value);
+    load_immediate(t, reg, value);
     
     *var = temp_var;
     return reg;
