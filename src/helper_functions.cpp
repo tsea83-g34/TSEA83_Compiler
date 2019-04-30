@@ -9,6 +9,11 @@ void load_immediate(translator_t* t, int reg, int value) {
     std::stringstream output;
     t->reg_alloc.touch(reg, true);
 
+    if (value < std::numeric_limits<short>().max()) {
+        addi_instr(t, reg, NULL_REGISTER, value);
+        return;
+    }
+
     int hi = (value & 0xFFFF0000) >> 16;
     movhi_instr(t, reg, hi);
     
