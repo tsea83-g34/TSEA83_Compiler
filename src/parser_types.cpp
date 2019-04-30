@@ -684,8 +684,9 @@ int func_decl_t::translate(translator_t* t) {
 
     current_function->defined = true;
 
-    std::string label = current_function->identifier + ":";
-    t->print_instruction_row(label, false);
+    print_label(t, current_function->identifier);
+
+    move_instr(t, BASE_POINTER, STACK_POINTER);
 
     t->symbol_table.push_scope(false);
 
@@ -866,18 +867,27 @@ int var_decl_t::translate(translator_t* t) {
                 load_immediate(t, register_index, constant_value);
             } else {
                 
-                // Give ownership of the register to the new variable
-                int register_index = value->translate(t);
-                bool was_temp = t->reg_alloc.is_temporary(register_index);
+                int value_reg = value->translate(t);
+                bool was_temp = t->reg_alloc.is_temporary(value_reg);
 
-                var_info_t* temp_info = t->reg_alloc.give_ownership(register_index, var);
-                t->reg_alloc.touch(register_index, true);
-                
-                // Remove and deallocate the temporary variable
-                if (was_temp) {
-                    std::cout << "Removing " << temp_info->name << std::endl;
-                    t->symbol_table.get_current_scope()->remove(temp_info->name);
-                    delete temp_info;
+                // If value was a function return value, allocate a register
+                if (value_reg == RETURN_REGISTER) {
+                    
+                    int reg = t->reg_alloc.allocate(var, false, false);
+                    move_instr(t, reg, value_reg);
+
+                // If it was another register give ownership of the register to the new variable
+                } else {
+
+                    var_info_t* temp_info = t->reg_alloc.give_ownership(value_reg, var);
+                    t->reg_alloc.touch(value_reg, true);
+                    
+                    // Remove and deallocate the temporary variable
+                    if (was_temp) {
+                        std::cout << "Removing " << temp_info->name << std::endl;
+                        t->symbol_table.get_current_scope()->remove(temp_info->name);
+                        delete temp_info;
+                    }
                 }
             }
         } 
