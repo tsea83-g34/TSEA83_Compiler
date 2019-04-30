@@ -56,6 +56,7 @@ int main(int argc, char const *argv[]) {
         program = parser.parse_token_stream();
     } catch (syntax_error e) {
         cout << "--- Syntax Error: " << e.what() << std::endl;
+        return 0;
     }
 
     cout << "Finished parsing" << endl;
