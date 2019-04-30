@@ -28,6 +28,9 @@ class translator_t {
     std::stringstream output;
 
 public:
+
+    std::unordered_map<int, std::string> special_registers;
+
     symbol_table_t          symbol_table;
     register_allocator_t    reg_alloc;
     type_table_t            type_table;

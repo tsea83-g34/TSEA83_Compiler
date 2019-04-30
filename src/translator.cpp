@@ -10,15 +10,19 @@ translator_t::translator_t() {
     
     // Stack pointer
     print_instruction_row("const SP r15", false);
-    
+    special_registers.insert({15, "SP"});
+
     // Null register
     print_instruction_row("const NULL r14", false);
-    
+    special_registers.insert({14, "NULL"});
+
     // Base pointer
     print_instruction_row("const BP r13", false);
-    
+    special_registers.insert({13, "BP"});
+
     // Return register
     print_instruction_row("const RR r12", false);
+    special_registers.insert({12, "RR"});
 
     // Print an empty row
     print_instruction_row("", false);
