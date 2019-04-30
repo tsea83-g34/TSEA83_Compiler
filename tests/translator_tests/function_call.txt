@@ -4,6 +4,6 @@ int f(int a int b int c) {
 }
 
 int main(int d int e) {
-    int c = 3;
+    int c = -d;
     f(d e c);
 }
