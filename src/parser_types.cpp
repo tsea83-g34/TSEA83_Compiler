@@ -915,7 +915,32 @@ int block_stmt_t::translate(translator_t* t) {
 }
 
 int if_stmt_t::translate(translator_t* t) {
-    
+
+    int constant_value = 0;
+    bool cond_evaluated = cond->evaluate(&constant_value);
+
+    if (cond_evaluated) {
+        
+        if (constant_value) {
+            // If constant evaluates to true, translate statements
+            actions->translate(t);    
+        } else return -1; // Otherwise return
+
+    } else {
+
+        int cond_reg = cond->translate(t);
+        std::string end_label = t->label_allocator.get_label_name();
+
+        // Test if true or false
+        cmpi_instr(t, cond_reg, 1);
+
+        branch_instr(t, BRNE_INSTR, end_label);
+
+        actions->translate(t);
+
+        print_label(t, end_label);
+    }
+
 }
 
 int assignment_stmt_t::translate(translator_t* t) {
@@ -1108,7 +1133,7 @@ int sub_binop_t::translate(translator_t* t) {
         // If the allocated register is not temporary, take ownership of it
         if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
             
-            give_ownership_temp(t, "__name__", left_register);
+            give_ownership_temp(t, "__temp__", left_register);
 
         }
     }
@@ -1175,7 +1200,7 @@ int eq_binop_t::translate(translator_t* t) {
         // If the allocated register is not temporary, take ownership of it
         if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
             
-            give_ownership_temp(t, "__name__", left_register);
+            give_ownership_temp(t, "__temp__", left_register);
 
         }
     }
@@ -1263,7 +1288,7 @@ int neq_binop_t::translate(translator_t* t) {
         // If the allocated register is not temporary, take ownership of it
         if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
             
-            give_ownership_temp(t, "__name__", left_register);
+            give_ownership_temp(t, "__temp__", left_register);
 
         }
     }
