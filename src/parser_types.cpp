@@ -881,6 +881,7 @@ int var_decl_t::translate(translator_t* t) {
                 bool was_temp = t->reg_alloc.is_temporary(register_index);
 
                 var_info_t* temp_info = t->reg_alloc.give_ownership(register_index, var);
+                t->reg_alloc.touch(register_index, true);
                 
                 // Remove and deallocate the temporary variable
                 if (was_temp) {
@@ -946,6 +947,27 @@ int expr_stmt_t::translate(translator_t* t) {
 
 int neg_expr_t::translate(translator_t* t) {
     
+    std::stringstream output;
+
+    int reg = value->translate(t);
+    std::string register_string = t->reg_alloc.get_register_string(reg);
+    
+     // If the allocated register is not temporary, take ownership of it
+    if (!t->reg_alloc.is_temporary(reg) || reg != RETURN_REGISTER) {
+        
+        std::string left_temp_name = t->name_allocator.get_name("__temp__");
+
+        // Add temporary variable to scope to allow register allocation
+        var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
+        t->reg_alloc.give_ownership(reg, temp_var);
+
+    }
+    
+    output << NEG_INSTR << " " << register_string << ", " << register_string;
+    t->print_instruction_row(output.str(), true); 
+    // output = std::stringstream();
+
+    return reg;
 }
 
 int term_expr_t::translate(translator_t* t) {
@@ -1061,7 +1083,7 @@ int add_binop_t::translate(translator_t* t) {
         left_register = rest->translate(t);
 
         // If the allocated register is not temporary, take ownership of it
-        if (!t->reg_alloc.is_temporary(left_register)) {
+        if (!t->reg_alloc.is_temporary(left_register) || left_register != RETURN_REGISTER) {
             
             std::string left_temp_name = t->name_allocator.get_name("__temp__");
 

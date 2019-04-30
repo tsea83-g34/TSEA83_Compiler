@@ -6,6 +6,7 @@
 #define SUB_INSTR       "sub"
 #define ADD_IMM_INSTR   "addi"
 #define SUB_IMM_INSTR   "subi"
+#define NEG_INSTR       "neg"
 
 #define MOVLO_INSTR     "movlo"
 #define MOVHI_INSTR     "movhi"
