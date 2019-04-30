@@ -41,6 +41,14 @@ public:
     std::string get_name(const std::string& id);
 };
 
+class label_allocator_t {
+    int counter;
+
+public:
+    label_allocator_t();
+    std::string get_label_name();
+};
+
 class scope_t;
 
 struct var_info_t {

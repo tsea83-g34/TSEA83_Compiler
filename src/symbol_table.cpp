@@ -19,6 +19,16 @@ scope_name_allocator_t::scope_name_allocator_t() {
     name_counter = std::unordered_map<std::string, int>();
 }
 
+label_allocator_t::label_allocator_t() {
+    counter = 0;
+}
+
+std::string label_allocator_t::get_label_name() {
+    std::string result = std::string("L") + std::to_string(counter);
+    counter++; 
+    return result;
+}
+
 std::string scope_name_allocator_t::get_name(const std::string& id) {
 
     if (name_counter.count(id)) {

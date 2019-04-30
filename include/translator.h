@@ -35,6 +35,7 @@ public:
     register_allocator_t    reg_alloc;
     type_table_t            type_table;
     scope_name_allocator_t  name_allocator;
+    label_allocator_t       label_allocator;
     long instr_cnt;
 
     translator_t();
