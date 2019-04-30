@@ -217,6 +217,17 @@ void movlo_instr(translator_t* t, int rd, int imm) {
     t->print_instruction_row(output.str(), true);
 }
 
+void move_instr(translator_t* t, int rd, int ra) {
+
+    std::string rd_str = get_register_string(t, rd);
+    std::string ra_str = get_register_string(t, ra);
+
+    std::stringstream output;
+
+    output << MOVE_INSTR << " " << rd_str << ", " << ra_str;
+    t->print_instruction_row(output.str(), true);
+}
+
 void cmp_instr(translator_t* t, int ra, int rb) {
     
     std::string ra_str = get_register_string(t, ra);

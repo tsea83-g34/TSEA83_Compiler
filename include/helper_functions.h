@@ -43,6 +43,8 @@ void movhi_instr(translator_t* t, int rd, int imm);
 
 void movlo_instr(translator_t* t, int rd, int imm);
 
+void move_instr(translator_t* t, int rd, int ra);
+
 void cmp_instr(translator_t* t, int ra, int rb);
 
 void cmpi_instr(translator_t* t, int ra, int imm);
