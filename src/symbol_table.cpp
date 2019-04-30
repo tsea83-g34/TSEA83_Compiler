@@ -15,7 +15,6 @@ std::string local_addr_info_t::get_address_string() {
     return std::to_string(base_offset);
 }
 
-
 scope_name_allocator_t::scope_name_allocator_t() {
     name_counter = std::unordered_map<std::string, int>();
 }
@@ -190,6 +189,11 @@ symbol_table_t::~symbol_table_t() {
     while (!scope_stack.empty()) {
         pop_scope();
     }
+
+    for (auto kv_pair : function_table) {
+        delete kv_pair.second;
+    }
+    function_table.clear();
 }
 
 var_info_t* symbol_table_t::get_var(const std::string& key) {
