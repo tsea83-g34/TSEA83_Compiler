@@ -1,13 +1,9 @@
 
-int f() {
-    int a;
-    int b;
-    int c;
+int f(int a int b int c) {
+    int d = 1;
 }
 
-int main(int a int b) {
-    
-    int c;
-    int d;
-    f();
+int main(int d int e) {
+    int c = 3;
+    f(d e c);
 }
