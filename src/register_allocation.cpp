@@ -13,7 +13,7 @@
 reg_t::reg_t() {
     index        = 0;
     content      = nullptr;
-    last_changed = 0;
+    last_changed = 0L;
 
     locked      = false;
     temp        = false;
@@ -30,20 +30,22 @@ struct reg_ptr_cmp {
 };
 
 register_allocator_t::register_allocator_t() {
-
-    registers = std::vector<reg_t*>(REGISTER_COUNT);
+    std::cout << "Creating register allocator" << std::endl;
+    //registers = std::vector<reg_t*>(REGISTER_COUNT);
 
     for (int i = 0; i < REGISTER_COUNT; i++) {
+        
         reg_t* reg = new reg_t();
         reg->index = i;
-        registers[i] = reg;
+        registers.push_back(reg);
+
         if (i >= REGISTER_COUNT - RESERVE_COUNT) {
             reg->reserved = true;
             reg->last_changed = std::numeric_limits<long>::max();
         }
     }
 
-    std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
+    //std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
 }
 
 register_allocator_t::~register_allocator_t() {
@@ -73,6 +75,7 @@ void register_allocator_t::free(reg_t* reg, bool store, bool sort) {
     // If the register has no content, there is nothing to free
     if (reg->content == nullptr) return;
 
+    std::cout << "Freeing register " << reg->index << " belonging to variable " << reg->content->name << std::endl;
 
     var_info_t* old_data = reg->content;
     int size = parent->type_table.at(old_data->type)->size;
@@ -102,34 +105,60 @@ void register_allocator_t::free(reg_t* reg, bool store, bool sort) {
     reg->changed = false;
     
     // re-heapify the vector
-    if (sort) std::make_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
+    //if (sort) std::make_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
 }
 
 int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable, bool temp) {
+
+    std::cout << "Allocating register for variable " << var_to_alloc->name << std::endl;
+    std::cout << "-------------------------------------" << std::endl;
+    for (int i = 0; i < registers.size(); i++) {
+        reg_t* reg = registers[i];
+        std::cout << "Reg: " << reg->index << " Content: " << reg->content;
+        if (reg->content != nullptr) {
+            std::cout << " Variable: " << reg->content->name << std::endl;
+        } else {
+            std::cout << std::endl;
+        }
+    }
+    std::cout << "-------------------------------------" << std::endl;
 
     if (var_to_alloc == nullptr) return -1;
 
     for (int i = 0; i < registers.size(); i++) {
         reg_t* reg = registers[i];
+
+        if (reg->content == nullptr) continue;
+
+        std::cout << "Reg: " << reg->index << " Content: " << reg->content->name << std::endl;
         
         if (reg->content == var_to_alloc) {
+            std::cout << "variable " << var_to_alloc->name << " already present in register " << reg->index << std::endl;
             // If the allocation is temporary, make it available instantly
             reg->last_changed = (temp) ? 0 : parent->instr_cnt;
             return reg->index;
         }
     }
 
-    std::cout << "Allocating register..." << std::endl;
 
     // Pop the least recently changed register from the heap to modify
-    reg_t* front = registers.front();
-    std::pop_heap(registers.begin(), registers.end(), reg_ptr_cmp());
+    //reg_t* front = registers.front();
+    //std::pop_heap(registers.begin(), registers.end(), reg_ptr_cmp());
+    long min = std::numeric_limits<long>().max();
+    reg_t* front = nullptr; 
+
+    for (auto* reg : registers) {
+        if (reg->last_changed < min) {
+            front = reg;
+            min = reg->last_changed;
+        }
+    }
 
     std::cout << "Allocated register " << front->index << ", last changed: " << front->last_changed << std::endl;
     
     // Free the register, store the variable and dont sort the heap
     // if the variable contained is temporary, don't store
-    free(front, !(front->temp), false);
+    if (front->content != nullptr) free(front, !(front->temp), false);
 
     // ----- Variable loading -----
     
@@ -166,7 +195,7 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable,
 
     std::cout << "register count: " << registers.size() << std::endl;
     // Push the updated register back to the heap
-    std::push_heap(registers.begin(), registers.end(), reg_ptr_cmp());
+    //std::make_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
     
     return front->index;
 }
@@ -184,6 +213,8 @@ var_info_t* register_allocator_t::free(int index) {
 
 void register_allocator_t::store_context() {
 
+    std::cout << "Storing context" << std::endl;
+
     for (reg_t* reg : registers) {
         if (reg->content == nullptr) continue;
         if (!parent->symbol_table.is_scope_reachable(reg->content->scope)) continue;
@@ -194,12 +225,12 @@ void register_allocator_t::store_context() {
     }
 
     // re-heapify the vector
-    std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
+    //std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
 
 }
 
 void register_allocator_t::free_scope(scope_t* scope_to_free) {
-
+    std::cout << "Freeing scope" << std::endl;
     for (reg_t* reg : registers) {
 
         if (reg->content == nullptr) continue;
@@ -211,7 +242,7 @@ void register_allocator_t::free_scope(scope_t* scope_to_free) {
     }
 
     // re-heapify the vector
-    std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
+    //std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
 
 }
 
@@ -225,7 +256,7 @@ void register_allocator_t::touch(int register_index, bool has_changed) {
     reg->changed      = has_changed;
 
     // Re-heapify the vector
-    std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
+    //std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
 } 
 
 void register_allocator_t::load_immediate(int register_index, int value) {
@@ -252,9 +283,13 @@ void register_allocator_t::load_immediate(int register_index, int value) {
 
 var_info_t* register_allocator_t::give_ownership(int register_index, var_info_t* new_owner) {
 
+
     std::stringstream output;
 
     reg_t* reg = get_register(register_index);
+
+    std::cout << "Giving ownership of reg " << register_index << " from variable " << reg->content->name
+              << " to variable " << new_owner->name << std::endl; 
 
     var_info_t* old_content = reg->content;
 
@@ -266,7 +301,7 @@ var_info_t* register_allocator_t::give_ownership(int register_index, var_info_t*
     reg->temp = false;  
     reg->changed = false;
 
-    std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
+    //std::make_heap(registers.begin(), registers.end(), reg_ptr_cmp());
 
     return old_content;
 }
