@@ -1106,7 +1106,7 @@ int sub_binop_t::translate(translator_t* t) {
         left_register = rest->translate(t);
 
         // If the allocated register is not temporary, take ownership of it
-        if (!t->reg_alloc.is_temporary(left_register) &&  left_register != RETURN_REGISTER) {
+        if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
             
             give_ownership_temp(t, "__name__", left_register);
 
@@ -1150,10 +1150,178 @@ int sub_binop_t::translate(translator_t* t) {
 
 int eq_binop_t::translate(translator_t* t) {
     
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
+    
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    int left_register;
+    int right_register;
+
+    if (left_success) {
+
+        // Means left was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
+            
+            give_ownership_temp(t, "__name__", left_register);
+
+        }
+    }
+
+    if (right_success) {
+        // If right value is larger than 16 bits
+        if (right_value > std::numeric_limits<int16_t>().max()) {
+            // TODO: This is not very good...
+            throw translation_error("Constant cant be larger than 16-bits");
+        }
+
+        // Print cmp immediate instruction
+        cmpi_instr(t, left_register, right_value);
+
+    } else {
+
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = push_temp(t, left_register);
+        }
+
+        // Translate term
+        right_register = term->translate(t);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = pop_temp(t, var);
+        }
+
+        // Print sub instruction
+        cmp_instr(t, left_register, right_register);
+    }
+
+    std::string false_label = t->label_allocator.get_label_name();
+    std::string end_label = t->label_allocator.get_label_name();
+    
+    // brne L1
+    branch_instr(t, BREQ_INSTR, false_label);
+
+    // addi r, NULL, 1
+    addi_instr(t, left_register, NULL_REGISTER, 0);
+
+    // jmp L2
+    branch_instr(t, JMP_INSTR, end_label);
+
+    // L1:
+    print_label(t, false_label);
+
+    // addi r, NULL, 0
+    addi_instr(t, left_register, NULL_REGISTER, 1);
+
+    // L2:
+    print_label(t, end_label);
+
+    return left_register;
 }
 
 int neq_binop_t::translate(translator_t* t) {
+ 
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
     
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    int left_register;
+    int right_register;
+
+    if (left_success) {
+
+        // Means left was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        if (!t->reg_alloc.is_temporary(left_register) && left_register != RETURN_REGISTER) {
+            
+            give_ownership_temp(t, "__name__", left_register);
+
+        }
+    }
+
+    if (right_success) {
+        // If right value is larger than 16 bits
+        if (right_value > std::numeric_limits<int16_t>().max()) {
+            // TODO: This is not very good...
+            throw translation_error("Constant cant be larger than 16-bits");
+        }
+
+        // Print cmp immediate instruction
+        cmpi_instr(t, left_register, right_value);
+
+    } else {
+
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = push_temp(t, left_register);
+        }
+
+        // Translate term
+        right_register = term->translate(t);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = pop_temp(t, var);
+        }
+
+        // Print sub instruction
+        cmp_instr(t, left_register, right_register);
+    }
+
+    std::string false_label = t->label_allocator.get_label_name();
+    std::string end_label = t->label_allocator.get_label_name();
+    
+    // brne L1
+    branch_instr(t, BRNE_INSTR, false_label);
+
+    // addi r, NULL, 1
+    addi_instr(t, left_register, NULL_REGISTER, 0);
+
+    // jmp L2
+    branch_instr(t, JMP_INSTR, end_label);
+
+    // L1:
+    print_label(t, false_label);
+
+    // addi r, NULL, 0
+    addi_instr(t, left_register, NULL_REGISTER, 1);
+
+    // L2:
+    print_label(t, end_label);
+
+    return left_register;   
 }
 
 
