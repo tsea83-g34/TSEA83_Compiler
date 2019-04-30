@@ -674,12 +674,11 @@ block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
     std::cout << "Matched first brace" << std::endl;
 
     stmts_t* inner = match_stmts(p);
-
-    // If unsuccessful in finding inner statements, revert
-    if (inner == nullptr) {
+    // Not matching statements is okay
+    /*if (inner == nullptr) {
         p->put_back_token(open_brace);
         return nullptr;
-    }
+    }*/
 
     std::cout << "Matched inner statements" << std::endl;
 
