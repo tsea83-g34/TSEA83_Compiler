@@ -22,6 +22,8 @@ translator_t::translator_t() {
 
     // Print an empty row
     print_instruction_row("", false);
+
+    instr_cnt = 0L;
 }
 
 void translator_t::print_instruction_row(const std::string& instr, bool tab = true) {
