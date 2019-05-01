@@ -226,6 +226,33 @@ std::string if_stmt_t::get_string(parser_t* p) {
     return "(if)[ cond{ " + cond->get_string(p) + " } ]{ " + actions->get_string(p) + " }";
 }
 
+void while_stmt_t::undo(parser_t* p) {
+    
+    if (actions != nullptr) {
+        actions->undo(p);
+        delete actions;
+    }
+
+    // Put back ) token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    cond->undo(p);
+    delete cond;
+
+    // Put back ( token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back if token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string while_stmt_t::get_string(parser_t* p) {
+    return "(while)[ cond{ " + cond->get_string(p) + " } ]{ " + actions->get_string(p) + " }";
+}
+
 void assignment_stmt_t::undo(parser_t* p) {
     
     // Put back ; token
@@ -959,6 +986,56 @@ int if_stmt_t::translate(translator_t* t) {
         print_label(t, end_label);
     }
 
+}
+
+int while_stmt_t::translate(translator_t* t) {
+
+    int constant_value = 0;
+    bool cond_evaluated = cond->evaluate(&constant_value);
+
+    if (cond_evaluated) {
+        
+        if (!constant_value) return -1;
+
+        std::string start_label = t->label_allocator.get_label_name();
+        std::string end_label   = t->label_allocator.get_label_name();
+
+        t->reg_alloc.store_context();
+
+        print_label(t, start_label);
+
+        actions->translate(t);
+
+        t->reg_alloc.store_context();
+
+        branch_instr(t, JMP_INSTR, start_label);
+
+        print_label(t, end_label);
+
+    } else {
+
+        std::string start_label = t->label_allocator.get_label_name();
+        std::string end_label   = t->label_allocator.get_label_name();
+
+        t->reg_alloc.store_context();
+
+        print_label(t, start_label);
+
+        int cond_reg = cond->translate(t);
+
+        cmpi_instr(t, cond_reg, 1);
+
+        branch_instr(t, BRNE_INSTR, end_label);
+
+        actions->translate(t);
+
+        t->reg_alloc.store_context();
+
+        branch_instr(t, JMP_INSTR, start_label);
+
+        print_label(t, end_label);
+
+    }
 }
 
 int assignment_stmt_t::translate(translator_t* t) {

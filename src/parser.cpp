@@ -279,8 +279,6 @@ stmt_t* parser_t::match_stmt(parser_t* p) {
     stmt = match_stmt_decl(p);
     if (stmt != nullptr) return stmt;
 
-    std::cout << "beep" << std::endl;
-
     stmt = match_stmt_block(p);
     if (stmt != nullptr) return stmt;
 
@@ -291,6 +289,9 @@ stmt_t* parser_t::match_stmt(parser_t* p) {
     if (stmt != nullptr) return stmt;
 
     stmt = match_stmt_if(p);
+    if (stmt != nullptr) return stmt;
+
+    stmt = match_stmt_while(p);
     if (stmt != nullptr) return stmt;
 
     throw syntax_error("Could not match statement. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token");
@@ -781,8 +782,83 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
     result->tokens.push_back(open_paren_token);
     result->tokens.push_back(closed_paren_token);
 
-    return result;
     std::cout << "Finished matching if statement" << std::endl;
+    return result;
+}
+
+// stmt -> while ( expr ) stmt
+while_stmt_t* parser_t::match_stmt_while(parser_t* p) {
+
+    std::cout << "Matching while statement" << std::endl;
+
+    lex::token* while_token;
+    lex::token* open_paren_token;
+    lex::token* closed_paren_token;
+
+    while_token = p->get_token();
+    open_paren_token = p->get_token();
+    
+    // Mismatching tokens, revert
+    if (while_token->tag != lex::tag_t::WHILE || open_paren_token->tag != lex::tag_t::OPEN_PAREN) {
+        p->put_back_token(open_paren_token);
+        p->put_back_token(while_token);
+        return nullptr;
+    }
+
+    // Acquire conditional expression
+    expr_t* cond;
+
+    try {
+        cond = match_expr(p);
+    } catch (syntax_error e) {
+
+        // If could not acquire conditional, revert
+        p->put_back_token(open_paren_token);
+        p->put_back_token(while_token);
+        throw syntax_error("Could not match conditional expression for if statement");
+    }
+
+    closed_paren_token = p->get_token();
+
+    if (closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
+        p->put_back_token(closed_paren_token);
+        cond->undo(p);
+        p->put_back_token(open_paren_token);
+        p->put_back_token(while_token);
+
+        delete cond;
+        return nullptr;
+    }
+
+    stmt_t* stmt = match_stmt(p);
+
+    if (stmt == nullptr) {
+        p->put_back_token(closed_paren_token);
+        cond->undo(p);
+        p->put_back_token(open_paren_token);
+        p->put_back_token(while_token);
+        delete cond;
+        return nullptr;
+    }
+
+    // If we got this far, we have a successful match, delete tokens and return result
+    
+    // Change associativity of expression if needed
+    cond = binop_expr_t::rewrite(cond);
+    
+
+    // Build syntax object
+    while_stmt_t* result = new while_stmt_t();
+    result->cond = cond;
+    result->actions = stmt;
+
+    // Store tokens
+    result->tokens.push_back(while_token);
+    result->tokens.push_back(open_paren_token);
+    result->tokens.push_back(closed_paren_token);
+
+    std::cout << "Finished matching while statement" << std::endl;
+    return result;
 }
 
 // stmt -> return expr ;

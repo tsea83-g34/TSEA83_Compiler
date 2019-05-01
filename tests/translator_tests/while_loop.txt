@@ -1,0 +1,13 @@
+
+int f(int a) {
+    return a;
+}
+
+int main() {
+    int a = 0;
+    while (f(a)) {
+        int b = 1;
+        a = f(b) + a;
+    }
+
+}

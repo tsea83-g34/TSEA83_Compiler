@@ -27,6 +27,7 @@ struct stmts_t;
 struct block_stmt_t;
 
 struct if_stmt_t;
+struct while_stmt_t;
 struct assignment_stmt_t;
 struct return_stmt_t;
 struct expr_stmt_t;
@@ -182,6 +183,7 @@ private:
 
     static block_stmt_t* match_stmt_block(parser_t* p);
     static if_stmt_t* match_stmt_if(parser_t* p);
+    static while_stmt_t* match_stmt_while(parser_t* p);
     static var_decl_t* match_stmt_decl(parser_t* p);
     static assignment_stmt_t* match_stmt_assign(parser_t* p);
     static return_stmt_t* match_stmt_return(parser_t* p);

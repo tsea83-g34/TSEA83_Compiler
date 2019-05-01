@@ -24,6 +24,7 @@ namespace lex {
         // Keywords
         IF,
         RETURN,
+        WHILE,
 
         // Other
         ID,

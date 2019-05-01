@@ -29,7 +29,8 @@
     param_decl  ->  type id
 
     stmt        ->  block_stmt
-                |   if ( expr ) stmt // This could lead to great errors if expr is matched but not stmt?
+                |   if ( expr ) stmt
+                |   while ( expr ) stmt
                 |   var_decl
                 |   id "=" expr ;   // assignment
                 |   return expr ;
@@ -74,6 +75,7 @@ struct stmt_t;
 struct stmts_t;
 struct block_stmt_t;
 struct if_stmt_t;
+struct while_stmt_t;
 struct assignment_stmt_t;
 struct return_stmt_t;
 struct expr_stmt_t;
@@ -204,6 +206,15 @@ struct block_stmt_t : stmt_t {
 };
 
 struct if_stmt_t : stmt_t {
+    expr_t* cond;
+    stmt_t* actions;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+};
+
+struct while_stmt_t : stmt_t {
     expr_t* cond;
     stmt_t* actions;
 
