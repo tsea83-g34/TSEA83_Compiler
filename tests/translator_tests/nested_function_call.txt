@@ -1,5 +1,9 @@
-int f(int a int b) {
+int g() {
+    return 1;
+}
 
+int f(int a int b) {
+    return g() + 1;
 }
 
 int main() {

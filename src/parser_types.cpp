@@ -699,8 +699,10 @@ int func_decl_t::translate(translator_t* t) {
     stmt->translate(t);
 
     // Set return register to 0 and print ret instruction
-    move_instr(t, RETURN_REGISTER, NULL_REGISTER);
-    ret_instr(t);
+    if (!t->last_was_ret) {
+        move_instr(t, RETURN_REGISTER, NULL_REGISTER);
+        ret_instr(t);
+    }
 
     // Free the registers containing local variables in the current scope
     t->reg_alloc.free_scope(t->symbol_table.get_current_scope());
@@ -919,8 +921,10 @@ int block_stmt_t::translate(translator_t* t) {
     // Throw away variables
     int scope_size = t->symbol_table.get_current_scope()->size();
 
-    // Pop scope variables
-    addi_instr(t, STACK_POINTER, STACK_POINTER, scope_size);
+    // If the scope has not returned pop scope variables
+    if (!t->last_was_ret && scope_size != 0) {
+        addi_instr(t, STACK_POINTER, STACK_POINTER, scope_size);
+    }
 
     // Free the registers containing local variables in the current scope
     t->reg_alloc.free_scope(t->symbol_table.get_current_scope());
@@ -1001,6 +1005,28 @@ int assignment_stmt_t::translate(translator_t* t) {
 
 int return_stmt_t::translate(translator_t* t) {
     
+    int constant_value = 0;
+    bool value_evaluated = return_value->evaluate(&constant_value);
+
+    if (value_evaluated) {
+        
+        load_immediate(t, RETURN_REGISTER, constant_value);
+
+    } else {
+
+        int value_reg = return_value->translate(t);
+
+        if (value_reg != RETURN_REGISTER) {
+            move_instr(t, RETURN_REGISTER, value_reg);
+        }
+
+    }
+    int total_scope_size = t->symbol_table.get_current_scope()->get_end_offset();
+
+    // Pop whole scope variables
+    if (total_scope_size != 0) addi_instr(t, STACK_POINTER, STACK_POINTER, total_scope_size);
+
+    ret_instr(t);
 }
 
 int expr_stmt_t::translate(translator_t* t) {
@@ -1082,7 +1108,7 @@ int call_term_t::translate(translator_t* t) {
 
     // Pop parameters
     std::cout << "Parameters size: " << func->params_size << std::endl;
-    addi_instr(t, STACK_POINTER, STACK_POINTER, func->params_size + alignment);
+    if (func->params_size + alignment) addi_instr(t, STACK_POINTER, STACK_POINTER, func->params_size + alignment);
 
     // Pop base pointer from stack
     pop_instr(t, BASE_POINTER, POINTER_SIZE);
