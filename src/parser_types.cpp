@@ -698,7 +698,8 @@ int func_decl_t::translate(translator_t* t) {
     
     stmt->translate(t);
 
-    // Print ret instruction
+    // Set return register to 0 and print ret instruction
+    move_instr(t, RETURN_REGISTER, NULL_REGISTER);
     ret_instr(t);
 
     // Free the registers containing local variables in the current scope
@@ -715,14 +716,15 @@ int param_decls_t::translate(translator_t* t, func_info_t* f) {
         rest->translate(t, f);
 
     } else {
-
-        // If this is the last param, align the stack to 4
-        if (f->params_size % 4 != 0) {
-                f->params_size += (-f->params_size) % 4;
-        }
-
         // remove return pointer offset from params_size
         f->params_size -= 2;
+
+        /*
+        // If this is the last param, align the stack to 4
+        if (f->params_size % 4 != 0) {
+                f->params_size += 4 - f->params_size % 4;
+        }*/
+
     }
     
 }
@@ -859,6 +861,9 @@ int var_decl_t::translate(translator_t* t) {
         local_addr_info_t* addr = new local_addr_info_t(variable_base_offset);
         var_info_t* var = t->symbol_table.add_var(id, type, size_to_allocate, addr);
 
+        // Allocate memory for the variable
+        subi_instr(t, STACK_POINTER, STACK_POINTER, alignment + size_to_allocate);
+
         // If a value was given, load it into a register
         if (value != nullptr) {
 
@@ -894,10 +899,6 @@ int var_decl_t::translate(translator_t* t) {
                 }
             }
         } 
-
-        // Allocate memory for the variable
-        subi_instr(t, STACK_POINTER, STACK_POINTER, alignment + size_to_allocate);
-
     }
 }
 
@@ -991,6 +992,7 @@ int assignment_stmt_t::translate(translator_t* t) {
             // If it is not temporary, allocate a register and move
             // Could this steal the register of the variable being loaded?
             int reg = t->reg_alloc.allocate(var, false, true);
+            t->reg_alloc.touch(reg, true);
 
             move_instr(t, reg, right_register);
         }
@@ -1051,8 +1053,9 @@ int call_term_t::translate(translator_t* t) {
 
     scope_t* current_scope = t->symbol_table.get_current_scope();
     
-    int context_size = current_scope->get_end_offset() + 2; //+ func->params_size;
+    int context_size = current_scope->get_end_offset() + 2 + func->params_size;
     std::cout << "Context size: " << context_size << std::endl;
+    
     int alignment = (context_size % 4) ? 4 - (context_size % 4) : 0;
     std::cout << "Alignment: " << alignment << std::endl;
 
@@ -1060,6 +1063,7 @@ int call_term_t::translate(translator_t* t) {
     push_instr(t, BASE_POINTER, POINTER_SIZE);
 
     // Align the stack to 4
+    current_scope->push(alignment);
     if (alignment) {
         subi_instr(t, STACK_POINTER, STACK_POINTER, alignment);
     }
@@ -1072,11 +1076,12 @@ int call_term_t::translate(translator_t* t) {
 
     // Call function
     call_instr(t, function_identifier);
-    
+
     // Pop parameters and alignment
-    current_scope->pop(alignment);
+    current_scope->pop(alignment + func->params_size);
 
     // Pop parameters
+    std::cout << "Parameters size: " << func->params_size << std::endl;
     addi_instr(t, STACK_POINTER, STACK_POINTER, func->params_size + alignment);
 
     // Pop base pointer from stack
