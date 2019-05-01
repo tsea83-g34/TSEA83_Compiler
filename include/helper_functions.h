@@ -29,6 +29,8 @@ void subi_instr(translator_t* t, int rd, int ra, int imm);
 
 void neg_instr(translator_t* t, int rd, int ra);
 
+void xor_instr(translator_t* t, int rd, int ra, int rb);
+
 void push_instr(translator_t* t, int rd, int size);
 
 void pop_instr(translator_t* t, int rd, int size);

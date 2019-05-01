@@ -159,11 +159,25 @@ void neg_instr(translator_t* t, int rd, int ra) {
 
 }
 
+void xor_instr(translator_t* t, int rd, int ra, int rb) {
+
+    std::string rd_str = get_register_string(t, rd);
+    std::string ra_str = get_register_string(t, ra);
+    std::string rb_str = get_register_string(t, rb);
+
+    std::stringstream output;
+
+    output << XOR_INSTR << " " << rd_str << ", " << ra_str << ", " << rb_str;
+    t->print_instruction_row(output.str(), true);
+}
+
 void push_instr(translator_t* t, int rd, int size) {
 
     std::string rd_str = get_register_string(t, rd);
 
     std::stringstream output;
+
+    t->symbol_table.get_current_scope()->push(size);
 
     output << PUSH_INSTR << "[" << size << "] " << rd_str;
     t->print_instruction_row(output.str(), true);
@@ -175,6 +189,8 @@ void pop_instr(translator_t* t, int rd, int size) {
     std::string rd_str = get_register_string(t, rd);
 
     std::stringstream output;
+
+    t->symbol_table.get_current_scope()->pop(size);
 
     output << POP_INSTR << "[" << size << "] " << rd_str;
     t->print_instruction_row(output.str(), true);

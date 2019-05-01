@@ -11,6 +11,10 @@
 #define CMP_INSTR       "cmp"
 #define CMP_IMM_INSTR   "cmpi"
 
+// Logical
+
+#define XOR_INSTR       "xor"
+
 // Branch
 
 #define BREQ_INSTR      "breq"
