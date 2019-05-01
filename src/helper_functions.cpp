@@ -31,6 +31,8 @@ int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_i
     int reg = t->reg_alloc.allocate(temp_var, false, false);
 
     load_immediate(t, reg, value);
+
+    t->reg_alloc.touch(reg, false);
     
     *var = temp_var;
     return reg;
@@ -70,12 +72,8 @@ int take_ownership_or_allocate(translator_t* t, const std::string& name, int reg
 
 var_info_t* push_temp(translator_t* t, int reg) {
 
-    std::stringstream output;
-
     var_info_t* var = t->reg_alloc.free(reg);
     int var_size = t->type_table.at(var->type)->size;
-    
-    t->symbol_table.get_current_scope()->push(var_size);
 
     push_instr(t, reg, var_size);
     
@@ -86,8 +84,6 @@ int pop_temp(translator_t* t, var_info_t* var) {
 
     int reg = t->reg_alloc.allocate(var, false, true);
     int var_size = t->type_table.at(var->type)->size;
-
-    t->symbol_table.get_current_scope()->pop(var_size);
 
     pop_instr(t, reg, var_size);
 
@@ -210,7 +206,7 @@ void ret_instr(translator_t* t) {
     std::stringstream output;
 
     output << RETURN_INSTR;
-    t->print_instruction_row(output.str(), true);
+    t->print_instruction_row(output.str(), true, true);
 }
 
 void store_instr(translator_t* t, int rd, int ra, addr_info_t* offset, int size) {
