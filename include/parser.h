@@ -41,6 +41,7 @@ struct term_t;
 struct lit_term_t;
 struct id_term_t;
 struct call_term_t;
+struct expr_term_t;
 
 struct add_binop_t;
 struct sub_binop_t;
@@ -201,6 +202,7 @@ private:
     static id_term_t* match_term_identifier(parser_t* p);
     static lit_term_t* match_term_literal(parser_t* p);
     static call_term_t* match_term_call(parser_t* p);
+    static expr_term_t* match_term_expr(parser_t* p);
 
 public:
     parser_t(lex::lexer *l);

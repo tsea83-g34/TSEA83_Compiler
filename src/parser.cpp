@@ -356,7 +356,11 @@ term_t* parser_t::match_term(parser_t* p) {
     if (term != nullptr) return term;
 
     term = match_term_literal(p);
+    if (term != nullptr) return term;
+
+    term = match_term_expr(p);
     return term;
+
 }
 
 // Production specific matching functions
@@ -1216,5 +1220,51 @@ call_term_t* parser_t::match_term_call(parser_t* p) {
     result->tokens.push_back(open_paren_token);
     result->tokens.push_back(closed_paren_token);
 
+    return result;
+}
+
+// term -> ( expr )
+expr_term_t* parser_t::match_term_expr(parser_t* p) {
+
+    std::cout << "Matching expression term " << std::endl;
+    lex::token* open_paren_token;
+    lex::token* closed_paren_token;
+
+    open_paren_token = p->get_token();
+
+    if (open_paren_token->tag != lex::tag_t::OPEN_PAREN) {
+        p->put_back_token(open_paren_token);
+        return nullptr;
+    }
+
+    expr_t* expr = match_expr(p);
+
+    if (expr == nullptr) {
+        p->put_back_token(open_paren_token);
+        return nullptr;
+    }
+
+    closed_paren_token = p->get_token();
+
+    if (closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
+        p->put_back_token(closed_paren_token);
+        expr->undo(p);
+        p->put_back_token(open_paren_token);
+        delete expr;
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+    
+    // Try rewriting associativity of expr
+    expr = binop_expr_t::rewrite(expr);
+
+    // Build syntax object
+    expr_term_t* result = new expr_term_t();
+    result->expr = expr;
+
+    // Store token
+    result->tokens.push_back(open_paren_token);
+    result->tokens.push_back(closed_paren_token);
     return result;
 }

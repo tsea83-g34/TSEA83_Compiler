@@ -375,6 +375,26 @@ std::string call_term_t::get_string(parser_t* p) {
     return function_identifier + "(" + params_string + ")";
 }
 
+void expr_term_t::undo(parser_t* p) {
+    
+    // Put back ) token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // put back expression
+    expr->undo(p);
+    delete expr;
+
+    // Put back ( token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+    
+}
+
+std::string expr_term_t::get_string(parser_t* p) {
+    return "(" + expr->get_string(p) + ")";
+}
+
 
 void binop_expr_t::undo(parser_t* p) {
 
@@ -461,6 +481,12 @@ bool call_term_t::evaluate(int* result) {
 
 bool id_term_t::evaluate(int* result) {
     return false;
+}
+
+bool expr_term_t::evaluate(int* result) {
+    
+    return expr->evaluate(result);
+
 }
 
 bool add_binop_t::evaluate(int* result) {
@@ -632,7 +658,15 @@ expr_t* binop_expr_t::rewrite(expr_t* e) {
         
         // Set the associativity of new node to left, and it's term to the term of the previous operation from the old tree
         current->left_assoc = true;
+
+        // If the rest was a tree within parenthesis, rewrite it
+        expr_term_t* term_tree = dynamic_cast<expr_term_t*>(previous_old->term);
+        if (term_tree != nullptr) {
+            term_tree->expr = rewrite(term_tree->expr);
+        }
+        
         current->term = previous_old->term;
+
 
         // Set the rest of the previous node from the new tree to this node
         previous_new->rest = current;
@@ -1194,6 +1228,12 @@ int call_term_t::translate(translator_t* t) {
 }
 
 int lit_term_t::translate(translator_t* t) {
+    
+}
+
+int expr_term_t::translate(translator_t* t) {
+    
+    return expr->translate(t);
     
 }
 

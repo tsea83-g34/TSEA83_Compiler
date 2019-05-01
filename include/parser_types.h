@@ -53,6 +53,7 @@
     term        ->  id
                 |   literal
                 |   id ( params )  // Function call
+                |   ( expr )
     
     params      ->  expr params
                 |   e
@@ -88,6 +89,7 @@ struct term_t;
 struct lit_term_t;
 struct id_term_t;
 struct call_term_t;
+struct expr_term_t;
 
 
 // New binary operation system
@@ -293,6 +295,16 @@ struct call_term_t : term_t {
     params_t* params;
 
     call_term_t() { is_literal = false; }
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
+};
+
+struct expr_term_t : term_t {
+    expr_t* expr;
+
+    expr_term_t() { is_literal = false; }
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
