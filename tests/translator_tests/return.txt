@@ -1,0 +1,16 @@
+
+int main() {
+    int a = 1;
+
+    if (a) {
+        int b = 3;
+        return b;
+    }
+
+    if (a == 0) {
+        int b = 6;
+        return b;
+    }
+
+    return a;
+}
