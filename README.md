@@ -23,15 +23,15 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
 ### Code Generation
 
-- [ ] Symbol table tree for variables and declarations
-- [ ] Register allocation table and register usage
-- [ ] Translation from abstract syntax tree to machine code
+- [x] Symbol table tree for variables and declarations
+- [x] Register allocation table and register usage
+- [x] Translation from abstract syntax tree to machine code
 
 ### Other Language Features
 
 - [ ] Structs, struct operator `.`
 - [ ] Pointers, pointer operators `*, &, ->, []`
-- [ ] While-loops
+- [x] While-loops
 - [ ] For-loops
 - [ ] Arithmetic operators `*, %, a++, ++a, a--, --a, +=, -=, *=`
 - [ ] Logical operators `&&, ||, ^, !`
