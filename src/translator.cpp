@@ -28,10 +28,12 @@ translator_t::translator_t() {
     print_instruction_row("", false);
 
     instr_cnt = 0L;
+    last_was_ret = false;
 }
 
-void translator_t::print_instruction_row(const std::string& instr, bool tab = true) {
+void translator_t::print_instruction_row(const std::string& instr, bool tab, bool ret) {
     
+    last_was_ret = ret;
     if (tab) output << "\t";
     output << instr << "\n";
     instr_cnt++;

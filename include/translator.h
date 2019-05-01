@@ -37,13 +37,14 @@ public:
     scope_name_allocator_t  name_allocator;
     label_allocator_t       label_allocator;
     long instr_cnt;
+    bool last_was_ret;
 
     translator_t();
     ~translator_t() = default;
 
     void print_to_file(std::ofstream& file);
 
-    void print_instruction_row(const std::string& instr, bool tab);
+    void print_instruction_row(const std::string& instr, bool tab, bool ret = false);
     void static_alloc(std::string name, int size, int value);
 };
 
