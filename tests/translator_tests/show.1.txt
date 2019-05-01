@@ -1,0 +1,16 @@
+
+int main() {
+
+    int a = 1;
+    int b = 3;
+
+    if (a == 1) {
+        return b;
+    }
+
+    while (b != 10) {
+        b = b + 1;
+    }
+
+    return b;
+}
