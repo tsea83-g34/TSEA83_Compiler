@@ -31,8 +31,8 @@
 #define MOVHI_INSTR     "movhi"
 #define MOVE_INSTR      "move"
 
-#define LOAD_INSTR      "ld"
-#define STORE_INSTR     "str"
+#define LOAD_INSTR      "load"
+#define STORE_INSTR     "store"
 
 #define CALL_INSTR      "call"
 #define RETURN_INSTR    "ret"
