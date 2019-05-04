@@ -25,6 +25,7 @@ namespace lex {
         IF,
         RETURN,
         WHILE,
+        ELSE,
 
         // Other
         ID,

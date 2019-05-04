@@ -47,6 +47,7 @@ lexer::lexer(std::string filename) {
     reserved_words.insert({"if", tag_t::IF});
     reserved_words.insert({"return", tag_t::RETURN});
     reserved_words.insert({"while", tag_t::WHILE});
+    reserved_words.insert({"else", tag_t::ELSE});
 }
 
 lexer::~lexer() {
