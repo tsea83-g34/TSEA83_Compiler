@@ -162,6 +162,23 @@ token* lexer::get_next_token() {
             continue;
         
         // Check case where comment signifier // is split between buffers
+        } else if (lexeme_start[0] == '/' && lexeme_start[1] == '*') {
+            std::cout << "Found block comment" << std::endl;
+
+            while (!(lexeme_start[0] == '*' && lexeme_start[1] == '/')) {
+                if (lexeme_start == get_current_buffer_end()) {
+                    switch_buffer();
+                    continue;
+                }
+
+                if (*lexeme_start == '\n') line++;
+
+                lexeme_start++;
+            }
+            lexeme_start += 2;
+
+            continue;
+
         } else if (*lexeme_start == '/' && lexeme_start+1 == get_current_buffer_end()) {
             switch_buffer();
             if (*lexeme_start == '/') {
