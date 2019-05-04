@@ -14,7 +14,8 @@ using namespace lex;
 lexer::lexer(std::string filename) {
 
     reserved_words = std::unordered_map<std::string, tag_t>();
-    line = 0;
+    line = 1;
+    column = 0;
 
     identifier_regex        = std::regex("([A-Z]|[a-z]|_)(([A-Z]|[a-z]|_)|[0-9])*");
     int_literal_regex       = std::regex("([1-9][0-9]*)|0");
@@ -57,6 +58,20 @@ lexer::~lexer() {
 
 int lexer::char_to_digit(char c) {
     return c - '0';
+}
+
+int lexer::get_trailing_whitespace_count(const std::string& str) {
+
+    int count = 0;
+    for (char c : str) {
+        if (c == '\n') {
+            count = 0;
+            continue;
+        } else if (c == '\t') {
+            count += 4;
+        } else count++;
+    }
+    return count;
 }
 
 char* lexer::get_current_buffer() {
@@ -118,8 +133,18 @@ token* lexer::get_next_token() {
         if(std::regex_search(lexeme_start, cm, whitespace_regex) && cm.prefix().length() == 0) {
             lexeme_start += cm[0].length();
             std::string spaces = cm[0].str();
-            line += std::count(spaces.begin(), spaces.end(), '\n');
-            //std::cout << "Removed " << cm[0].length() << " whitespace characters" << std::endl;
+            
+            column += spaces.length();
+            
+            int tab_count = std::count(spaces.begin(), spaces.end(), '\t');
+            int newline_count = std::count(spaces.begin(), spaces.end(), '\n');
+
+            if (newline_count) {
+                column = 0;
+                line += newline_count;
+            }
+            column += get_trailing_whitespace_count(spaces);
+
             continue; // Try again in case of buffer switch
         }
         
@@ -163,11 +188,20 @@ token* lexer::get_next_token() {
             // Otherwise just offset the pointer with the word length
             } else lexeme_start += word.length();
                 
-            // If found word is keyword
-            if (reserved_words.count(word)) return new keyword_token(reserved_words[word]);
+            
 
+            // If found word is keyword
+            token* result_token;
+
+            if (reserved_words.count(word)) result_token = new keyword_token(reserved_words[word]);
+            else result_token = new id_token(std::move(word));
+            
+            result_token->line_number = line;
+            result_token->column_number = column;
+
+            column += word.length();
             // Otherwise create a new identifier token
-            return new id_token(std::move(word));
+            return result_token;
         }
 
         // Check for integer literals
@@ -184,15 +218,27 @@ token* lexer::get_next_token() {
 
             // Parse integer value and return new integer literal token
             int value = std::stoi(literal);
-            return new int_literal_token(value);
+            token* result_token = new int_literal_token(value);
+            
+            result_token->line_number = line;
+            result_token->column_number = column;
+
+            column += literal.length();
+            return result_token;
         }
 
         // Check for string literals
         if (std::regex_search(lexeme_start, cm, str_literal_regex) && cm.prefix().length() == 0) {
             std::string literal = cm[0].str();
-            lexeme_start += literal.length();
+            int literal_size = literal.length();
+            lexeme_start += literal_size;
+            
+            token* result_token = new str_literal_token(std::move(literal));
+            result_token->line_number = line;
+            result_token->column_number = column;
+            column += literal_size;
+            return result_token;
 
-            return new str_literal_token(std::move(literal));
         // In case literal is split between buffers, look for half string
         } else if (std::regex_search(lexeme_start, cm, half_str_literal_regex) && cm.prefix().length() == 0) {
             
@@ -205,28 +251,54 @@ token* lexer::get_next_token() {
         }
 
         // Check for parenthesis, single character operators and semi-colons
+        token* result_token = nullptr;
+        tag_t tag = tag_t::UNKNOWN;
+        bool found = false;
+
         switch (*lexeme_start) {
             case ';':
                 lexeme_start++;
-                return new token(tag_t::SEMI_COLON);
+                found = true;
+                tag = tag_t::SEMI_COLON;
+                break;
             case '(':
                 lexeme_start++;
-                return new token(tag_t::OPEN_PAREN);
+                found = true;
+                tag = tag_t::OPEN_PAREN;
+                break;
             case ')':
                 lexeme_start++;
-                return new token(tag_t::CLOSED_PAREN);
+                found = true;
+                tag = tag_t::CLOSED_PAREN;
+                break;
             case '{':
                 lexeme_start++;
-                return new token(tag_t::OPEN_BRACE);
+                found = true;
+                tag = tag_t::OPEN_BRACE;
+                break;
             case '}':
                 lexeme_start++;
-                return new token(tag_t::CLOSED_BRACE);
+                found = true;
+                tag = tag_t::CLOSED_BRACE;
+                break;
             case '+':
                 lexeme_start++;
-                return new arithop_token(tag_t::PLUS);
+                found = true;
+                tag = tag_t::PLUS;
+                break;
             case '-':
                 lexeme_start++;
-                return new arithop_token(tag_t::MINUS);
+                found = true;
+                tag = tag_t::MINUS;
+                break;
+        }
+
+        if (found) {
+            result_token = new token(tag);
+            result_token->line_number = line;
+            result_token->column_number = column;
+            column++;
+            return result_token;
         }
 
         // Check for relational operators
@@ -236,14 +308,23 @@ token* lexer::get_next_token() {
                 switch_buffer();
             } else lexeme_start++;
 
+            tag_t tag = tag_t::UNKNOWN;
+            int size = 1;
             switch(*lexeme_start) {
                 case '=':
                     lexeme_start++;
-                    return new relop_token(tag_t::EQUALS);
+                    size++;
+                    tag = tag_t::EQUALS;
                     break;
                 default:
-                    return new token(tag_t::ASSIGNMENT);
+                    tag = tag_t::ASSIGNMENT;
             }
+
+            token* result_token = new token(tag);
+            result_token->line_number = line;
+            result_token->column_number = column;
+            column += size;
+            return result_token;
         }
 
         if (*lexeme_start == '!') {
@@ -251,15 +332,23 @@ token* lexer::get_next_token() {
             if (lexeme_start[1] == '\0') {
                 switch_buffer();
             } else lexeme_start++;
-
+            
+            tag_t tag = tag_t::UNKNOWN;
+            int size = 1;
             switch(*lexeme_start) {
                 case '=':
                     lexeme_start++;
-                    return new relop_token(tag_t::NOT_EQUALS);
+                    size++;
+                    tag = tag_t::NOT_EQUALS;
                     break;
                 default:
-                    return new token(tag_t::UNKNOWN);
+                    tag = tag_t::UNKNOWN;
             }
+
+            token* result_token = new token(tag);
+            result_token->line_number = line;
+            result_token->column_number = column;
+            column += size;
         }
 
         return new token(tag_t::UNKNOWN);

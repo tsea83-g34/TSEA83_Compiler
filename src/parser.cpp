@@ -131,7 +131,7 @@ decl_t* parser_t::match_decl(parser_t* p) {
     d = match_decl_func(p);
     if (d != nullptr) return d;
 
-    throw syntax_error("Could not match declaration. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token");
+    throw syntax_error("Could not match declaration. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token " + std::to_string(p->token_queue.front()->line_number) + ":" + std::to_string(p->token_queue.front()->column_number));
 }
 
 func_decl_t* parser_t::match_decl_func(parser_t* p) {
@@ -294,7 +294,7 @@ stmt_t* parser_t::match_stmt(parser_t* p) {
     stmt = match_stmt_while(p);
     if (stmt != nullptr) return stmt;
 
-    throw syntax_error("Could not match statement. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token");
+    throw syntax_error("Could not match statement. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token " + std::to_string(p->token_queue.front()->line_number) + ":" + std::to_string(p->token_queue.front()->column_number));
 }
 
 expr_t* parser_t::match_expr(parser_t* p) {
@@ -311,7 +311,7 @@ expr_t* parser_t::match_expr(parser_t* p) {
     expr = match_expr_negated(p);
     if (expr != nullptr) return expr;
 
-    throw syntax_error("Could not match expression. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token");
+    throw syntax_error("Could not match expression. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token " + std::to_string(p->token_queue.front()->line_number) + ":" + std::to_string(p->token_queue.front()->column_number));
 }
 
 binop_expr_t* parser_t::match_binop(parser_t* p) {

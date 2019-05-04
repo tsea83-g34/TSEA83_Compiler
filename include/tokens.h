@@ -52,7 +52,9 @@ namespace lex {
 
     const std::string token_names[] = {
         "if keyword", 
-        "return keyword", 
+        "return keyword",
+        "while keyowrd",
+        "else keyword", 
         "identifier", 
         "integer literal", 
         "string literal",
@@ -73,6 +75,8 @@ namespace lex {
     struct token {
         const tag_t tag;
         token(tag_t _tag) : tag(_tag) { }
+        int line_number;
+        int column_number;
 
         virtual type_t type() { return type_t::GENERAL; }
     };

@@ -34,8 +34,9 @@ namespace lex {
         // Pointers for reading
         char *lexeme_start;
 
-        // Current line
+        // Current line and column
         int line;
+        int column;
         
         // Regular expressions
         std::regex identifier_regex;
@@ -60,6 +61,7 @@ namespace lex {
 
         const char* get_current_buffer_end();
 
+        int get_trailing_whitespace_count(const std::string& str);
     public:
         lexer(std::string filename);
         ~lexer();
