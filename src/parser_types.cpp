@@ -1010,12 +1010,16 @@ int if_stmt_t::translate(translator_t* t) {
         int cond_reg = cond->translate(t);
         std::string end_label = t->label_allocator.get_label_name();
 
+        t->reg_alloc.store_context();
+        
         // Test if true or false
         cmpi_instr(t, cond_reg, 1);
 
         branch_instr(t, BRNE_INSTR, end_label);
 
         actions->translate(t);
+
+        t->reg_alloc.store_context();
 
         print_label(t, end_label);
     }
