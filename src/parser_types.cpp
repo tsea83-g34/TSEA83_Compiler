@@ -1298,7 +1298,7 @@ int if_stmt_t::translate(translator_t* t) {
 
         print_label(t, else_label);
 
-        else_actions->translate(t);
+        if (else_actions != nullptr) else_actions->translate(t);
 
         t->reg_alloc.store_context();
 
