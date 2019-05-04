@@ -27,6 +27,14 @@ void sub_instr(translator_t* t, int rd, int ra, int rb);
 
 void subi_instr(translator_t* t, int rd, int ra, int imm);
 
+void mult_instr(translator_t* t,int rd, int ra, int rb);
+
+void and_instr(translator_t* t,int rd, int ra, int rb);
+
+void or_instr(translator_t* t,int rd, int ra, int rb);
+
+void not_instr(translator_t* t,int rd, int ra);
+
 void neg_instr(translator_t* t, int rd, int ra);
 
 void xor_instr(translator_t* t, int rd, int ra, int rb);

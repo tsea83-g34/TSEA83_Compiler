@@ -311,6 +311,9 @@ expr_t* parser_t::match_expr(parser_t* p) {
     expr = match_expr_negated(p);
     if (expr != nullptr) return expr;
 
+    expr = match_expr_not(p);
+    if (expr != nullptr) return expr;
+
     throw syntax_error("Could not match expression. Unexpected " + lex::token_names[(int) p->token_queue.front()->tag] + " token " + std::to_string(p->token_queue.front()->line_number) + ":" + std::to_string(p->token_queue.front()->column_number));
 }
 
@@ -326,11 +329,32 @@ binop_expr_t* parser_t::match_binop(parser_t* p) {
         case lex::tag_t::MINUS:
             result = new sub_binop_t();
             break;
+        case lex::tag_t::AND:
+            result = new and_binop_t();
+            break;
+        case lex::tag_t::OR:
+            result = new or_binop_t();
+            break;
+        case lex::tag_t::STAR:
+            result = new mult_binop_t();
+            break;
         case lex::tag_t::EQUALS:
             result = new eq_binop_t();
             break;
         case lex::tag_t::NOT_EQUALS:
             result = new neq_binop_t();
+            break;
+        case lex::tag_t::LESS:
+            result = new less_binop_t();
+            break;
+        case lex::tag_t::GREATER:
+            result = new greater_eq_binop_t();
+            break;
+        case lex::tag_t::LESS_OR_EQUAL:
+            result = new less_eq_binop_t();
+            break;
+        case lex::tag_t::GREATER_OR_EQUAL:
+            result = new greater_eq_binop_t();
             break;
         default:
             p->put_back_token(op_token);
@@ -1099,6 +1123,36 @@ neg_expr_t* parser_t::match_expr_negated(parser_t* p) {
 
     // Store token
     result->tokens.push_back(neg_token);
+    
+    return result;
+}
+
+// expr -> "!" term
+not_expr_t* parser_t::match_expr_not(parser_t* p) {
+    
+    lex::token* not_token  = p->get_token();
+
+    // If first token is not a minus operator, or the second token is not a literal nor an identifier, revert
+    if (not_token->tag != lex::tag_t::NOT) {
+        p->put_back_token(not_token);
+        return nullptr;
+    }
+
+    term_t* value = match_term(p);
+    
+    if (value == nullptr) {
+        p->put_back_token(not_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match is successful
+
+    // Create syntax object
+    not_expr_t* result = new not_expr_t();
+    result->value = value;
+
+    // Store token
+    result->tokens.push_back(not_token);
     
     return result;
 }

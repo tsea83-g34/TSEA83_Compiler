@@ -143,6 +143,55 @@ void subi_instr(translator_t* t, int rd, int ra, int imm) {
 
 }
 
+void mult_instr(translator_t* t, int rd, int ra, int rb) {
+    
+    std::string rd_str = get_register_string(t, rd);
+    std::string ra_str = get_register_string(t, ra);
+    std::string rb_str = get_register_string(t, rb);
+
+    std::stringstream output;
+
+    output  << MULT_INSTR << " " << rd_str << ", " << ra_str << ", " << rb_str;
+    t->print_instruction_row(output.str(), true);
+}
+
+
+void and_instr(translator_t* t, int rd, int ra, int rb) {
+    
+    std::string rd_str = get_register_string(t, rd);
+    std::string ra_str = get_register_string(t, ra);
+    std::string rb_str = get_register_string(t, rb);
+
+    std::stringstream output;
+
+    output  << AND_INSTR << " " << rd_str << ", " << ra_str << ", " << rb_str;
+    t->print_instruction_row(output.str(), true);
+}
+
+void or_instr(translator_t* t, int rd, int ra, int rb) {
+    
+    std::string rd_str = get_register_string(t, rd);
+    std::string ra_str = get_register_string(t, ra);
+    std::string rb_str = get_register_string(t, rb);
+
+    std::stringstream output;
+
+    output  << OR_INSTR << " " << rd_str << ", " << ra_str << ", " << rb_str;
+    t->print_instruction_row(output.str(), true);
+}
+
+void not_instr(translator_t* t, int rd, int ra) {
+
+    std::string rd_str = get_register_string(t, rd);
+    std::string ra_str = get_register_string(t, ra);
+
+    std::stringstream output;
+
+    output  << NOT_INSTR << " " << rd_str << ", " << ra_str;
+    t->print_instruction_row(output.str(), true);
+
+}
+
 void neg_instr(translator_t* t, int rd, int ra) {
 
     std::string rd_str = get_register_string(t, rd);

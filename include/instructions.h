@@ -6,6 +6,10 @@
 #define SUB_INSTR       "sub"
 #define ADD_IMM_INSTR   "addi"
 #define SUB_IMM_INSTR   "subi"
+#define MULT_INSTR      "mul"
+#define AND_INSTR       "and"
+#define OR_INSTR        "or"
+#define NOT_INSTR       "not"
 #define NEG_INSTR       "neg"
 
 #define CMP_INSTR       "cmp"

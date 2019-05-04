@@ -291,6 +291,21 @@ token* lexer::get_next_token() {
                 found = true;
                 tag = tag_t::MINUS;
                 break;
+            case '&':
+                lexeme_start++;
+                found = true;
+                tag = tag_t::AND;
+                break;
+            case '|':
+                lexeme_start++;
+                found = true;
+                tag = tag_t::OR;
+                break;
+            case '*':
+                lexeme_start++;
+                found = true;
+                tag = tag_t::STAR;
+                break;
         }
 
         if (found) {
@@ -333,6 +348,7 @@ token* lexer::get_next_token() {
                 switch_buffer();
             } else lexeme_start++;
             
+            std::cout << "Not operator found" << std::endl;
             tag_t tag = tag_t::UNKNOWN;
             int size = 1;
             switch(*lexeme_start) {
@@ -342,13 +358,64 @@ token* lexer::get_next_token() {
                     tag = tag_t::NOT_EQUALS;
                     break;
                 default:
-                    tag = tag_t::UNKNOWN;
+                    tag = tag_t::NOT;
             }
 
             token* result_token = new token(tag);
             result_token->line_number = line;
             result_token->column_number = column;
             column += size;
+            return result_token;
+        }
+
+        if (*lexeme_start == '<') {
+            // Handle split
+            if (lexeme_start[1] == '\0') {
+                switch_buffer();
+            } else lexeme_start++;
+            
+            tag_t tag = tag_t::UNKNOWN;
+            int size = 1;
+            switch(*lexeme_start) {
+                case '=':
+                    lexeme_start++;
+                    size++;
+                    tag = tag_t::LESS_OR_EQUAL;
+                    break;
+                default:
+                    tag = tag_t::LESS;
+            }
+
+            token* result_token = new token(tag);
+            result_token->line_number = line;
+            result_token->column_number = column;
+            column += size;
+            return result_token;
+        }
+
+        if (*lexeme_start == '>') {
+            // Handle split
+            if (lexeme_start[1] == '\0') {
+                switch_buffer();
+            } else lexeme_start++;
+            
+            tag_t tag = tag_t::UNKNOWN;
+            int size = 1;
+            switch(*lexeme_start) {
+                case '=':
+                    lexeme_start++;
+                    size++;
+                    tag = tag_t::GREATER_OR_EQUAL;
+                    break;
+                default:
+                    tag = tag_t::GREATER;
+            }
+
+            token* result_token = new token(tag);
+            result_token->line_number = line;
+            result_token->column_number = column;
+            column += size;
+            return result_token;
         }
 
         return new token(tag_t::UNKNOWN);

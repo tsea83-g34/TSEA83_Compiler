@@ -332,6 +332,20 @@ std::string neg_expr_t::get_string(parser_t* p) {
     return "- " + value->get_string(p);
 }
 
+void not_expr_t::undo(parser_t* p) {
+    
+    value->undo(p);
+    delete value;
+    
+    // Put back ! token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string not_expr_t::get_string(parser_t* p) {
+    return "!" + value->get_string(p);
+}
+
 void term_expr_t::undo(parser_t* p) {
     
     t->undo(p);
@@ -446,6 +460,30 @@ std::string sub_binop_t::get_string(parser_t* p) {
     }
 }
 
+std::string and_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return "(" + rest->get_string(p) + ") & " + term->get_string(p);
+    } else {
+        return term->get_string(p) + " & (" + rest->get_string(p) + ")";
+    }
+}
+
+std::string or_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return "(" + rest->get_string(p) + ") | " + term->get_string(p);
+    } else {
+        return term->get_string(p) + " | (" + rest->get_string(p) + ")";
+    }
+}
+
+std::string mult_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return "(" + rest->get_string(p) + ") * " + term->get_string(p);
+    } else {
+        return term->get_string(p) + " * (" + rest->get_string(p) + ")";
+    }
+}
+
 std::string eq_binop_t::get_string(parser_t* p) {
     if (left_assoc) {
         return "(" + rest->get_string(p) + ") == " + term->get_string(p);
@@ -462,6 +500,38 @@ std::string neq_binop_t::get_string(parser_t* p) {
     }
 }
 
+std::string less_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return "(" + rest->get_string(p) + ") < " + term->get_string(p);
+    } else {
+        return term->get_string(p) + " < (" + rest->get_string(p) + ")";
+    }
+}
+
+std::string greater_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return "(" + rest->get_string(p) + ") > " + term->get_string(p);
+    } else {
+        return term->get_string(p) + " > (" + rest->get_string(p) + ")";
+    }
+}
+
+std::string less_eq_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return "(" + rest->get_string(p) + ") <= " + term->get_string(p);
+    } else {
+        return term->get_string(p) + " <= (" + rest->get_string(p) + ")";
+    }
+}
+
+std::string greater_eq_binop_t::get_string(parser_t* p) {
+    if (left_assoc) {
+        return "(" + rest->get_string(p) + ") >= " + term->get_string(p);
+    } else {
+        return term->get_string(p) + " >= (" + rest->get_string(p) + ")";
+    }
+}
+
 // -------------------- EVALUATION ---------------------
 //
 // -----------------------------------------------------
@@ -474,6 +544,17 @@ bool neg_expr_t::evaluate(int* result) {
     if (!success) return false;
 
     *result = - val;
+    return true;
+}
+
+bool not_expr_t::evaluate(int* result) {
+    
+    int val;
+    bool success = value->evaluate(&val);
+
+    if (!success) return false;
+
+    *result = !val;
     return true;
 }
 
@@ -528,6 +609,48 @@ bool sub_binop_t::evaluate(int* result) {
     return true;
 }
 
+bool and_binop_t::evaluate(int* result) {
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val & term_val;
+    return true;
+}
+
+bool or_binop_t::evaluate(int* result) {
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val | term_val;
+    return true;
+}
+
+bool mult_binop_t::evaluate(int* result) {
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val * term_val;
+    return true;
+}
+
 bool eq_binop_t::evaluate(int* result) {
     // Assumes left associativity
     int rest_val;
@@ -553,6 +676,62 @@ bool neq_binop_t::evaluate(int* result) {
     if (!success) return false;
 
     *result = rest_val != term_val;
+    return true;
+}
+
+bool less_binop_t::evaluate(int* result) {
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val < term_val;
+    return true;
+}
+
+bool greater_binop_t::evaluate(int* result) {
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val > term_val;
+    return true;
+}
+
+bool less_eq_binop_t::evaluate(int* result) {
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val <= term_val;
+    return true;
+}
+
+bool greater_eq_binop_t::evaluate(int* result) {
+    // Assumes left associativity
+    int rest_val;
+    int term_val;
+
+    bool success;
+    success = rest->evaluate(&rest_val) && term->evaluate(&term_val);
+
+    if (!success) return false;
+
+    *result = rest_val >= term_val;
     return true;
 }
 
@@ -583,6 +762,39 @@ sub_binop_t* sub_binop_t::duplicate() {
     return result;
 }
 
+mult_binop_t* mult_binop_t::duplicate() {
+    
+    mult_binop_t* result = new mult_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
+}
+
+and_binop_t* and_binop_t::duplicate() {
+    
+    and_binop_t* result = new and_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
+}
+
+or_binop_t* or_binop_t::duplicate() {
+    
+    or_binop_t* result = new or_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
+}
+
 eq_binop_t* eq_binop_t::duplicate() {
         
     eq_binop_t* result = new eq_binop_t();
@@ -597,6 +809,50 @@ eq_binop_t* eq_binop_t::duplicate() {
 neq_binop_t* neq_binop_t::duplicate() {
         
     neq_binop_t* result = new neq_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
+}
+
+less_binop_t* less_binop_t::duplicate() {
+        
+    less_binop_t* result = new less_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
+}
+
+greater_binop_t* greater_binop_t::duplicate() {
+        
+    greater_binop_t* result = new greater_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
+}
+
+less_eq_binop_t* less_eq_binop_t::duplicate() {
+        
+    less_eq_binop_t* result = new less_eq_binop_t();
+    
+    // Give ownership of the operator token
+    result->tokens.push_back(tokens.back());
+    tokens.pop_back();
+    
+    return result;
+}
+
+greater_eq_binop_t* greater_eq_binop_t::duplicate() {
+        
+    greater_eq_binop_t* result = new greater_eq_binop_t();
     
     // Give ownership of the operator token
     result->tokens.push_back(tokens.back());
@@ -1193,6 +1449,25 @@ int neg_expr_t::translate(translator_t* t) {
     return reg;
 }
 
+int not_expr_t::translate(translator_t* t) {
+    
+    std::stringstream output;
+
+    int reg = value->translate(t);
+    std::string register_string = t->reg_alloc.get_register_string(reg);
+    
+     // If the allocated register is not temporary, take ownership of it
+    if (!t->reg_alloc.is_temporary(reg) && reg != RETURN_REGISTER) {
+        
+        give_ownership_temp(t, "__temp__", reg);
+
+    }
+    
+    // Print neg instr
+    not_instr(t, reg, reg);
+    return reg;
+}
+
 int term_expr_t::translate(translator_t* t) {
     
     return this->t->translate(t);
@@ -1392,6 +1667,190 @@ int sub_binop_t::translate(translator_t* t) {
     return left_register;
 }
 
+int and_binop_t::translate(translator_t* t) {
+    
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
+    
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    int left_register;
+    int right_register;
+
+    if (left_success) {
+
+        // Means left was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
+    }
+
+    if (right_success) {
+
+        // Means right was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        right_register = allocate_temp_imm(t, "__temp__", right_value, &var_info);
+
+        t->reg_alloc.free(right_register);
+        
+    } else {
+
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = push_temp(t, left_register);
+        }
+
+        // Translate term
+        right_register = term->translate(t);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = pop_temp(t, var);
+        }
+
+    }
+
+    and_instr(t, left_register, left_register, right_register);
+
+    return left_register;
+}
+
+int or_binop_t::translate(translator_t* t) {
+    
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
+    
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    int left_register;
+    int right_register;
+
+    if (left_success) {
+
+        // Means left was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
+    }
+
+    if (right_success) {
+        
+        // Means right was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        right_register = allocate_temp_imm(t, "__temp__", right_value, &var_info);
+
+        t->reg_alloc.free(right_register);
+        
+    } else {
+
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = push_temp(t, left_register);
+        }
+
+        // Translate term
+        right_register = term->translate(t);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = pop_temp(t, var);
+        }
+
+    }
+
+    or_instr(t, left_register, left_register, right_register);
+
+    return left_register;   
+}
+
+int mult_binop_t::translate(translator_t* t) {
+    
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
+    
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    int left_register;
+    int right_register;
+
+    if (left_success) {
+
+        // Means left was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
+    }
+
+    if (right_success) {
+
+        // Means right was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        right_register = allocate_temp_imm(t, "__temp__", right_value, &var_info);
+
+        t->reg_alloc.free(right_register);
+        
+    } else {
+
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = push_temp(t, left_register);
+        }
+
+        // Translate term
+        right_register = term->translate(t);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = pop_temp(t, var);
+        }
+
+    }
+
+    mult_instr(t, left_register, left_register, right_register);   
+
+    return left_register;
+}
+
+
 int eq_binop_t::translate(translator_t* t) {
     
     // Assume left associativity
@@ -1541,6 +2000,342 @@ int neq_binop_t::translate(translator_t* t) {
     
     // brne L1
     branch_instr(t, BRNE_INSTR, false_label);
+
+    // addi r, NULL, 1
+    addi_instr(t, left_register, NULL_REGISTER, 0);
+
+    // jmp L2
+    branch_instr(t, JMP_INSTR, end_label);
+
+    // L1:
+    print_label(t, false_label);
+
+    // addi r, NULL, 0
+    addi_instr(t, left_register, NULL_REGISTER, 1);
+
+    // L2:
+    print_label(t, end_label);
+
+    return left_register;   
+}
+
+int less_binop_t::translate(translator_t* t) {
+ 
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
+    
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    int left_register;
+    int right_register;
+
+    if (left_success) {
+
+        // Means left was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
+    }
+
+    if (right_success) {
+        // If right value is larger than 16 bits
+        if (right_value > std::numeric_limits<int16_t>().max()) {
+            // TODO: This is not very good...
+            throw translation_error("Constant cant be larger than 16-bits");
+        }
+
+        // Print cmp immediate instruction
+        cmpi_instr(t, left_register, right_value);
+
+    } else {
+
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = push_temp(t, left_register);
+        }
+
+        // Translate term
+        right_register = term->translate(t);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = pop_temp(t, var);
+        }
+
+        // Print sub instruction
+        cmp_instr(t, left_register, right_register);
+    }
+
+    std::string false_label = t->label_allocator.get_label_name();
+    std::string end_label = t->label_allocator.get_label_name();
+    
+    // brne L1
+    branch_instr(t, BRLT_INSTR, false_label);
+
+    // addi r, NULL, 1
+    addi_instr(t, left_register, NULL_REGISTER, 0);
+
+    // jmp L2
+    branch_instr(t, JMP_INSTR, end_label);
+
+    // L1:
+    print_label(t, false_label);
+
+    // addi r, NULL, 0
+    addi_instr(t, left_register, NULL_REGISTER, 1);
+
+    // L2:
+    print_label(t, end_label);
+
+    return left_register;   
+}
+
+int greater_binop_t::translate(translator_t* t) {
+ 
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
+    
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    int left_register;
+    int right_register;
+
+    if (left_success) {
+
+        // Means left was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
+    }
+
+    if (right_success) {
+        // If right value is larger than 16 bits
+        if (right_value > std::numeric_limits<int16_t>().max()) {
+            // TODO: This is not very good...
+            throw translation_error("Constant cant be larger than 16-bits");
+        }
+
+        // Print cmp immediate instruction
+        cmpi_instr(t, left_register, right_value);
+
+    } else {
+
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = push_temp(t, left_register);
+        }
+
+        // Translate term
+        right_register = term->translate(t);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = pop_temp(t, var);
+        }
+
+        // Print sub instruction
+        cmp_instr(t, left_register, right_register);
+    }
+
+    std::string false_label = t->label_allocator.get_label_name();
+    std::string end_label = t->label_allocator.get_label_name();
+    
+    // brne L1
+    branch_instr(t, BRGT_INSTR, false_label);
+
+    // addi r, NULL, 1
+    addi_instr(t, left_register, NULL_REGISTER, 0);
+
+    // jmp L2
+    branch_instr(t, JMP_INSTR, end_label);
+
+    // L1:
+    print_label(t, false_label);
+
+    // addi r, NULL, 0
+    addi_instr(t, left_register, NULL_REGISTER, 1);
+
+    // L2:
+    print_label(t, end_label);
+
+    return left_register;   
+}
+
+int less_eq_binop_t::translate(translator_t* t) {
+ 
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
+    
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    int left_register;
+    int right_register;
+
+    if (left_success) {
+
+        // Means left was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
+    }
+
+    if (right_success) {
+        // If right value is larger than 16 bits
+        if (right_value > std::numeric_limits<int16_t>().max()) {
+            // TODO: This is not very good...
+            throw translation_error("Constant cant be larger than 16-bits");
+        }
+
+        // Print cmp immediate instruction
+        cmpi_instr(t, left_register, right_value);
+
+    } else {
+
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = push_temp(t, left_register);
+        }
+
+        // Translate term
+        right_register = term->translate(t);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = pop_temp(t, var);
+        }
+
+        // Print sub instruction
+        cmp_instr(t, left_register, right_register);
+    }
+
+    std::string false_label = t->label_allocator.get_label_name();
+    std::string end_label = t->label_allocator.get_label_name();
+    
+    // brne L1
+    branch_instr(t, BRLE_INSTR, false_label);
+
+    // addi r, NULL, 1
+    addi_instr(t, left_register, NULL_REGISTER, 0);
+
+    // jmp L2
+    branch_instr(t, JMP_INSTR, end_label);
+
+    // L1:
+    print_label(t, false_label);
+
+    // addi r, NULL, 0
+    addi_instr(t, left_register, NULL_REGISTER, 1);
+
+    // L2:
+    print_label(t, end_label);
+
+    return left_register;   
+}
+
+int greater_eq_binop_t::translate(translator_t* t) {
+ 
+    // Assume left associativity
+    if (!left_assoc) throw translation_error("Expression is right associative");
+    
+    int left_value = 0;
+    bool left_success = rest->evaluate(&left_value);
+
+    int right_value = 0;
+    bool right_success = term->evaluate(&right_value);
+
+    int left_register;
+    int right_register;
+
+    if (left_success) {
+
+        // Means left was a constant, allocate a register and load the immediate value into it
+        var_info_t* var_info;
+        left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
+
+    } else {
+
+        left_register = rest->translate(t);
+
+        // If the allocated register is not temporary, take ownership of it
+        left_register = take_ownership_or_allocate(t, "__temp__", left_register);
+    }
+
+    if (right_success) {
+        // If right value is larger than 16 bits
+        if (right_value > std::numeric_limits<int16_t>().max()) {
+            // TODO: This is not very good...
+            throw translation_error("Constant cant be larger than 16-bits");
+        }
+
+        // Print cmp immediate instruction
+        cmpi_instr(t, left_register, right_value);
+
+    } else {
+
+        bool is_function_call = dynamic_cast<call_term_t*>(term) != nullptr;
+        var_info_t* var;
+
+        // If term is a function call save temporary value on stack
+        if (is_function_call) {
+            var = push_temp(t, left_register);
+        }
+
+        // Translate term
+        right_register = term->translate(t);
+
+        // If term is a function call restore temporary value
+        if (is_function_call) {
+            left_register = pop_temp(t, var);
+        }
+
+        // Print sub instruction
+        cmp_instr(t, left_register, right_register);
+    }
+
+    std::string false_label = t->label_allocator.get_label_name();
+    std::string end_label = t->label_allocator.get_label_name();
+    
+    // brne L1
+    branch_instr(t, BRGE_INSTR, false_label);
 
     // addi r, NULL, 1
     addi_instr(t, left_register, NULL_REGISTER, 0);

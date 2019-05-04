@@ -34,6 +34,7 @@ struct expr_stmt_t;
 
 struct expr_t;
 struct neg_expr_t;
+struct not_expr_t;
 struct term_expr_t;
 struct binop_expr_t;
 
@@ -43,10 +44,20 @@ struct id_term_t;
 struct call_term_t;
 struct expr_term_t;
 
+struct binop_expr_t;
+
 struct add_binop_t;
 struct sub_binop_t;
+struct and_binop_t;
+struct or_binop_t;
+
 struct eq_binop_t;
 struct neq_binop_t;
+struct less_biop_t;
+struct greater_binop_t;
+
+struct less_eq_binop_t;
+struct greater_eq_binop_t;
 
 /* ----------------------------- */
 
@@ -197,6 +208,7 @@ private:
     static binop_expr_t* match_binop(parser_t* p);
 
     static neg_expr_t* match_expr_negated(parser_t* p);
+    static not_expr_t* match_expr_not(parser_t* p);
     static term_t* match_expr_term(parser_t* p);
 
     static id_term_t* match_term_identifier(parser_t* p);

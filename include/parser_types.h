@@ -44,17 +44,24 @@
 
     expr        ->  term binop expr
                 |   "-" term
+                |   "!" term
                 |   term
 
     binop       ->  "+"
                 |   "-"
+                |   "*"
                 |   "=="
                 |   "!="
+                |   ">="
+                |   "<="
+                |   "&"
+                |   "|"
 
     term        ->  id
                 |   literal
                 |   id ( params )  // Function call
                 |   ( expr )
+                |
     
     params      ->  expr params
                 |   e
@@ -84,6 +91,7 @@ struct expr_stmt_t;
 
 struct expr_t;
 struct neg_expr_t;
+struct not_expr_t;
 struct term_expr_t;
 
 struct term_t;
@@ -99,8 +107,17 @@ struct binop_expr_t;
 
 struct add_binop_t;
 struct sub_binop_t;
+struct and_binop_t;
+struct or_binop_t;
+struct mult_binop_t;
+
 struct eq_binop_t;
 struct neq_binop_t;
+struct less_biop_t;
+struct greater_binop_t;
+
+struct less_eq_binop_t;
+struct greater_eq_binop_t;
 
 /* ----------------------------- */
 class parser_t;
@@ -267,6 +284,15 @@ struct neg_expr_t : expr_t {
     bool evaluate(int* result) override;
 };
 
+struct not_expr_t : expr_t {
+    term_t* value;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
+};
+
 struct term_expr_t : expr_t {
     term_t* t;
 
@@ -364,7 +390,37 @@ struct sub_binop_t : binop_expr_t {
     sub_binop_t* duplicate() override;
 };
 
-// Conditional equality
+// Arithmetic multiplication
+struct mult_binop_t : binop_expr_t {
+    mult_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
+    mult_binop_t* duplicate() override;
+};
+
+// Logical and
+struct and_binop_t : binop_expr_t {
+    and_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
+    and_binop_t* duplicate() override;
+};
+
+// Logical or
+struct or_binop_t : binop_expr_t {
+    or_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
+    or_binop_t* duplicate() override;
+};
+
+// Relational equal
 struct eq_binop_t : binop_expr_t {
     eq_binop_t() : binop_expr_t() {}
 
@@ -374,7 +430,7 @@ struct eq_binop_t : binop_expr_t {
     eq_binop_t* duplicate() override;
 };
 
-// Conditional non-equality
+// Relational not-equal
 struct neq_binop_t : binop_expr_t {
     neq_binop_t() : binop_expr_t() {}
 
@@ -382,6 +438,46 @@ struct neq_binop_t : binop_expr_t {
     int translate(translator_t* p) override;
     bool evaluate(int* result) override;
     neq_binop_t* duplicate() override;
+};
+
+// Relational less
+struct less_binop_t : binop_expr_t {
+    less_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
+    less_binop_t* duplicate() override;
+};
+
+// Relational greater
+struct greater_binop_t : binop_expr_t {
+    greater_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
+    greater_binop_t* duplicate() override;
+};
+
+// Relational less or equal
+struct less_eq_binop_t : binop_expr_t {
+    less_eq_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
+    less_eq_binop_t* duplicate() override;
+};
+
+// Relational greater or equal
+struct greater_eq_binop_t : binop_expr_t {
+    greater_eq_binop_t() : binop_expr_t() {}
+
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* p) override;
+    bool evaluate(int* result) override;
+    greater_eq_binop_t* duplicate() override;
 };
 
 #endif
