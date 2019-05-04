@@ -43,6 +43,8 @@ namespace lex {
         std::regex str_literal_regex;
         std::regex whitespace_regex;
         std::regex half_str_literal_regex;
+        std::regex char_literal_regex;
+        std::regex hex_literal_regex;
 
         // Converts an ASCII digit character to its corresponding integer digit
         int char_to_digit(char c);
