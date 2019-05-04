@@ -29,14 +29,17 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
 ### Other Language Features
 
+- [x] While loops
+- [x] Else statements
+- [x] Logical operators `&, |, !`
+- [x] Extended relational operators `<, >, <=, >=`
+- [x] Multiplication operator `*`
+- [ ] Inline Assembly
+- [ ] Pointers, pointer operators `*, &, []`
+- [ ] Shift operators `<< >>`
+- [ ] Headers and file includes
 - [ ] Structs, struct operator `.`
-- [ ] Pointers, pointer operators `*, &, ->, []`
-- [x] While-loops
 - [ ] For-loops
-- [ ] Arithmetic operators `*, %, a++, ++a, a--, --a, +=, -=, *=`
-- [ ] Logical operators `&&, ||, ^, !`
-- [ ] Bitwise operators `~, &, |, ^, <<, >>`
-- [ ] Compound assignment operators 
 
 ## C-- Specification
 
@@ -44,19 +47,19 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
     e denotes empty string
 
-    program     ->  decls                       PROGRAM::1
+    program     ->  decls
 
-    decls       ->  decl decls                  DECLS::1
-                |   e                           DECLS::2
+    decls       ->  decl decls
+                |   e
 
     decl        ->  func_decl
                 |   var_decl
     
-    var_decl    ->  type id ;
-                |   type id "=" expr ;
+    var_decl    ->  type id ";"
+                |   type id "=" expr ";"
 
-    func_decl   ->  type id ( param_decls ) ;
-                |   type id ( param_decls ) block_stmt
+    func_decl   ->  type id "(" param_decls ")" ";"
+                |   type id "(" param_decls ")" block_stmt
 
     param_decls ->  param_decl param_decls
                 |   e
@@ -64,30 +67,36 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
     param_decl  ->  type id
 
     stmt        ->  block_stmt
-                |   if ( expr ) stmt
-                |   if ( expr ) stmt else stmt
+                |   "if" "(" expr ")" stmt
+                |   "if" "(" expr ")" stmt "else" stmt
                 |   var_decl 
-                |   id "=" expr ;
-                |   return expr ;
-                |   expr ;
+                |   id "=" expr ";"
+                |   return expr ";"
+                |   expr ";"
     
     stmts       ->  stmt stmts
                 |   e
 
-    block_stmt  ->  { stmts }
+    block_stmt  ->  "{" stmts "}"
 
     expr        ->  term binop expr
                 |   "-" term
+                |   "!" term
                 |   term
 
     binop       ->  "+"
                 |   "-"
+                |   "*"
                 |   "=="
                 |   "!="
+                |   ">="
+                |   "<="
+                |   "&"
+                |   "|"
 
     term        ->  id
                 |   literal
-                |   id ( params )  // Function call
+                |   id "(" params ")"  // Function call
     
     params      ->  expr params
                 |   e
