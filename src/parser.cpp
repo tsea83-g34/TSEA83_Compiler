@@ -716,6 +716,7 @@ block_stmt_t* parser_t::match_stmt_block(parser_t* p) {
 }
 
 // stmt -> if ( expr ) stmt
+//      |  if ( expr ) stmt else stmt 
 if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
 
     std::cout << "Matching if statement" << std::endl;
@@ -723,6 +724,7 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
     lex::token* if_token;
     lex::token* open_paren_token;
     lex::token* closed_paren_token;
+    lex::token* else_token;
 
     if_token = p->get_token();
     open_paren_token = p->get_token();
@@ -770,6 +772,19 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
         return nullptr;
     }
 
+    else_token = p->get_token();
+    stmt_t* else_stmt = nullptr;
+
+    // Try matching else statement
+    if (else_token->tag == lex::tag_t::ELSE) {
+
+        else_stmt = match_stmt(p);
+
+    } else {
+        p->put_back_token(else_token);
+        else_token = nullptr;
+    }
+
     // If we got this far, we have a successful match, delete tokens and return result
     
     // Change associativity of expression if needed
@@ -780,11 +795,13 @@ if_stmt_t* parser_t::match_stmt_if(parser_t* p) {
     if_stmt_t* result = new if_stmt_t();
     result->cond = cond;
     result->actions = stmt;
+    result->else_actions = else_stmt;
 
     // Store tokens
     result->tokens.push_back(if_token);
     result->tokens.push_back(open_paren_token);
     result->tokens.push_back(closed_paren_token);
+    if (else_token) result->tokens.push_back(else_token);
 
     std::cout << "Finished matching if statement" << std::endl;
     return result;

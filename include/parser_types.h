@@ -30,6 +30,7 @@
 
     stmt        ->  block_stmt
                 |   if ( expr ) stmt
+                |   if ( expr ) stmt else stmt
                 |   while ( expr ) stmt
                 |   var_decl
                 |   id "=" expr ;   // assignment
@@ -210,6 +211,7 @@ struct block_stmt_t : stmt_t {
 struct if_stmt_t : stmt_t {
     expr_t* cond;
     stmt_t* actions;
+    stmt_t* else_actions;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;

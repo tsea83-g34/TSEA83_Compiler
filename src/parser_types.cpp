@@ -200,6 +200,16 @@ std::string block_stmt_t::get_string(parser_t* p) {
 }
 
 void if_stmt_t::undo(parser_t* p) {
+
+    // If there was an else statement
+    if (else_actions != nullptr) {
+        else_actions->undo(p);
+        delete else_actions;
+
+        // Put back else token
+        p->put_back_token(tokens.back());
+        tokens.pop_back();
+    }
     
     if (actions != nullptr) {
         actions->undo(p);
@@ -223,7 +233,8 @@ void if_stmt_t::undo(parser_t* p) {
 }
 
 std::string if_stmt_t::get_string(parser_t* p) {
-    return "(if)[ cond{ " + cond->get_string(p) + " } ]{ " + actions->get_string(p) + " }";
+    std::string else_str = (else_actions) ? " (else){ " + else_actions->get_string(p) + " }" : "";
+    return "(if)[ cond{ " + cond->get_string(p) + " } ]{ " + actions->get_string(p) + " }" + else_str;
 }
 
 void while_stmt_t::undo(parser_t* p) {
@@ -1003,11 +1014,17 @@ int if_stmt_t::translate(translator_t* t) {
         if (constant_value) {
             // If constant evaluates to true, translate statements
             actions->translate(t);    
-        } else return -1; // Otherwise return
+        } else {
+            // If constant evaluates to true, translate else statements
+            else_actions->translate(t);   
+        } 
+
+        return -1;
 
     } else {
 
         int cond_reg = cond->translate(t);
+        std::string else_label = t->label_allocator.get_label_name();
         std::string end_label = t->label_allocator.get_label_name();
 
         t->reg_alloc.store_context();
@@ -1015,15 +1032,22 @@ int if_stmt_t::translate(translator_t* t) {
         // Test if true or false
         cmpi_instr(t, cond_reg, 1);
 
-        branch_instr(t, BRNE_INSTR, end_label);
+        branch_instr(t, BRNE_INSTR, else_label);
 
         actions->translate(t);
+
+        t->reg_alloc.store_context();
+        
+        branch_instr(t, JMP_INSTR, end_label);
+
+        print_label(t, else_label);
+
+        else_actions->translate(t);
 
         t->reg_alloc.store_context();
 
         print_label(t, end_label);
     }
-
 }
 
 int while_stmt_t::translate(translator_t* t) {
