@@ -64,9 +64,10 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
     param_decl  ->  type id
 
     stmt        ->  block_stmt
-                |   if ( expr ) stmt // This could lead to great errors if expr is matched but not stmt?
+                |   if ( expr ) stmt
+                |   if ( expr ) stmt else stmt
                 |   var_decl 
-                |   id "=" expr ;   // assignment
+                |   id "=" expr ;
                 |   return expr ;
                 |   expr ;
     
