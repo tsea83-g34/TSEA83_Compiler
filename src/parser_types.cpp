@@ -1072,7 +1072,7 @@ int param_decl_t::translate(translator_t* t, func_info_t* f) {
     // adjust it 
     // TODO: This isn't accounted for...
     if (f->params_size % size != 0) {
-        f->params_size += (-f->params_size) % size;
+        f->params_size += size - f->params_size % size;
     }
     
     // Create address structure for parameter
