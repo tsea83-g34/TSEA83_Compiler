@@ -1,0 +1,12 @@
+
+int f(int a int b) {
+    return a + b;
+}
+
+int WIDTH = 40;
+int HEIGHT = 30;
+int a = f(WIDTH HEIGHT);
+
+int main() {
+    int b = a + 1;
+}

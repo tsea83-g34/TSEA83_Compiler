@@ -1036,6 +1036,8 @@ int func_decl_t::translate(translator_t* t) {
     t->reg_alloc.free_scope(t->symbol_table.get_current_scope());
     
     t->symbol_table.pop_scope();
+
+    t->print_instruction_row("", false, false);
 }
 
 int param_decls_t::translate(translator_t* t, func_info_t* f) {
@@ -1131,20 +1133,58 @@ int var_decl_t::translate(translator_t* t) {
             throw translation_error("Multiple definition of global symbol \"" + id + "\"");
         }
 
-        // Global variable
-        
-        int constant_value = 0;
-        if (value != nullptr) value->evaluate(&constant_value);
-
         type_descriptor_t* type_desc = t->type_table.at(type);
         
         global_addr_info_t* addr = new global_addr_info_t(id);
 
         // Size is zero since the variable is allocated statically
-        t->symbol_table.add_var(id, type, 0, addr);
+        var_info_t* var = t->symbol_table.add_var(id, type, 0, addr);
 
-        t->static_alloc(id, type_desc->size, constant_value);
+        // Global variable
+        if (value == nullptr) {
+            t->static_alloc(id, type_desc->size, 0);
+            return 0;    
+        };
 
+        int constant_value = 0;
+        bool evaluated = value->evaluate(&constant_value);
+
+        if (evaluated) {
+            t->static_alloc(id, type_desc->size, constant_value);
+            return 0;
+        }
+
+        // Allocate space for the variable
+        t->static_alloc(id, type_desc->size, 0);
+
+        t->set_data_mode(true);
+
+        // If not evaluated translate the expression
+        int value_reg = value->translate(t);
+        bool was_temp = t->reg_alloc.is_temporary(value_reg);
+
+        // If value was a function return value, allocate a register
+        if (value_reg == RETURN_REGISTER) {
+            
+            int reg = t->reg_alloc.allocate(var, false, false);
+            move_instr(t, reg, value_reg);
+            t->reg_alloc.touch(reg, true);
+
+        // If it was another register give ownership of the register to the new variable
+        } else {
+
+            var_info_t* temp_info = t->reg_alloc.give_ownership(value_reg, var);
+            t->reg_alloc.touch(value_reg, true);
+            
+            // Remove and deallocate the temporary variable
+            if (was_temp) {
+                std::cout << "Removing " << temp_info->name << std::endl;
+                t->symbol_table.get_current_scope()->remove(temp_info->name);
+                delete temp_info;
+            }
+        }
+
+        t->set_data_mode(false);
     } else {
         
         std::cout << "Found local variable!" << std::endl;
@@ -1490,6 +1530,8 @@ int call_term_t::translate(translator_t* t) {
     // TODO: Fix alignment?
 
     func_info_t* func = t->symbol_table.get_func(function_identifier);
+
+    if (func == nullptr) throw translation_error("Function " + function_identifier + " is not declared. " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number));
 
     scope_t* current_scope = t->symbol_table.get_current_scope();
     
