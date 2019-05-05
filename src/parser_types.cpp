@@ -9,6 +9,7 @@
 
 #include <stack>
 #include <iostream>
+#include <vector>
 
 void program_t::undo(parser_t* p) {
     decls->undo(p);
@@ -125,6 +126,23 @@ void param_decls_t::undo(parser_t* p) {
 }
 
 std::string param_decls_t::get_string(parser_t* p) {
+    std::string result = first->get_string(p);
+    if (rest != nullptr) result += " " + rest->get_string(p);
+    return result;
+}
+
+void asm_params_t::undo(parser_t* p) {
+
+    if (rest != nullptr) {
+        rest->undo(p);
+        delete rest;
+    }
+
+    first->undo(p);
+    delete first;
+}
+
+std::string asm_params_t::get_string(parser_t* p) {
     std::string result = first->get_string(p);
     if (rest != nullptr) result += " " + rest->get_string(p);
     return result;
@@ -262,6 +280,32 @@ void while_stmt_t::undo(parser_t* p) {
 
 std::string while_stmt_t::get_string(parser_t* p) {
     return "(while)[ cond{ " + cond->get_string(p) + " } ]{ " + actions->get_string(p) + " }";
+}
+
+void asm_stmt_t::undo(parser_t* p) {
+    
+    // Put back ) token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    params->undo(p);
+    delete params;
+
+    // Put back string literal token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();    
+
+    // Put back ( token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back asm token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string asm_stmt_t::get_string(parser_t* p) {
+    return "(asm){ " + literal + " " + params->get_string(p) + " }";
 }
 
 void assignment_stmt_t::undo(parser_t* p) {
@@ -1123,6 +1167,10 @@ int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
     return -1;
 }
 
+int asm_params_t::translate(translator_t*) {
+    
+} 
+
 int var_decl_t::translate(translator_t* t) {
     
     if (t->symbol_table.is_global_scope()) {
@@ -1393,6 +1441,56 @@ int while_stmt_t::translate(translator_t* t) {
 
         print_label(t, end_label);
 
+    }
+}
+
+int asm_stmt_t::translate(translator_t* t) {
+
+    std::vector<term_t*> param_vector;
+    std::vector<int> temp_registers;
+
+    asm_params_t* current = params;
+    while (current != nullptr) {
+        param_vector.push_back(dynamic_cast<term_t*>(current->first));
+        current = current->rest;
+    }
+
+    int first_reg = -1;
+    std::string result = literal; 
+    for (term_t* term : param_vector) {
+        
+        int reg;
+        // If the current parameter is a literal, load it into a register
+        if (dynamic_cast<lit_term_t*>(term)) {
+            
+            var_info_t* var;
+            int value = 0;
+            term->evaluate(&value);
+
+            reg = allocate_temp_imm(t, "__temp__", value, &var);
+            temp_registers.push_back(reg);
+
+        } else {
+
+            reg = term->translate(t);
+
+        }
+        if (first_reg == -1) first_reg = reg;
+        result.replace(result.find("$"), 1, get_register_string(t, reg));
+    }
+
+    if (result.find("$") != result.npos) {
+        throw translation_error("Mismatched number of \'$\' and parameters");
+    }
+
+    t->reg_alloc.touch(first_reg, true);
+
+    t->print_instruction_row(result, true, false);
+    
+    // Free temporary registers
+    for (int reg : temp_registers) {
+        if (reg == first_reg) throw translation_error("Inline assembly: First operand should not be a temporary value");
+        t->reg_alloc.free(reg);
     }
 }
 

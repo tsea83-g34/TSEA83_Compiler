@@ -1,6 +1,7 @@
 
 #include "../include/parser.h"
 #include "../include/parser_types.h"
+#include "../include/helper_functions.h"
 
 #include <iostream>
 
@@ -249,6 +250,35 @@ params_t* parser_t::match_params() {
     return result;
 }
 
+asm_params_t* parser_t::match_asm_params() {
+
+    asm_param_t* first;
+
+    first = match_asm_param();
+
+    if (first == nullptr) return nullptr;
+
+    asm_params_t* result = new asm_params_t();
+    result->first = first;
+
+    // Try matching more parameters
+    result->rest = match_asm_params();
+
+    return result;
+}
+
+asm_param_t* parser_t::match_asm_param() {
+
+    asm_param_t* result;
+
+    result = match_term_literal();
+    if (result != nullptr) return result;
+
+    result = match_term_identifier();
+    return result;
+
+}
+
 stmts_t* parser_t::match_stmts() {
     
     stmts_t* stmts = nullptr;
@@ -292,6 +322,9 @@ stmt_t* parser_t::match_stmt() {
     if (stmt != nullptr) return stmt;
 
     stmt = match_stmt_while();
+    if (stmt != nullptr) return stmt;
+
+    stmt = match_stmt_asm();
     if (stmt != nullptr) return stmt;
 
     throw syntax_error("Could not match statement. Unexpected " + lex::token_names[(int) token_queue.front()->tag] + " token " + std::to_string(token_queue.front()->line_number) + ":" + std::to_string(token_queue.front()->column_number));
@@ -905,6 +938,70 @@ while_stmt_t* parser_t::match_stmt_while() {
     std::cout << "Finished matching while statement" << std::endl;
     return result;
 }
+
+// stmt -> asm ( str_lit asm_params ) ; 
+asm_stmt_t* parser_t::match_stmt_asm() {
+
+    lex::token* asm_token;
+    lex::token* open_paren_token;
+    lex::token* string_literal_token;
+    lex::token* closed_paren_token;
+    lex::token* semi_colon_token;
+
+    asm_token               = get_token();
+    open_paren_token        = get_token();
+    string_literal_token    = get_token();
+
+    if (asm_token->tag != lex::tag_t::ASM || open_paren_token->tag != lex::tag_t::OPEN_PAREN || string_literal_token->tag != lex::tag_t::STRING_LITERAL) {
+        put_back_token(string_literal_token);
+        put_back_token(open_paren_token);
+        put_back_token(asm_token);
+        return nullptr;
+    }
+
+    asm_params_t* params = match_asm_params();
+
+    if (params == nullptr) {
+        put_back_token(string_literal_token);
+        put_back_token(open_paren_token);
+        put_back_token(asm_token);
+        return nullptr;
+    }
+
+    closed_paren_token = get_token();
+    semi_colon_token = get_token();
+
+    if (closed_paren_token->tag != lex::tag_t::CLOSED_PAREN || semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        
+        put_back_token(semi_colon_token);
+        put_back_token(closed_paren_token);
+
+        params->undo(this);
+        delete params;
+
+        put_back_token(string_literal_token);
+        put_back_token(open_paren_token);
+        put_back_token(asm_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    asm_stmt_t* result = new asm_stmt_t();
+    result->literal = strip_quotations(static_cast<lex::str_literal_token*>(string_literal_token)->value); 
+    result->params = params;
+
+    // Store tokens
+    result->tokens.push_back(asm_token);
+    result->tokens.push_back(open_paren_token);
+    result->tokens.push_back(string_literal_token);
+    result->tokens.push_back(closed_paren_token);
+    result->tokens.push_back(semi_colon_token);
+
+    return result;
+}
+
 
 // stmt -> return expr ;
 return_stmt_t* parser_t::match_stmt_return() {

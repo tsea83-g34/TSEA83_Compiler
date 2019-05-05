@@ -25,9 +25,9 @@ struct params_t;
 struct stmt_t;
 struct stmts_t;
 struct block_stmt_t;
-
 struct if_stmt_t;
 struct while_stmt_t;
+struct asm_stmt_t;
 struct assignment_stmt_t;
 struct return_stmt_t;
 struct expr_stmt_t;
@@ -36,7 +36,6 @@ struct expr_t;
 struct neg_expr_t;
 struct not_expr_t;
 struct term_expr_t;
-struct binop_expr_t;
 
 struct term_t;
 struct lit_term_t;
@@ -44,12 +43,18 @@ struct id_term_t;
 struct call_term_t;
 struct expr_term_t;
 
+struct asm_params_t;
+struct asm_param_t;
+
+// New binary operation system
+
 struct binop_expr_t;
 
 struct add_binop_t;
 struct sub_binop_t;
 struct and_binop_t;
 struct or_binop_t;
+struct mult_binop_t;
 
 struct eq_binop_t;
 struct neq_binop_t;
@@ -110,6 +115,9 @@ private:
     param_decls_t* match_param_decls();
     param_decl_t* match_param_decl();
     params_t* match_params();
+
+    asm_params_t* match_asm_params();
+    asm_param_t* match_asm_param();
     
     stmt_t* match_stmt();
     stmts_t* match_stmts();
@@ -130,6 +138,7 @@ private:
     block_stmt_t* match_stmt_block();
     if_stmt_t* match_stmt_if();
     while_stmt_t* match_stmt_while();
+    asm_stmt_t* match_stmt_asm();
     var_decl_t* match_stmt_decl();
     assignment_stmt_t* match_stmt_assign();
     return_stmt_t* match_stmt_return();

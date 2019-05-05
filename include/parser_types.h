@@ -32,6 +32,7 @@
                 |   if ( expr ) stmt
                 |   if ( expr ) stmt else stmt
                 |   while ( expr ) stmt
+                |   asm ( str_lit params )
                 |   var_decl
                 |   id "=" expr ;   // assignment
                 |   return expr ;
@@ -66,6 +67,12 @@
     params      ->  expr params
                 |   e
 
+    asm_params  ->  asm_param asm_params
+                |   e
+    
+    asm_param   ->  id
+                |   literal
+
  */
 
 /* Predefine syntax tree structs */
@@ -85,6 +92,7 @@ struct stmts_t;
 struct block_stmt_t;
 struct if_stmt_t;
 struct while_stmt_t;
+struct asm_stmt_t;
 struct assignment_stmt_t;
 struct return_stmt_t;
 struct expr_stmt_t;
@@ -100,6 +108,8 @@ struct id_term_t;
 struct call_term_t;
 struct expr_term_t;
 
+struct asm_params_t;
+struct asm_param_t;
 
 // New binary operation system
 
@@ -192,6 +202,19 @@ struct params_t : undoable_t, virtual printable_t {
     int translate(translator_t* t, func_info_t* func, int param_index);
 };
 
+struct asm_params_t : undoable_t, virtual printable_t, translateable_t {
+
+    asm_param_t* first;
+    asm_params_t* rest;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+};
+
+struct asm_param_t : virtual undoable_t, virtual printable_t, virtual translateable_t { };
+
+
 /* ---------------------- */
 
 /*       Statements       */
@@ -244,6 +267,16 @@ struct while_stmt_t : stmt_t {
     int translate(translator_t* t) override;
 };
 
+struct asm_stmt_t : stmt_t {
+    
+    std::string literal;
+    asm_params_t* params;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+};
+
 struct assignment_stmt_t : stmt_t {
     std::string identifier;
     expr_t* rvalue;
@@ -271,7 +304,7 @@ struct expr_stmt_t : stmt_t {
 
 /* ---------------------- */
 
-struct expr_t : undoable_t, printable_t, translateable_t {
+struct expr_t : virtual undoable_t, virtual printable_t, virtual translateable_t {
     virtual bool evaluate(int* result) = 0;
 };
 
@@ -309,7 +342,7 @@ struct term_t : expr_t {
     virtual bool evaluate(int* result) = 0;
 };
 
-struct id_term_t : term_t {
+struct id_term_t : term_t, asm_param_t {
     std::string identifier;
 
     id_term_t() { is_literal = false; }
@@ -339,7 +372,7 @@ struct expr_term_t : term_t {
     bool evaluate(int* result) override;
 };
 
-struct lit_term_t : term_t {
+struct lit_term_t : term_t, asm_param_t {
     int literal;
 
     lit_term_t() { is_literal = true; }
