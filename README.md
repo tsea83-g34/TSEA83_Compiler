@@ -103,7 +103,7 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
     params      ->  expr params
                 |   e
 
-    asm_params  -> asm_param asm_params
+    asm_params  ->  asm_param asm_params
                 |   e
     
     asm_param   ->  id
