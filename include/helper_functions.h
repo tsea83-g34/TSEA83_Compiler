@@ -17,7 +17,23 @@ var_info_t* push_temp(translator_t* t, int reg);
 
 int pop_temp(translator_t* t, var_info_t* var);
 
+int translate_binop_imm(translator_t* t, binop_expr_t* binop, const std::string& instr, const std::string& imm_instr);
+
+int translate_binop(translator_t* t, binop_expr_t* binop, const std::string& instr);
+
+int translate_binop_relational(translator_t* t, binop_expr_t* binop, const std::string& instr);
+
 // Instruction functions
+
+void tri_operand_instr(translator_t* t, const std::string& instr, int rd, int ra, int rb);
+
+void tri_operand_imm_instr(translator_t* t, const std::string& instr, int rd, int ra, int imm);
+
+void di_operand_instr(translator_t* t, const std::string& instr, int rd, int ra);
+
+void di_operand_imm_instr(translator_t* t, const std::string& instr, int rd, int im);
+
+
 
 void add_instr(translator_t* t,int rd, int ra, int rb);
 
