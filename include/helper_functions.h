@@ -5,6 +5,8 @@
 
 #define POINTER_SIZE 2
 
+std::string strip_quotations(const std::string& string_literal);
+
 void load_immediate(translator_t* t, int register_index, int value);
 
 int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_info_t** var);

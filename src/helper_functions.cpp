@@ -4,6 +4,10 @@
 
 #include <sstream>
 
+std::string strip_quotations(const std::string& string_literal) {
+    return string_literal.substr(1, string_literal.size() - 2);
+}
+
 void load_immediate(translator_t* t, int reg, int value) {
     
     std::stringstream output;
@@ -509,7 +513,7 @@ void cmp_instr(translator_t* t, int ra, int rb) {
 void cmpi_instr(translator_t* t, int ra, int imm) {
     
     di_operand_imm_instr(t, CMP_IMM_INSTR, ra, imm);
-    
+
 }
 
 void print_label(translator_t* t, const std::string& label) {
