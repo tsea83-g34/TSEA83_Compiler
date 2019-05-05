@@ -114,7 +114,7 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
 Usage example:
 
-    int inportb(int port) {
+    long inportb(int port) {
         long result = 0;
         asm ("in $, $" result port);
         return result;

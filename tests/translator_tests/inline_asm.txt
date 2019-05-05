@@ -1,5 +1,5 @@
 
-int inportb(int port) {
+long inportb(int port) {
     long result = 0;
     asm ("in $, $" result port);
     return result;
