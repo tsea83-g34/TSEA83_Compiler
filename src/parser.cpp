@@ -348,7 +348,7 @@ binop_expr_t* parser_t::match_binop(parser_t* p) {
             result = new less_binop_t();
             break;
         case lex::tag_t::GREATER:
-            result = new greater_eq_binop_t();
+            result = new greater_binop_t();
             break;
         case lex::tag_t::LESS_OR_EQUAL:
             result = new less_eq_binop_t();
