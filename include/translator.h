@@ -25,7 +25,10 @@ public:
 
 class translator_t {
 
+    std::stringstream defines_and_global_output;
     std::stringstream output;
+
+    bool data_mode;
 
 public:
 
@@ -43,6 +46,10 @@ public:
     ~translator_t() = default;
 
     void print_to_file(std::ofstream& file);
+
+    void set_data_mode(bool _mode);
+
+    bool get_data_mode();
 
     void print_instruction_row(const std::string& instr, bool tab, bool ret = false);
     void static_alloc(std::string name, int size, int value);

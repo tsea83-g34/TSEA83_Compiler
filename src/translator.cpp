@@ -8,6 +8,12 @@ translator_t::translator_t() {
     reg_alloc.set_parent(this);
     // print standard defines into file
     
+    instr_cnt = 0L;
+    last_was_ret = false;
+    data_mode = false;
+    
+    set_data_mode(true);
+
     // Stack pointer
     print_instruction_row("const SP r15", false);
     special_registers.insert({15, "SP"});
@@ -27,22 +33,32 @@ translator_t::translator_t() {
     // Print an empty row
     print_instruction_row("", false);
 
-    instr_cnt = 0L;
-    last_was_ret = false;
+    set_data_mode(false);
+}
+
+void translator_t::set_data_mode(bool _mode) {
+    data_mode = _mode;
+}
+
+bool translator_t::get_data_mode() {
+    return data_mode;
 }
 
 void translator_t::print_instruction_row(const std::string& instr, bool tab, bool ret) {
     
+    std::stringstream& local_output = (data_mode) ? defines_and_global_output : output; 
+
     last_was_ret = ret;
-    if (tab) output << "\t";
-    output << instr << "\n";
+    if (tab) local_output << "\t";
+    local_output << instr << "\n";
     instr_cnt++;
 }
 
 void translator_t::static_alloc(std::string name, int size, int value) {
+
+    set_data_mode(true);
     
-    std::string label = name;
-    label += ":";
+    std::string label = ".data " + name;
 
     std::string allocation;
 
@@ -64,9 +80,11 @@ void translator_t::static_alloc(std::string name, int size, int value) {
 
     print_instruction_row(label, false);
     print_instruction_row(allocation, true);
+    
+    set_data_mode(false);
 }
 
 void translator_t::print_to_file(std::ofstream& file) {
 
-    file << output.str();
+    file << defines_and_global_output.str() << "\n" << output.str();
 }
