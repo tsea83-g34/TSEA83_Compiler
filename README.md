@@ -69,6 +69,8 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
     stmt        ->  block_stmt
                 |   if ( expr ) stmt
                 |   if ( expr ) stmt else stmt
+                |   while ( expr ) stmt
+                |   asm ( str_lit asm_params ) ;
                 |   var_decl 
                 |   id = expr ;
                 |   return expr ;
@@ -101,10 +103,24 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
     params      ->  expr params
                 |   e
 
+    asm_params  -> asm_param asm_params
+                |   e
+    
+    asm_param   ->  id
+                |   literal
 
+
+### Inline assembly
+
+Usage example:
+
+    int inportb(int port) {
+        long result = 0;
+        asm ("in $, $" result port);
+        return result;
+    }
 
 ### Types
-
 
 #### Integer types
     - char (signed 8-bit)
