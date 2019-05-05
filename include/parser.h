@@ -100,55 +100,55 @@ private:
     inline int get_type(const lex::id_token* t);
     
     // Construct specific matching functions
-    static program_t* match_program(parser_t* p);
-    static decls_t* match_decls(parser_t* p);
-    static decl_t* match_decl(parser_t* p);
+    program_t* match_program();
+    decls_t* match_decls();
+    decl_t* match_decl();
 
-    static var_decl_t* match_decl_var(parser_t* p);
-    static func_decl_t* match_decl_func(parser_t* p);
+    var_decl_t* match_decl_var();
+    func_decl_t* match_decl_func();
 
-    static param_decls_t* match_param_decls(parser_t* p);
-    static param_decl_t* match_param_decl(parser_t* p);
-    static params_t* match_params(parser_t* p);
+    param_decls_t* match_param_decls();
+    param_decl_t* match_param_decl();
+    params_t* match_params();
     
-    static stmt_t* match_stmt(parser_t* p);
-    static stmts_t* match_stmts(parser_t* p);
+    stmt_t* match_stmt();
+    stmts_t* match_stmts();
 
-    static expr_t* match_expr(parser_t* p);
-    static term_t* match_term(parser_t* p);
+    expr_t* match_expr();
+    term_t* match_term();
 
     // Production specific matching functions
-    static decls_t* match_decls_1(parser_t* p);
-    static decls_t* match_decls_2(parser_t* p);
+    decls_t* match_decls_1();
+    decls_t* match_decls_2();
 
-    static var_decl_t* match_decl_var_1(parser_t* p);
-    static var_decl_t* match_decl_var_2(parser_t* p);
+    var_decl_t* match_decl_var_1();
+    var_decl_t* match_decl_var_2();
 
-    static func_decl_t* match_decl_func_1(parser_t* p);
-    static func_decl_t* match_decl_func_2(parser_t* p);
+    func_decl_t* match_decl_func_1();
+    func_decl_t* match_decl_func_2();
 
-    static block_stmt_t* match_stmt_block(parser_t* p);
-    static if_stmt_t* match_stmt_if(parser_t* p);
-    static while_stmt_t* match_stmt_while(parser_t* p);
-    static var_decl_t* match_stmt_decl(parser_t* p);
-    static assignment_stmt_t* match_stmt_assign(parser_t* p);
-    static return_stmt_t* match_stmt_return(parser_t* p);
-    static expr_stmt_t* match_stmt_expr(parser_t* p);
+    block_stmt_t* match_stmt_block();
+    if_stmt_t* match_stmt_if();
+    while_stmt_t* match_stmt_while();
+    var_decl_t* match_stmt_decl();
+    assignment_stmt_t* match_stmt_assign();
+    return_stmt_t* match_stmt_return();
+    expr_stmt_t* match_stmt_expr();
 
-    static stmts_t* match_stmts_1(parser_t* p);
-    static stmts_t* match_stmts_2(parser_t* p);
+    stmts_t* match_stmts_1();
+    stmts_t* match_stmts_2();
 
-    static binop_expr_t* match_expr_binop(parser_t* p);
-    static binop_expr_t* match_binop(parser_t* p);
+    binop_expr_t* match_expr_binop();
+    binop_expr_t* match_binop();
 
-    static neg_expr_t* match_expr_negated(parser_t* p);
-    static not_expr_t* match_expr_not(parser_t* p);
-    static term_t* match_expr_term(parser_t* p);
+    neg_expr_t* match_expr_negated();
+    not_expr_t* match_expr_not();
+    term_t* match_expr_term();
 
-    static id_term_t* match_term_identifier(parser_t* p);
-    static lit_term_t* match_term_literal(parser_t* p);
-    static call_term_t* match_term_call(parser_t* p);
-    static expr_term_t* match_term_expr(parser_t* p);
+    id_term_t* match_term_identifier();
+    lit_term_t* match_term_literal();
+    call_term_t* match_term_call();
+    expr_term_t* match_term_expr();
 
 public:
     parser_t(lex::lexer *l);
