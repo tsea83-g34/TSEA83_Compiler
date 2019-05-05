@@ -13,6 +13,7 @@ namespace lex {
         RETURN,
         WHILE,
         ELSE,
+        ASM,
 
         // Other
         ID,
@@ -49,7 +50,8 @@ namespace lex {
         "if keyword", 
         "return keyword",
         "while keyowrd",
-        "else keyword", 
+        "else keyword",
+        "asm keyword",
         "identifier", 
         "integer literal", 
         "string literal",
