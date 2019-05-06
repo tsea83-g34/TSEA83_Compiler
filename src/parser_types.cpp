@@ -1523,8 +1523,8 @@ int assignment_stmt_t::translate(translator_t* t) {
             t->reg_alloc.touch(right_register, true);
 
             // Remove old variable
-            t->symbol_table.get_current_scope()->remove(temp_var->name);
-            delete temp_var;
+            // t->symbol_table.get_current_scope()->remove(temp_var->name);
+            // delete temp_var;
 
         } else {
 
