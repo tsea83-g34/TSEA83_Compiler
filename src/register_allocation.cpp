@@ -109,7 +109,8 @@ void register_allocator_t::free(reg_t* reg, bool store, bool sort) {
 
 int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable, bool temp) {
 
-    if (var_to_alloc == nullptr) return -1;
+
+    if (var_to_alloc == nullptr) throw translation_error("Allocating non-existent variable");
 
     for (int i = 0; i < registers.size(); i++) {
         reg_t* reg = registers[i];
@@ -259,6 +260,8 @@ var_info_t* register_allocator_t::give_ownership(int register_index, var_info_t*
 
 
     std::stringstream output;
+
+
 
     reg_t* reg = get_register(register_index);
 

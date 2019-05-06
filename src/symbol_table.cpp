@@ -221,6 +221,7 @@ var_info_t* symbol_table_t::get_var(const std::string& key) {
     // If symbol not found yet, look at the global scope
     result = scope_stack.front()->at(key);
 
+    if (!result) throw translation_error("Variable " + key + " does not exist in the symbol table");
     return result;
 }
 
