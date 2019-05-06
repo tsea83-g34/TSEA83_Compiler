@@ -78,13 +78,11 @@ std::string parser_t::get_type_name(int type) {
 // Construct specific matching functions
 
 program_t* parser_t::match_program() {
-    
-    std::cout << "Matching program" << std::endl;
 
     decls_t* d = match_decls();
 
     if (d == nullptr) {
-        std::cout << "Failed matching decls" << std::endl;
+        
         return nullptr;
     }
     
@@ -95,13 +93,11 @@ program_t* parser_t::match_program() {
 
 decls_t* parser_t::match_decls() {
 
-    std::cout << "Matching decls" << std::endl;
     decls_t* ds = nullptr;
 
     lex::token* test_token = get_token();
     lex::tag_t tag = test_token->tag;
     put_back_token(test_token);
-    std::cout << "Decl test token tag: " << (int) tag << std::endl;
     
     if (tag == lex::tag_t::eof) return nullptr;
     
@@ -111,7 +107,6 @@ decls_t* parser_t::match_decls() {
         ds = match_decls_1();
     } catch (syntax_error e) {
 
-        std::cout << "Caught syntax error in match_decls" << std::endl;
         if (peek()->tag != lex::tag_t::eof) {
             throw e;
         }
@@ -123,7 +118,6 @@ decls_t* parser_t::match_decls() {
 }
 
 decl_t* parser_t::match_decl() {
-    std::cout << "Matching decl" << std::endl;
     decl_t* d;
 
     d = match_decl_var();
@@ -161,7 +155,6 @@ var_decl_t* parser_t::match_decl_var() {
     lex::token* semi_colon_token = get_token();
 
     if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
-        std::cout << "Failed acquiring semi colon: " << (int) semi_colon_token->tag << std::endl;
 
         put_back_token(semi_colon_token);
         result->undo(this);
@@ -177,11 +170,9 @@ var_decl_t* parser_t::match_decl_var() {
 //             |  e  
 param_decls_t* parser_t::match_param_decls() {
 
-    std::cout << "Matching param declarations" << std::endl;
     param_decl_t* first = match_param_decl();
     // If failed matching first, return nullptr
     if (first == nullptr) {
-        std::cout << "Failed matching param declarations" << std::endl;
         return nullptr;
     }
 
@@ -282,13 +273,11 @@ asm_param_t* parser_t::match_asm_param() {
 stmts_t* parser_t::match_stmts() {
     
     stmts_t* stmts = nullptr;
-    std::cout << "Matching statement list" << std::endl;
 
     try {
         stmts = match_stmts_1();
     } catch (syntax_error e) {
 
-        std::cout << "Caught syntax error in match_stmts" << std::endl;
         if (peek()->tag != lex::tag_t::CLOSED_BRACE) {
             throw e;
         }
@@ -300,7 +289,6 @@ stmts_t* parser_t::match_stmts() {
 
 stmt_t* parser_t::match_stmt() {
     
-    std::cout << "Matching statement" << std::endl;
     stmt_t* stmt;
 
     stmt = match_stmt_assign();
@@ -334,7 +322,6 @@ expr_t* parser_t::match_expr() {
     
     expr_t* expr;
 
-    std::cout << "Matching expression..." << std::endl;
     expr = match_expr_binop();
     if (expr != nullptr) return expr;
 
@@ -424,8 +411,6 @@ term_t* parser_t::match_term() {
 
 // decls -> decl decls
 decls_t* parser_t::match_decls_1() {
-    
-    std::cout << "Matching decls_1" << std::endl;
 
     decl_t* first = match_decl();
 
@@ -439,9 +424,6 @@ decls_t* parser_t::match_decls_1() {
     // Otherwise, look for more declarations
     decls_t* rest = (decls_t*) match_decls();
     result->rest = rest;
-    std::string s((rest == nullptr) ? "rest not found" : "rest found");
-    std::cout << s << std::endl; 
-
 
     return result;
 }
@@ -508,15 +490,12 @@ var_decl_t* parser_t::match_decl_var_2() {
         return d;
     }
 
-    std::cout << "assignment declaration" << std::endl;
-
     // Else check for expression
     expr_t* value = match_expr();
     
     // If no expression is found, return nullptr
     // TODO: Throw exception instead and free memory
     if (value == nullptr) {
-        std::cout << "Failed to match rvalue expression" << std::endl;
         
         value->undo(this);
         put_back_token(equals);
@@ -541,8 +520,6 @@ var_decl_t* parser_t::match_decl_var_2() {
 
 // func_decl -> type id ( param_decls ) ;
 func_decl_t* parser_t::match_decl_func_1() {
-
-    std::cout << "Matching func declaration" << std::endl;
 
     lex::token* type_token;
     lex::token* id_token;
@@ -602,7 +579,6 @@ func_decl_t* parser_t::match_decl_func_1() {
     }
 
     // If gotten so far, match is successful.
-    std::cout << "Function declaration match successful" << std::endl;
     // Build syntax object
     func_decl_t* result = new func_decl_t();
     result->type = get_type(static_cast<lex::id_token*>(type_token));
@@ -623,8 +599,6 @@ func_decl_t* parser_t::match_decl_func_1() {
 // func_decl -> type id ( ) block_stmt
 func_decl_t* parser_t::match_decl_func_2() {
 
-    std::cout << "Matching func definition" << std::endl;
-
     lex::token* type_token;
     lex::token* id_token;
     lex::token* open_paren_token;
@@ -635,7 +609,6 @@ func_decl_t* parser_t::match_decl_func_2() {
 
     // If first token is not a type token, put back token, delete d and return nullptr
     if (!is_type(type_token)) {
-        std::cout << "Could not match function type: " << (int) type_token->tag << " " << static_cast<lex::id_token*>(type_token)->lexeme << std::endl;
         put_back_token(type_token);
         return nullptr;
     }
@@ -644,7 +617,6 @@ func_decl_t* parser_t::match_decl_func_2() {
     id_token = get_token();
     // If the acquired token is not an identifier, put back tokens, delete d and return nullptr
     if (id_token->tag != lex::tag_t::ID) {
-        std::cout << "Could not match function identifier" << std::endl;
         put_back_token(id_token);
         put_back_token(type_token);
         return nullptr;
@@ -666,7 +638,6 @@ func_decl_t* parser_t::match_decl_func_2() {
     closed_paren_token  = get_token();
     // If acquired tokens are not parenthesis
     if (closed_paren_token->tag != lex::tag_t::CLOSED_PAREN) {
-        std::cout << "Could not match function parenthesis" << std::endl;
         put_back_token(closed_paren_token);
 
         // If there is a parameter list, undo it
@@ -686,7 +657,6 @@ func_decl_t* parser_t::match_decl_func_2() {
     
     // If unsuccessful in finding block statement, put back tokens and return nullptr
     if (bs == nullptr) {
-        std::cout << "Could not match function block statement" << std::endl;
         put_back_token(closed_paren_token);
 
         // If there is a parameter list, undo it
@@ -702,7 +672,6 @@ func_decl_t* parser_t::match_decl_func_2() {
     }
 
     // If gotten so far, match is successful
-    std::cout << "Function definition match successful" << std::endl;
     // Build syntax object
     func_decl_t* result = new func_decl_t();
     result->type = get_type(static_cast<lex::id_token*>(type_token));
@@ -733,7 +702,7 @@ block_stmt_t* parser_t::match_stmt_block() {
         put_back_token(open_brace);
         return nullptr;
     }
-    std::cout << "Matched first brace" << std::endl;
+    
 
     stmts_t* inner = match_stmts();
     // Not matching statements is okay
@@ -742,12 +711,12 @@ block_stmt_t* parser_t::match_stmt_block() {
         return nullptr;
     }*/
 
-    std::cout << "Matched inner statements" << std::endl;
+    
 
     // Get token for closed brace
     closed_brace = get_token();
     if (closed_brace->tag != lex::tag_t::CLOSED_BRACE) {
-        std::cout << "Debug" << std::endl;
+        
         
         put_back_token(closed_brace);
         inner->undo(this);
@@ -757,7 +726,7 @@ block_stmt_t* parser_t::match_stmt_block() {
         return nullptr;
     }
 
-    std::cout << "Matched second brace" << std::endl;
+    
 
     // If we got this far, we have a successful match
 
@@ -776,7 +745,7 @@ block_stmt_t* parser_t::match_stmt_block() {
 //      |  if ( expr ) stmt else stmt 
 if_stmt_t* parser_t::match_stmt_if() {
 
-    std::cout << "Matching if statement" << std::endl;
+    
 
     lex::token* if_token;
     lex::token* open_paren_token;
@@ -860,14 +829,14 @@ if_stmt_t* parser_t::match_stmt_if() {
     result->tokens.push_back(closed_paren_token);
     if (else_token) result->tokens.push_back(else_token);
 
-    std::cout << "Finished matching if statement" << std::endl;
+    
     return result;
 }
 
 // stmt -> while ( expr ) stmt
 while_stmt_t* parser_t::match_stmt_while() {
 
-    std::cout << "Matching while statement" << std::endl;
+    
 
     lex::token* while_token;
     lex::token* open_paren_token;
@@ -935,7 +904,7 @@ while_stmt_t* parser_t::match_stmt_while() {
     result->tokens.push_back(open_paren_token);
     result->tokens.push_back(closed_paren_token);
 
-    std::cout << "Finished matching while statement" << std::endl;
+    
     return result;
 }
 
@@ -1131,7 +1100,7 @@ assignment_stmt_t* parser_t::match_stmt_assign() {
         rvalue = match_expr();
     } catch (syntax_error e) {
         // If could not match expression, revert
-        std::cout << "Could not match assignment expr" << std::endl;
+        
         put_back_token(assign_token);
         put_back_token(id_token);
         return nullptr;
@@ -1394,7 +1363,6 @@ call_term_t* parser_t::match_term_call() {
 // term -> ( expr )
 expr_term_t* parser_t::match_term_expr() {
 
-    std::cout << "Matching expression term " << std::endl;
     lex::token* open_paren_token;
     lex::token* closed_paren_token;
 
