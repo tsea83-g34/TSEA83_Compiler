@@ -1217,12 +1217,14 @@ int var_decl_t::translate(translator_t* t) {
             int reg = t->reg_alloc.allocate(var, false, false);
             move_instr(t, reg, value_reg);
             t->reg_alloc.touch(reg, true);
+            t->reg_alloc.free(reg);
 
         // If it was another register give ownership of the register to the new variable
         } else {
 
             var_info_t* temp_info = t->reg_alloc.give_ownership(value_reg, var);
             t->reg_alloc.touch(value_reg, true);
+            t->reg_alloc.free(value_reg);
             
             // Remove and deallocate the temporary variable
             if (was_temp) {
