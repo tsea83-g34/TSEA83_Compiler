@@ -1362,7 +1362,7 @@ int if_stmt_t::translate(translator_t* t) {
             actions->translate(t);    
         } else {
             // If constant evaluates to true, translate else statements
-            else_actions->translate(t);   
+            if (else_actions) else_actions->translate(t);   
         } 
 
         return -1;
@@ -1530,7 +1530,7 @@ int assignment_stmt_t::translate(translator_t* t) {
 
             // If it is not temporary, allocate a register and move
             // Could this steal the register of the variable being loaded?
-            int reg = t->reg_alloc.allocate(var, false, true);
+            int reg = t->reg_alloc.allocate(var, false, false);
             t->reg_alloc.touch(reg, true);
 
             move_instr(t, reg, right_register);
