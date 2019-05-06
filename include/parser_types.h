@@ -181,7 +181,7 @@ struct param_decls_t : undoable_t, virtual printable_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
-    int translate(translator_t* t, func_info_t* f);
+    int translate(translator_t* t, func_info_t* f, int param_index);
 };
 
 struct param_decl_t : undoable_t, virtual printable_t {
@@ -190,7 +190,7 @@ struct param_decl_t : undoable_t, virtual printable_t {
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
-    int translate(translator_t* t, func_info_t* f);
+    int translate(translator_t* t, func_info_t* f, int param_index);
 };
 
 struct params_t : undoable_t, virtual printable_t {

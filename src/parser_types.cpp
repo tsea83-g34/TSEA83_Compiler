@@ -1065,7 +1065,7 @@ int func_decl_t::translate(translator_t* t) {
     if (param_list != nullptr) {
         // Starts at 2 to accomodate for return address pointer
         current_function->params_size = 2;
-        param_list->translate(t, current_function);
+        param_list->translate(t, current_function, 0);
     }
     
     stmt->translate(t);
@@ -1084,12 +1084,12 @@ int func_decl_t::translate(translator_t* t) {
     t->print_instruction_row("", false, false);
 }
 
-int param_decls_t::translate(translator_t* t, func_info_t* f) {
+int param_decls_t::translate(translator_t* t, func_info_t* f, int param_index) {
     
-    first->translate(t, f);
+    first->translate(t, f, param_index);
     if (rest != nullptr) {
         
-        rest->translate(t, f);
+        rest->translate(t, f, param_index + 1);
 
     } else {
         // remove return pointer offset from params_size
@@ -1105,24 +1105,19 @@ int param_decls_t::translate(translator_t* t, func_info_t* f) {
     
 }
 
-int param_decl_t::translate(translator_t* t, func_info_t* f) {
+int param_decl_t::translate(translator_t* t, func_info_t* f, int param_index) {
 
     // If a parameter with that name already exists
     if (t->symbol_table.get_current_scope()->at(id)) {
         throw translation_error("A parameter with name \"" + id + "\" already exists!");
     }
     
-    int size = t->type_table.at(type)->size;
-
-    // If the current base offset is mis-aligned in relation to the size of this parameter
-    // adjust it 
-    // TODO: This isn't accounted for...
-    if (f->params_size % size != 0) {
-        f->params_size += size - f->params_size % size;
-    }
+    var_info_t* param_info = &f->param_vector[param_index];
     
     // Create address structure for parameter
-    local_addr_info_t* addr = new local_addr_info_t(f->params_size);
+    int base_offset = static_cast<local_addr_info_t*>(param_info->address)->base_offset;
+    
+    local_addr_info_t* addr = new local_addr_info_t(base_offset);
 
     // Size is zero since allocation happens on function call, right now, we simply
     // want to add the variables to the namespace
@@ -1130,9 +1125,6 @@ int param_decl_t::translate(translator_t* t, func_info_t* f) {
     
     // Allocate a register for the variable and load it
     t->reg_alloc.allocate(var, true, false);
-
-    // Update parameter size with the size of the new variable
-    f->params_size += size;
 }
 
 int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
@@ -1150,6 +1142,14 @@ int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
         var_info_t* var;
         int reg = allocate_temp_imm(t, "__param__", first_value, &var);
 
+        int alignment = func->get_alignment(param_index);
+
+        if (alignment) {
+            std::cout << "Pushing alignment " << alignment << std::endl;
+            subi_instr(t, STACK_POINTER, STACK_POINTER, alignment);
+            t->symbol_table.get_current_scope()->push(alignment);
+        }
+
         push_instr(t, reg, t->type_table.at(func->param_vector[param_index].type)->size);
 
         t->reg_alloc.free(reg);
@@ -1159,6 +1159,13 @@ int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
     } else {
 
         int reg = first->translate(t);
+
+        int alignment = func->get_alignment(param_index);
+
+        if (alignment) {
+            subi_instr(t, STACK_POINTER, STACK_POINTER, alignment);
+            t->symbol_table.get_current_scope()->push(alignment);
+        }
 
         push_instr(t, reg, t->type_table.at(func->param_vector[param_index].type)->size);
 
@@ -1635,7 +1642,7 @@ int call_term_t::translate(translator_t* t) {
 
     scope_t* current_scope = t->symbol_table.get_current_scope();
     
-    int context_size = current_scope->get_end_offset() + 2 + func->params_size;
+    int context_size = current_scope->get_end_offset() + (func->param_vector.size()) ? 2 : 0;
     std::cout << "Context size: " << context_size << std::endl;
     
     int alignment = (context_size % 4) ? 4 - (context_size % 4) : 0;
@@ -1656,15 +1663,21 @@ int call_term_t::translate(translator_t* t) {
     // Store current context
     t->reg_alloc.store_context();
 
+    // If the parameters are 4 aligned, stack wont be because of return pointer, offset it with 2 unless there are no parameters
+    if (func->param_vector.size() && func->total_stack_size % 4 == 0) {
+        alignment += 2;
+        current_scope->push(2);
+        subi_instr(t, STACK_POINTER, STACK_POINTER, 2);
+    }
+
     // Call function
     call_instr(t, function_identifier);
 
     // Pop parameters and alignment
-    current_scope->pop(alignment + func->params_size);
+    current_scope->pop(alignment + func->total_stack_size);
 
     // Pop parameters
-    std::cout << "Parameters size: " << func->params_size << std::endl;
-    if (func->params_size + alignment) addi_instr(t, STACK_POINTER, STACK_POINTER, func->params_size + alignment);
+    if (alignment + func->total_stack_size) addi_instr(t, STACK_POINTER, STACK_POINTER, func->total_stack_size + alignment);
 
     // Pop base pointer from stack
     pop_instr(t, BASE_POINTER, POINTER_SIZE);

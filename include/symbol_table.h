@@ -64,17 +64,29 @@ struct var_info_t {
     bool operator==(const var_info_t& other);
 };
 
+struct alignment_info_t {
+    int param_index = 0;
+    int alignment = 0;
+
+    alignment_info_t(int _index, int _alignment) : param_index(_index), alignment(_alignment) { }
+};
+
 struct func_info_t {
+
     std::string identifier;
     int return_type;
     bool defined;
     std::vector<var_info_t> param_vector;
+    std::vector<alignment_info_t> alignment_vector;
     
     // Size occupied by parameters in bytes
     int params_size;
+    int total_stack_size;
 
     func_info_t() = default;
     func_info_t(const func_decl_t* decl, translator_t* t);
+
+    int get_alignment(int param_index);
 
     bool operator==(const func_info_t& other);
     bool operator!=(const func_info_t& other);

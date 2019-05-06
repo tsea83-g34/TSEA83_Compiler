@@ -47,10 +47,12 @@ bool var_info_t::operator==(const var_info_t& other) {
 }
 
 func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
+
     
     identifier = decl->id;
     return_type = decl->type;
     params_size = 0;
+    total_stack_size = 0;
     defined = false;
 
     // If the function has no parameters, finish
@@ -59,9 +61,47 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
     // Loop over parameters and add them to the param_info vector
     param_decls_t* current = decl->param_list;
 
-    // Starts at 2 to accomodate for return address pointer
-    int current_base_offset = 2;
+    // Loop over params and build param type vector
+    std::vector<int> param_types;
+    int param_count = 0;
+    while (current != nullptr) {
+        param_types.push_back(current->first->type);
+        param_count++;
+        current = current->rest;
+    }
+    
+    // Loop backwards over param_types and calculate stack alignment for passing parameters
+    std::cout << "Calculating parameter alignment" << std::endl;
+    int total = 0;
+    while (!param_types.empty()) {
+        
+        int current_type = param_types.back();
+        int current_size = t->type_table.at(current_type)->size;
+        //if (current_size == 1) current_size = 2;
 
+        int alignment = 0;
+        if (total % current_size) {
+            alignment = current_size - (total % current_size);
+            total += alignment;
+            alignment_vector.push_back(alignment_info_t(param_types.size() - 1, alignment));
+        }
+
+        std::cout << "Allocating variable with size " << current_size << " at offset " << total << " with alignment " << alignment << std::endl;
+
+        total += current_size;
+        param_types.pop_back();
+    }
+
+    total_stack_size = total;
+
+    // Loop over parameters and add them to the param_info vector
+    current = decl->param_list;
+
+    // If the parameters on stack are 4 aligned, two bytes will be pushed for alignment
+    // Therefore offset start will be 4, otherwise 2
+    int current_base_offset = (total_stack_size % 4 == 0) ? 4 : 2;
+    int param_index = 0;
+    std::cout << ">>> Starting offset: " << current_base_offset << std::endl;
     while (current != nullptr) {
         
         var_info_t param_info;
@@ -71,30 +111,34 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
 
         int current_size = t->type_table.at(param_info.type)->size;
 
+        //if (current_size == 1) current_size = 2;
+
+
         // If the current base offset is mis-aligned in relation to the size of this parameter
         // adjust it 
-        if (current_base_offset % current_size != 0) {
-            current_base_offset += (-current_base_offset) % current_size;
-        }
+        /*if (current_base_offset % current_size != 0) {
+            int param_alignment = current_size - current_base_offset % current_size;
+            current_base_offset += param_alignment;
+        }*/
 
         // Create address structure for parameter
         local_addr_info_t* addr = new local_addr_info_t(current_base_offset);
         param_info.address = addr;
-        
+        std::cout << ">>> Allocated parameter at offset " << current_base_offset << " size " << current_size << std::endl;
         // Update base offset with the new variable
         current_base_offset += current_size;
 
+        int alignment = get_alignment(param_index);
+
+        if (alignment) {
+            current_base_offset += alignment;
+            std::cout << ">>> Adding alignment " << alignment << " at param index " << param_index << std::endl;
+        }
+
         param_vector.push_back(param_info);        
         current = current->rest;
+        param_index++;
     }
-
-    // Align stack to 4
-    if (current_base_offset % 4 != 0) {
-            current_base_offset += (-current_base_offset) % 4;
-    }
-
-    // params_size equals the current base offset minus the return pointer
-    params_size = current_base_offset - 2;
 }
 
 bool func_info_t::operator==(const func_info_t& other) {
@@ -114,6 +158,13 @@ bool func_info_t::operator==(const func_info_t& other) {
 
 bool func_info_t::operator!=(const func_info_t& other) {
     return !(*this == other);
+}
+
+int func_info_t::get_alignment(int param_index) {
+    for (auto& al : alignment_vector) {
+        if (al.param_index == param_index) return al.alignment;
+    }
+    return 0;
 }
 
 scope_t::scope_t() : total_size(0), base_offset(0), inherit_scope(false) {
