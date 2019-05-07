@@ -85,6 +85,10 @@ const char* lexer::get_current_buffer_end() {
 
 char* lexer::switch_buffer() {
     // Overwrite the non-current buffer and switch to it
+    char* current_buffer = (buffer_switch) ? buffer_1 : buffer_2;
+
+    std::cout << "Reached buffer end at \"" << std::string(lexeme_start-10) << "\"" << std::endl;
+
     char* other_buffer = (buffer_switch) ? buffer_2 : buffer_1;
     file.read(other_buffer, READ_SIZE);
     buffer_switch = !buffer_switch;
@@ -265,7 +269,12 @@ token* lexer::get_next_token() {
                 handle_split(str_literal_regex, literal, literal.length());
             } else return new token(tag_t::UNKNOWN);
 
-            return new str_literal_token(std::move(literal));
+            int str_lit_length = literal.size();
+            str_literal_token* result = new str_literal_token(std::move(literal));
+            result->column_number = column;
+            result->line_number = line;
+            column += str_lit_length;
+            return result;
         }
 
         // Check for parenthesis, single character operators and semi-colons
