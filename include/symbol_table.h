@@ -129,6 +129,7 @@ class symbol_table_t {
 
     scope_name_allocator_t name_alloc;
 
+
 public:
     symbol_table_t();
     ~symbol_table_t();
@@ -150,6 +151,7 @@ public:
     
     bool is_scope_reachable(scope_t* scope);
     bool is_global_scope();
+    scope_t* get_global_scope();
     scope_t* get_current_scope();
 
     void push_scope(bool inherit_scope);

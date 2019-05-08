@@ -321,6 +321,8 @@ void symbol_table_t::remove_func(const std::string& name) {
 
 bool symbol_table_t::is_scope_reachable(scope_t* scope) {
 
+    if (scope == get_global_scope()) return true;
+
     for (int i = scope_stack.size() - 1; i >= 1; i--) {
         
         if (scope_stack[i] == scope) return true;
@@ -336,6 +338,10 @@ bool symbol_table_t::is_global_scope() {
 
 scope_t* symbol_table_t::get_current_scope() {
     return scope_stack.back();
+}
+
+scope_t* symbol_table_t::get_global_scope() {
+    return scope_stack.front();
 }
 
 void symbol_table_t::push_scope(bool inherit_scope) {
