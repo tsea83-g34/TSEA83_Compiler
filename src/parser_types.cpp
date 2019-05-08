@@ -1060,7 +1060,7 @@ int func_decl_t::translate(translator_t* t) {
 
     move_instr(t, BASE_POINTER, STACK_POINTER);
 
-    t->symbol_table.push_scope(false);
+    t->symbol_table.push_scope(true);
 
     if (param_list != nullptr) {
         // Starts at 2 to accomodate for return address pointer
@@ -1077,7 +1077,7 @@ int func_decl_t::translate(translator_t* t) {
     }
 
     // Free the registers containing local variables in the current scope
-    t->reg_alloc.free_scope(t->symbol_table.get_current_scope());
+    t->reg_alloc.free_scope(t->symbol_table.get_current_scope(), true);
     
     t->symbol_table.pop_scope();
 
