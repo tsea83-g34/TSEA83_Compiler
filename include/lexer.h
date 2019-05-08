@@ -8,7 +8,7 @@
 
 #include "tokens.h"
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 65538
 #define READ_SIZE BUFFER_SIZE - 1
 
 #define MAX_TOKEN_SIZE 64

@@ -108,6 +108,8 @@ decls_t* parser_t::match_decls() {
     } catch (syntax_error e) {
 
         if (peek()->tag != lex::tag_t::eof) {
+            std::string id_str = (peek()->tag == lex::tag_t::ID) ? static_cast<const lex::id_token*>(peek())->lexeme : "";
+            std::cout << "Failed matching declaration. Look-ahead: " << lex::token_names[(int) peek()->tag] << " " << id_str << std::endl;
             throw e;
         }
     }
