@@ -226,13 +226,17 @@ void register_allocator_t::store_context() {
 
 }
 
-void register_allocator_t::free_scope(scope_t* scope_to_free) {
+void register_allocator_t::free_scope(scope_t* scope_to_free, bool store_globals) {
     std::cout << "Freeing scope" << std::endl;
+    
+    scope_t* global_scope = parent->symbol_table.get_global_scope();
+    
     for (reg_t* reg : registers) {
 
         if (reg->content == nullptr) continue;
-
-        if (reg->content->scope != scope_to_free) continue;
+ 
+        bool globals = store_globals != (reg->content->scope == global_scope);
+        if (reg->content->scope != scope_to_free && globals) continue;
 
         // Free the register without storing the variable or sorting the heap
         free(reg, false, false);

@@ -47,7 +47,7 @@ public:
     void free(var_info_t* var, bool store);
 
     void store_context();
-    void free_scope(scope_t* scope_to_free);
+    void free_scope(scope_t* scope_to_free, bool store_globals = false);
 
     void touch(int register_index, bool has_changed);
     bool is_temporary(int register_index);
