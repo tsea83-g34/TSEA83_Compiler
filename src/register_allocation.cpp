@@ -214,6 +214,9 @@ void register_allocator_t::store_context() {
 
     for (reg_t* reg : registers) {
         if (reg->content == nullptr) continue;
+        
+        std::cout << "Register: " << reg->index << " Content: " << reg->content->name << std::endl;
+
         if (!parent->symbol_table.is_scope_reachable(reg->content->scope)) continue;
 
         // Free the register, store the variable and dont sort the heap
@@ -238,8 +241,10 @@ void register_allocator_t::free_scope(scope_t* scope_to_free, bool store_globals
         bool globals = store_globals != (reg->content->scope == global_scope);
         if (reg->content->scope != scope_to_free && globals) continue;
 
+        bool store = reg->content->scope != scope_to_free;
+
         // Free the register without storing the variable or sorting the heap
-        free(reg, false, false);
+        free(reg, store, false);
     }
 
     // re-heapify the vector
