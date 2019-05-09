@@ -79,7 +79,7 @@ void register_allocator_t::free(reg_t* reg, bool store, bool sort) {
     std::cout << "Freeing register " << reg->index << " belonging to variable " << reg->content->name << std::endl;
 
     var_info_t* old_data = reg->content;
-    int size = parent->type_table.at(old_data->type)->size;
+    int size = (old_data->is_pointer) ? POINTER_SIZE : parent->type_table.at(old_data->type)->size;
 
     if (store && reg->changed) {
         
@@ -162,7 +162,7 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable,
             base_or_null = BASE_POINTER;
         }
 
-        int size = parent->type_table.at(var_to_alloc->type)->size;
+        int size = (var_to_alloc->is_pointer) ? POINTER_SIZE : parent->type_table.at(var_to_alloc->type)->size;
         
         // Print instruction
         load_instr(parent, front->index, base_or_null, var_to_alloc->address, size);
