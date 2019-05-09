@@ -1,6 +1,7 @@
 
 #include "../include/symbol_table.h"
 #include "../include/translator.h"
+#include "../include/helper_functions.h"
 
 #include <iostream>
 #include <utility>
@@ -43,7 +44,8 @@ bool var_info_t::operator==(const var_info_t& other) {
 
     return  name    == other.name &&
             type    == other.type &&
-            address->get_address_string() == other.address->get_address_string();
+            address->get_address_string() == other.address->get_address_string() &&
+            is_pointer == other.is_pointer;
 }
 
 func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
@@ -65,7 +67,12 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
     std::vector<int> param_types;
     int param_count = 0;
     while (current != nullptr) {
-        param_types.push_back(current->first->type);
+        if (current->first->is_pointer) {
+            std::cout << "Param is pointer" << std::endl;
+            param_types.push_back(0);
+        } else {
+            param_types.push_back(current->first->type);
+        }
         param_count++;
         current = current->rest;
     }
@@ -108,8 +115,9 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
         param_info.name = current->first->id;
         param_info.id = current->first->id;
         param_info.type = current->first->type;
+        param_info.is_pointer = current->first->is_pointer;
 
-        int current_size = t->type_table.at(param_info.type)->size;
+        int current_size = (param_info.is_pointer) ? POINTER_SIZE : t->type_table.at(param_info.type)->size;
 
         //if (current_size == 1) current_size = 2;
 

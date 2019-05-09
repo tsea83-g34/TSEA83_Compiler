@@ -224,6 +224,8 @@ param_decl_t* parser_t::match_param_decl() {
     result->id          = static_cast<lex::id_token*>(id_token)->lexeme;
     result->is_pointer  = star_token != nullptr;
 
+    if (star_token) std::cout << "Found pointer parameter" << std::endl;
+
     // Store token
     result->tokens.push_back(type_token);
     if (star_token) result->tokens.push_back(star_token);

@@ -1230,7 +1230,9 @@ int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
             t->symbol_table.get_current_scope()->push(alignment);
         }
 
-        push_instr(t, reg, t->type_table.at(func->param_vector[param_index].type)->size);
+        int size = (func->param_vector[param_index].is_pointer) ? POINTER_SIZE : t->type_table.at(func->param_vector[param_index].type)->size;
+        if (func->param_vector[param_index].is_pointer) std::cout << "PUSHING POINTER" << std::endl;
+        push_instr(t, reg, size);
 
         t->reg_alloc.free(reg);
         t->symbol_table.get_current_scope()->remove(var->name);
@@ -1247,7 +1249,9 @@ int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
             t->symbol_table.get_current_scope()->push(alignment);
         }
 
-        push_instr(t, reg, t->type_table.at(func->param_vector[param_index].type)->size);
+        // Size = 2 if pointer sizeof(type) otherwise
+        int size = (func->param_vector[param_index].is_pointer) ? POINTER_SIZE : t->type_table.at(func->param_vector[param_index].type)->size;
+        push_instr(t, reg, size);
 
     }
 
@@ -1815,7 +1819,7 @@ int call_term_t::translate(translator_t* t) {
 
     scope_t* current_scope = t->symbol_table.get_current_scope();
     
-    int context_size = current_scope->get_end_offset() + (func->param_vector.size()) ? 2 : 0;
+    int context_size = current_scope->get_end_offset() + 2;//(func->param_vector.size()) ? 2 : 0;
     std::cout << "Context size: " << context_size << std::endl;
     
     int alignment = (context_size % 4) ? 4 - (context_size % 4) : 0;
