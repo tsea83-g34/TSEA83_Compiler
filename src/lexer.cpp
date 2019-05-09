@@ -1,5 +1,6 @@
 
 #include "../include/lexer.h"
+#include "../include/helper_functions.h"
 
 #include <utility>
 #include <cctype>
@@ -23,7 +24,7 @@ lexer::lexer(std::string filename) {
     whitespace_regex        = std::regex("[\t\n\ ]+");
     half_str_literal_regex  = std::regex("\"([^\"]*)");
 
-    char_literal_regex      = std::regex("\'[^\']*\'");
+    char_literal_regex      = std::regex("\'\?[^\']\'");
     hex_literal_regex       = std::regex("0x[0-9a-fA-F]+");
 
     // Open file, allocate buffer memory and read BUFFER_SIZE characters
@@ -222,6 +223,41 @@ token* lexer::get_next_token() {
 
             column += word.length();
             // Otherwise create a new identifier token
+            return result_token;
+        }
+
+        // Check for character literals
+        // TODO: Does not handle splits!
+        if (std::regex_search(lexeme_start, cm, char_literal_regex) && cm.prefix().length() == 0) {
+            
+            std::string literal = cm[0].str();
+            lexeme_start += literal.length();
+
+            std::cout << "Found character literal: " << literal << std::endl;
+
+            char value = char_literal_to_ascii(literal);
+            token* result_token = new int_literal_token(value);
+
+            result_token->line_number = line;
+            result_token->column_number = column;
+
+            column += literal.length();
+            return result_token;
+        }
+
+        // Check for hexadecimal integer literals
+        if (std::regex_search(lexeme_start, cm, hex_literal_regex) && cm.prefix().length() == 0) {
+            
+            std::string literal = cm[0].str();
+            lexeme_start += literal.length();
+
+            int value = std::stoi(literal, 0, 16);
+            token* result_token = new int_literal_token(value);
+
+            result_token->line_number = line;
+            result_token->column_number = column;
+
+            column += literal.length();
             return result_token;
         }
 

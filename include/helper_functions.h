@@ -7,6 +7,10 @@
 
 std::string strip_quotations(const std::string& string_literal);
 
+char char_literal_to_ascii(const std::string& char_literal);
+
+void str_lit_to_str(const std::string& str, std::string& result);
+
 void load_immediate(translator_t* t, int register_index, int value);
 
 int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_info_t** var);

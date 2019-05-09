@@ -3,10 +3,81 @@
 #include "../include/instructions.h"
 
 #include <sstream>
+#include <algorithm>
 
 std::string strip_quotations(const std::string& string_literal) {
     return string_literal.substr(1, string_literal.size() - 2);
 }
+
+char char_literal_to_ascii(const std::string& char_literal) {
+    
+    std::string str;
+    if (char_literal.front() == '\'' && char_literal.back() == '\'') {
+        str = strip_quotations(char_literal);
+    } else {
+        str = char_literal;
+    }
+
+    if (str.length() == 1 && str[0] != '\\') return str[0];
+
+    char result;
+
+    switch(str[1]) {
+        case 'a':
+            result = '\a';
+            break;
+        case 'b':
+            result = '\b';
+            break;
+        case 'e':
+            result = '\e';
+            break;
+        case 'f':
+            result = '\f';
+            break;
+        case 'n':
+            result = '\n';
+            break;
+        case 'r':
+            result = '\r';
+            break;
+        case 't':
+            result = '\t';
+            break;
+        case 'v':
+            result = '\v';
+            break;
+        case '\\':
+            result = '\\';
+            break;
+        case '\'':
+            result = '\'';
+            break;
+        case '\"':
+            result = '\"';
+            break; 
+    }
+
+    return result;
+}
+
+void str_lit_to_str(const std::string& str, std::string& result) {
+
+    std::string buffer = strip_quotations(str);
+
+    for (int i = 0; i < buffer.length(); i++) {
+        if (buffer[i] == '\\') {
+            if (buffer[i] == '\\') continue;
+            else if (i > 0 && buffer[i-1] == '\\') continue;
+            else if (i = buffer.length() - 1) continue;
+            
+            buffer[i+1] = char_literal_to_ascii(buffer.substr(i, 2));
+        }
+    }
+
+    std::remove(buffer.begin(), buffer.end(), '\\');
+    result = str;
+} 
 
 void load_immediate(translator_t* t, int reg, int value) {
     
