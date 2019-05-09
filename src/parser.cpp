@@ -14,6 +14,8 @@ parser_t::parser_t(lex::lexer *l) : lexical_analyzer(l) {
 
     type_name_map = std::unordered_map<int, std::string>();
     type_name_map.insert({0, "int"});
+    type_name_map.insert({1, "char"});
+    type_name_map.insert({2, "long"});
 
     token_queue = std::deque<lex::token*>();
     current_pos = 0;
@@ -190,16 +192,26 @@ param_decls_t* parser_t::match_param_decls() {
 }
 
 // param_decl -> type id
+//            |  type * id
 param_decl_t* parser_t::match_param_decl() {
 
     lex::token* type_token;
+    lex::token* star_token = nullptr;
     lex::token* id_token;
 
     type_token  = get_token();
+    
+    star_token = get_token();
+    if (star_token->tag != lex::tag_t::STAR) {
+        put_back_token(star_token);
+        star_token = nullptr;
+    }
+
     id_token    = get_token();
 
     if (!is_type(type_token) || id_token->tag != lex::tag_t::ID) {
         put_back_token(id_token);
+        if (star_token) put_back_token(star_token);
         put_back_token(type_token);
         return nullptr;
     }
@@ -208,11 +220,13 @@ param_decl_t* parser_t::match_param_decl() {
 
     // Create syntax object
     param_decl_t* result = new param_decl_t();
-    result->type    = get_type(static_cast<lex::id_token*>(type_token));
-    result->id      = static_cast<lex::id_token*>(id_token)->lexeme;
+    result->type        = get_type(static_cast<lex::id_token*>(type_token));
+    result->id          = static_cast<lex::id_token*>(id_token)->lexeme;
+    result->is_pointer  = star_token != nullptr;
 
     // Store token
     result->tokens.push_back(type_token);
+    if (star_token) result->tokens.push_back(star_token);
     result->tokens.push_back(id_token);
 
     return result;
@@ -294,6 +308,9 @@ stmt_t* parser_t::match_stmt() {
     stmt_t* stmt;
 
     stmt = match_stmt_assign();
+    if (stmt != nullptr) return stmt;
+
+    stmt = match_stmt_assign_deref();
     if (stmt != nullptr) return stmt;
 
     stmt = match_stmt_decl();
@@ -404,6 +421,12 @@ term_t* parser_t::match_term() {
     term = match_term_literal();
     if (term != nullptr) return term;
 
+    term = match_term_addr_of();
+    if (term != nullptr) return term;
+
+    term = match_term_deref();
+    if (term != nullptr) return term;
+
     term = match_term_expr();
     return term;
 
@@ -439,9 +462,11 @@ decls_t* parser_t::match_decls_2() {
 }
 
 // var_decl -> type id
+//          |  type * id
 var_decl_t* parser_t::match_decl_var_1() {
 
     lex::token *type_token;
+    lex::token *star_token = nullptr;
     lex::token *id_token;
     // Get type
     type_token = get_token();
@@ -450,6 +475,12 @@ var_decl_t* parser_t::match_decl_var_1() {
     if (!is_type(type_token)) {
         put_back_token(type_token);
         return nullptr;
+    }
+
+    star_token = get_token();
+    if (star_token->tag != lex::tag_t::STAR) {
+        put_back_token(star_token);
+        star_token = nullptr;
     }
 
     // Get identifier
@@ -467,6 +498,7 @@ var_decl_t* parser_t::match_decl_var_1() {
     
     d->type = get_type(static_cast<lex::id_token*>(type_token));
     d->id = static_cast<lex::id_token*>(id_token)->lexeme;
+    d->is_pointer = star_token != nullptr;
 
     d->tokens.push_back(type_token);
     d->tokens.push_back(id_token);
@@ -475,6 +507,7 @@ var_decl_t* parser_t::match_decl_var_1() {
 }
 
 // var_decl -> type id "=" expr
+//          |  type "*" id "=" expr
 var_decl_t* parser_t::match_decl_var_2() {
 
     // Use other function to try to find first part of the declaration
@@ -1139,6 +1172,72 @@ assignment_stmt_t* parser_t::match_stmt_assign() {
     return result;
 }
 
+// stmt -> "*" id "=" expr ;
+deref_assignment_stmt_t* parser_t::match_stmt_assign_deref() {
+
+    lex::token* star_token;
+    lex::token* id_token;
+    lex::token* assign_token;
+    lex::token* semi_colon_token;
+
+    star_token = get_token();
+    id_token   = get_token();
+    assign_token = get_token();
+
+
+    if (star_token->tag != lex::tag_t::STAR || id_token->tag != lex::tag_t::ID || assign_token->tag != lex::tag_t::ASSIGNMENT) {
+        put_back_token(assign_token);
+        put_back_token(id_token);
+        put_back_token(star_token);
+        return nullptr;
+    }
+
+    // Acquire identifier from token
+    expr_t* rvalue;
+
+    try {
+        rvalue = match_expr();
+    } catch (syntax_error e) {
+        // If could not match expression, revert
+        put_back_token(assign_token);
+        put_back_token(id_token);
+        put_back_token(star_token);
+        return nullptr;
+    }
+
+    semi_colon_token = get_token();
+
+    if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        put_back_token(semi_colon_token);
+        rvalue->undo(this);
+        put_back_token(assign_token);
+        put_back_token(id_token);
+        put_back_token(star_token);
+        delete rvalue;
+        return nullptr;
+    }
+    
+    // If gotten this far, match was successful
+
+
+    // Change associativity of expression if needed
+    rvalue = binop_expr_t::rewrite(rvalue);
+    
+
+    // Build syntax object
+    deref_assignment_stmt_t* result = new deref_assignment_stmt_t();
+    result->identifier = static_cast<lex::id_token*>(id_token)->lexeme;
+    result->rvalue = rvalue;
+
+    // Store tokens
+    result->tokens.push_back(star_token);
+    result->tokens.push_back(id_token);
+    result->tokens.push_back(assign_token);
+    result->tokens.push_back(semi_colon_token);
+    
+    return result;
+}
+
 // stmts -> stmt stmts
 stmts_t* parser_t::match_stmts_1() {
 
@@ -1358,6 +1457,56 @@ call_term_t* parser_t::match_term_call() {
     result->tokens.push_back(id_token);
     result->tokens.push_back(open_paren_token);
     result->tokens.push_back(closed_paren_token);
+
+    return result;
+}
+
+// term -> & id
+addr_of_term_t* parser_t::match_term_addr_of() {
+    
+    lex::token* ampersand_token = get_token();
+    lex::token* identifier_token = get_token();
+
+    if (ampersand_token->tag != lex::tag_t::AND || identifier_token->tag != lex::tag_t::ID) {
+        put_back_token(identifier_token);
+        put_back_token(ampersand_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+    
+    // Build syntax object
+    addr_of_term_t* result = new addr_of_term_t();
+    result->identifier = static_cast<lex::id_token*>(identifier_token)->lexeme;
+    
+    // Store token
+    result->tokens.push_back(ampersand_token);
+    result->tokens.push_back(identifier_token);
+
+    return result;
+}
+
+// term -> * id
+deref_term_t* parser_t::match_term_deref() {
+    
+    lex::token* star_token = get_token();
+    lex::token* identifier_token = get_token();
+
+    if (star_token->tag != lex::tag_t::STAR || identifier_token->tag != lex::tag_t::ID) {
+        put_back_token(identifier_token);
+        put_back_token(star_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+    
+    // Build syntax object
+    deref_term_t* result = new deref_term_t();
+    result->identifier = static_cast<lex::id_token*>(identifier_token)->lexeme;
+    
+    // Store token
+    result->tokens.push_back(star_token);
+    result->tokens.push_back(identifier_token);
 
     return result;
 }

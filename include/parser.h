@@ -29,12 +29,13 @@ struct if_stmt_t;
 struct while_stmt_t;
 struct asm_stmt_t;
 struct assignment_stmt_t;
+struct deref_assignment_stmt_t;
 struct return_stmt_t;
 struct expr_stmt_t;
 
 struct expr_t;
 struct neg_expr_t;
-struct not_expr_t;
+struct not_expr_t;;
 struct term_expr_t;
 
 struct term_t;
@@ -42,6 +43,8 @@ struct lit_term_t;
 struct id_term_t;
 struct call_term_t;
 struct expr_term_t;
+struct deref_term_t;
+struct addr_of_term_t;
 
 struct asm_params_t;
 struct asm_param_t;
@@ -141,6 +144,7 @@ private:
     asm_stmt_t* match_stmt_asm();
     var_decl_t* match_stmt_decl();
     assignment_stmt_t* match_stmt_assign();
+    deref_assignment_stmt_t* match_stmt_assign_deref();
     return_stmt_t* match_stmt_return();
     expr_stmt_t* match_stmt_expr();
 
@@ -158,6 +162,8 @@ private:
     lit_term_t* match_term_literal();
     call_term_t* match_term_call();
     expr_term_t* match_term_expr();
+    addr_of_term_t* match_term_addr_of();
+    deref_term_t* match_term_deref();
 
 public:
     parser_t(lex::lexer *l);

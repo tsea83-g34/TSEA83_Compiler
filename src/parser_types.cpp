@@ -60,6 +60,12 @@ void var_decl_t::undo(parser_t* p) {
     p->put_back_token(tokens.back());
     tokens.pop_back();
 
+    if (is_pointer) {
+        // Put back * token
+        p->put_back_token(tokens.back());
+        tokens.pop_back();
+    }
+
     // Put back type token
     p->put_back_token(tokens.back());
     tokens.pop_back();
@@ -67,7 +73,9 @@ void var_decl_t::undo(parser_t* p) {
 }
 
 std::string var_decl_t::get_string(parser_t* p) {
-    return "(var_decl)[ " + p->get_type_name(type) + " " + id + " ]" +
+    std::string ptr_str = (is_pointer) ? "* " : "";
+
+    return "(var_decl)[ " + p->get_type_name(type) + " " + ptr_str + id + " ]" +
         ((value != nullptr) ? "{ " + value->get_string(p) + " }" : "");
 }
 
@@ -154,13 +162,20 @@ void param_decl_t::undo(parser_t* p) {
     p->put_back_token(tokens.back());
     tokens.pop_back();
 
+    if (is_pointer) {
+        // Put back * token
+        p->put_back_token(tokens.back());
+        tokens.pop_back();
+    }
+
     // Put back type token
     p->put_back_token(tokens.back());
     tokens.pop_back();
 }
 
 std::string param_decl_t::get_string(parser_t* p) {
-    return p->get_type_name(type) + " " + id;
+    std::string ptr_str = (is_pointer) ? "* " : "";
+    return p->get_type_name(type) + " " + ptr_str + id;
 }
 
 void params_t::undo(parser_t* p) {
@@ -330,6 +345,32 @@ std::string assignment_stmt_t::get_string(parser_t* p) {
     return "(assign)[ " + identifier + " value( " + rvalue->get_string(p) + " )]";
 }
 
+void deref_assignment_stmt_t::undo(parser_t* p) {
+    
+    // Put back ; token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    rvalue->undo(p);
+    delete rvalue;
+
+    // Put back = token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back(); 
+
+    // Put back * token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string deref_assignment_stmt_t::get_string(parser_t* p) {
+    return "(assign)[ " + identifier + " value( " + rvalue->get_string(p) + " )]";
+}
+
 void return_stmt_t::undo(parser_t* p) {
 
     // Put back ; token
@@ -388,6 +429,21 @@ void not_expr_t::undo(parser_t* p) {
 
 std::string not_expr_t::get_string(parser_t* p) {
     return "!" + value->get_string(p);
+}
+
+void deref_term_t::undo(parser_t* p) {
+
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();    
+    
+    // Put back * token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string deref_term_t::get_string(parser_t* p) {
+    return "*" + identifier;
 }
 
 void term_expr_t::undo(parser_t* p) {
@@ -462,6 +518,22 @@ void expr_term_t::undo(parser_t* p) {
 
 std::string expr_term_t::get_string(parser_t* p) {
     return "(" + expr->get_string(p) + ")";
+}
+
+void addr_of_term_t::undo(parser_t* p) {
+    
+    // Put back identifier token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back & token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+    
+}
+
+std::string addr_of_term_t::get_string(parser_t* p) {
+    return "( *" + identifier + ")";
 }
 
 
@@ -602,6 +674,10 @@ bool not_expr_t::evaluate(int* result) {
     return true;
 }
 
+bool deref_term_t::evaluate(int* result) {
+    return false;
+}
+
 bool term_expr_t::evaluate(int* result) {
     return t->evaluate(result);
 }
@@ -619,10 +695,13 @@ bool id_term_t::evaluate(int* result) {
     return false;
 }
 
+bool addr_of_term_t::evaluate(int* result) {
+    return false;
+}
+
 bool expr_term_t::evaluate(int* result) {
     
     return expr->evaluate(result);
-
 }
 
 bool add_binop_t::evaluate(int* result) {
@@ -1122,6 +1201,7 @@ int param_decl_t::translate(translator_t* t, func_info_t* f, int param_index) {
     // Size is zero since allocation happens on function call, right now, we simply
     // want to add the variables to the namespace
     var_info_t* var = t->symbol_table.add_var(id, type, 0, addr);
+    var->is_pointer = is_pointer;
     
     // Allocate a register for the variable and load it
     t->reg_alloc.allocate(var, true, false);
@@ -1194,10 +1274,13 @@ int var_decl_t::translate(translator_t* t) {
 
         // Size is zero since the variable is allocated statically
         var_info_t* var = t->symbol_table.add_var(id, type, 0, addr);
+        var->is_pointer = is_pointer;
+        
+        int size = (is_pointer) ? POINTER_SIZE : type_desc->size;
 
         // Global variable
         if (value == nullptr) {
-            t->static_alloc(id, type_desc->size, 0);
+            t->static_alloc(id, size, 0);
             return 0;    
         };
 
@@ -1205,12 +1288,12 @@ int var_decl_t::translate(translator_t* t) {
         bool evaluated = value->evaluate(&constant_value);
 
         if (evaluated) {
-            t->static_alloc(id, type_desc->size, constant_value);
+            t->static_alloc(id, size, constant_value);
             return 0;
         }
 
         // Allocate space for the variable
-        t->static_alloc(id, type_desc->size, 0);
+        t->static_alloc(id, size, 0);
 
         t->set_data_mode(true);
 
@@ -1259,8 +1342,9 @@ int var_decl_t::translate(translator_t* t) {
 
         // Get type descriptor of the type of the variable
         type_descriptor_t* type_desc = t->type_table.at(type);
-
-        std::cout << "Type: " << type_desc->name << " size: " << type_desc->size << std::endl;
+        int size = (is_pointer) ? POINTER_SIZE : type_desc->size;
+ 
+        std::cout << "Type: " << type_desc->name << " size: " << size << std::endl;
 
         // Acquire current scope
         scope_t* current_scope = t->symbol_table.get_current_scope();
@@ -1272,7 +1356,7 @@ int var_decl_t::translate(translator_t* t) {
         int size_to_allocate = 0;
         int alignment = 0;
 
-        if (type_desc->size <= 2) {
+        if (size <= 2) {
             // If the variable size is 2 or less, allocate 2 bytes
             size_to_allocate = 2;
         } else {
@@ -1280,7 +1364,7 @@ int var_decl_t::translate(translator_t* t) {
             alignment = current_scope->align(4);
 
             // If the size is already a multiple of 4, allocate that many bytes, otherwise round it up to the nearest multiple
-            size_to_allocate = (type_desc->size % 4 == 0) ? type_desc->size : type_desc->size + (4 - type_desc->size % 4);
+            size_to_allocate = (size % 4 == 0) ? size : size + (4 - size % 4);
         }
 
         variable_base_offset = -(current_scope->get_end_offset() + size_to_allocate);
@@ -1545,6 +1629,38 @@ int assignment_stmt_t::translate(translator_t* t) {
     }
 }
 
+int deref_assignment_stmt_t::translate(translator_t* t) {
+
+    var_info_t* var = t->symbol_table.get_var(identifier);
+    int var_size = t->type_table.at(var->type)->size;
+
+    if (!var->is_pointer) std::cout << "-- Translator warning: Dereferencing non-pointer variable " << var->name << " " << tokens.front()->line_number << ":" << tokens.front()->column_number << std::endl;
+
+    int constant_value = 0;
+    bool value_evaluated = rvalue->evaluate(&constant_value);
+    int ptr_reg = t->reg_alloc.allocate(var, true, false);
+
+    if (value_evaluated) {
+
+
+        var_info_t* temp_var;
+        int const_reg = allocate_temp_imm(t, "__temp__", constant_value, &temp_var);
+        
+        store_instr(t, ptr_reg, const_reg, nullptr, var_size);
+        t->reg_alloc.free(temp_var, false);
+
+    } else {
+        
+        int right_register = rvalue->translate(t);
+
+        if (right_register == ptr_reg) {
+            ptr_reg = t->reg_alloc.allocate(var, true, false);
+        }
+
+        store_instr(t, ptr_reg, right_register, nullptr, var_size);
+    }
+}
+
 int return_stmt_t::translate(translator_t* t) {
     
     int constant_value = 0;
@@ -1630,6 +1746,63 @@ int id_term_t::translate(translator_t* t) {
 
     // Return the register index of the allocated register
     return register_index;
+}
+
+int addr_of_term_t::translate(translator_t* t) {
+
+    var_info_t* var = t->symbol_table.get_var(identifier);
+
+    bool is_local = dynamic_cast<local_addr_info_t*>(var->address) != nullptr;
+    bool is_global = dynamic_cast<global_addr_info_t*>(var->address) != nullptr;
+
+    std::string temp_name = t->name_allocator.get_name("__temp__");
+
+    // Add temporary variable to scope to allow register allocation
+    var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
+
+    int reg = t->reg_alloc.allocate(temp_var, false, false);
+
+    if (is_local) {
+        
+        local_addr_info_t* l_addr = dynamic_cast<local_addr_info_t*>(var->address);
+
+        addi_instr(t, reg, BASE_POINTER, l_addr->base_offset);
+    
+    } else { // Is global
+
+        global_addr_info_t* g_addr = dynamic_cast<global_addr_info_t*>(var->address);
+
+        tri_operand_imm_str_instr(t, ADD_IMM_INSTR, reg, NULL_REGISTER, g_addr->label);
+
+    }
+
+    return reg;
+}
+
+int deref_term_t::translate(translator_t* t) {
+
+    var_info_t* var = t->symbol_table.get_var(identifier);
+    int var_size = t->type_table.at(var->type)->size;
+
+    if (!var->is_pointer) std::cout << "-- Translator warning: Dereferencing non-pointer variable " << var->name << " " << tokens.front()->line_number << ":" << tokens.front()->column_number << std::endl;
+
+    bool is_local = dynamic_cast<local_addr_info_t*>(var->address) != nullptr;
+    bool is_global = dynamic_cast<global_addr_info_t*>(var->address) != nullptr;
+
+    std::string temp_name = t->name_allocator.get_name("__temp__");
+
+    // Add temporary variable to scope to allow register allocation
+    var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
+
+    int reg = t->reg_alloc.allocate(var, false, false);
+
+    // Take ownership of register
+    t->reg_alloc.give_ownership(reg, temp_var);
+
+    // Load the value pointed to by reg into reg with offset 0
+    load_instr(t, reg, reg, nullptr, var_size);
+
+    return reg;
 }
 
 int call_term_t::translate(translator_t* t) {

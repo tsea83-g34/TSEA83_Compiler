@@ -18,7 +18,9 @@
                 |   var_decl
     
     var_decl    ->  type id ;
+                |   type "*" id ;
                 |   type id "=" expr ;
+                |   type "*" id "=" expr ;
 
     func_decl   ->  type id ( param_decls ) ;
                 |   type id ( param_decls ) block_stmt
@@ -27,6 +29,7 @@
                 |   e
 
     param_decl  ->  type id
+                |   type * id
 
     stmt        ->  block_stmt
                 |   if ( expr ) stmt
@@ -35,6 +38,7 @@
                 |   asm ( str_lit params )
                 |   var_decl
                 |   id "=" expr ;   // assignment
+                |   "*" id "=" expr ; // deref assignment
                 |   return expr ;
                 |   expr ;
     
@@ -46,6 +50,7 @@
     expr        ->  term binop expr
                 |   "-" term
                 |   "!" term
+                |   "*" term
                 |   term
 
     binop       ->  "+"
@@ -62,7 +67,7 @@
                 |   literal
                 |   id ( params )  // Function call
                 |   ( expr )
-                |
+                |   & id
     
     params      ->  expr params
                 |   e
@@ -94,12 +99,13 @@ struct if_stmt_t;
 struct while_stmt_t;
 struct asm_stmt_t;
 struct assignment_stmt_t;
+struct deref_assignment_stmt_t;
 struct return_stmt_t;
 struct expr_stmt_t;
 
 struct expr_t;
 struct neg_expr_t;
-struct not_expr_t;
+struct not_expr_t;;
 struct term_expr_t;
 
 struct term_t;
@@ -107,6 +113,8 @@ struct lit_term_t;
 struct id_term_t;
 struct call_term_t;
 struct expr_term_t;
+struct deref_term_t;
+struct addr_of_term_t;
 
 struct asm_params_t;
 struct asm_param_t;
@@ -187,6 +195,7 @@ struct param_decls_t : undoable_t, virtual printable_t {
 struct param_decl_t : undoable_t, virtual printable_t {
     int type;
     std::string id;
+    bool is_pointer;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
@@ -224,6 +233,7 @@ struct stmt_t : virtual undoable_t, virtual printable_t, virtual translateable_t
 struct var_decl_t : decl_t, stmt_t {
     int type;
     std::string id;
+    bool is_pointer;
     expr_t* value;
 
     void undo(parser_t* p) override;
@@ -278,6 +288,16 @@ struct asm_stmt_t : stmt_t {
 };
 
 struct assignment_stmt_t : stmt_t {
+    std::string identifier;
+    expr_t* rvalue;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+};
+
+struct deref_assignment_stmt_t : stmt_t {
+    
     std::string identifier;
     expr_t* rvalue;
 
@@ -367,6 +387,26 @@ struct expr_term_t : term_t {
 
     expr_term_t() { is_literal = false; }
     void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
+};
+
+struct addr_of_term_t : term_t {
+    std::string identifier;
+
+    void undo(parser_t* p) override;
+    addr_of_term_t() { is_literal = false; }
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
+};
+
+struct deref_term_t : term_t {
+    std::string identifier;
+
+    void undo(parser_t* p) override;
+    deref_term_t() { is_literal = false; }
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
     bool evaluate(int* result) override;

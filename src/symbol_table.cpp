@@ -283,6 +283,7 @@ var_info_t* symbol_table_t::add_var(const std::string& name, const int type, con
     varinfo->type = type;
     varinfo->scope = get_current_scope();
     varinfo->address = addr;
+    varinfo->is_pointer = false;
 
     if (is_global_scope()) {
         varinfo->id = name;
