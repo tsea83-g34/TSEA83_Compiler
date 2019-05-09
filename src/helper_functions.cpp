@@ -332,6 +332,17 @@ void tri_operand_imm_instr(translator_t* t, const std::string& instr, int rd, in
     t->print_instruction_row(output.str(), true);
 }
 
+void tri_operand_imm_str_instr(translator_t* t, const std::string& instr, int rd, int ra, const std::string& imm) {
+
+    std::string rd_str = get_register_string(t, rd);
+    std::string ra_str = get_register_string(t, ra);
+
+    std::stringstream output;
+
+    output  << instr << " " << rd_str << ", " << ra_str << ", " << imm;
+    t->print_instruction_row(output.str(), true);
+}
+
 void di_operand_instr(translator_t* t, const std::string& instr, int rd, int ra) {
     
     std::string ra_str = get_register_string(t, rd);
@@ -460,10 +471,11 @@ void store_instr(translator_t* t, int rd, int ra, addr_info_t* offset, int size)
     
     std::string rd_str = get_register_string(t, rd);
     std::string ra_str = get_register_string(t, ra);
+    std::string offset_string = (offset) ? offset->get_address_string() : "0";
 
     std::stringstream output;
 
-    output << STORE_INSTR << "[" << size << "] " << rd_str << ", " << ra_str << ", " << offset->get_address_string();
+    output << STORE_INSTR << "[" << size << "] " << rd_str << ", " << ra_str << ", " << offset_string;
     t->print_instruction_row(output.str(), true);
 }
 
@@ -471,10 +483,11 @@ void load_instr(translator_t* t, int rd, int ra, addr_info_t* offset, int size) 
     
     std::string rd_str = get_register_string(t, rd);
     std::string ra_str = get_register_string(t, ra);
+    std::string offset_string = (offset) ? offset->get_address_string() : "0";
 
     std::stringstream output;
 
-    output << LOAD_INSTR << "[" << size << "] " << rd_str << ", " << ra_str << ", " << offset->get_address_string();
+    output << LOAD_INSTR << "[" << size << "] " << rd_str << ", " << ra_str << ", " << offset_string;
     t->print_instruction_row(output.str(), true);
 }
 

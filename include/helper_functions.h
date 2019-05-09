@@ -31,6 +31,8 @@ void tri_operand_instr(translator_t* t, const std::string& instr, int rd, int ra
 
 void tri_operand_imm_instr(translator_t* t, const std::string& instr, int rd, int ra, int imm);
 
+void tri_operand_imm_str_instr(translator_t* t, const std::string& instr, int rd, int ra, const std::string& imm);
+
 void di_operand_instr(translator_t* t, const std::string& instr, int rd, int ra);
 
 void di_operand_imm_instr(translator_t* t, const std::string& instr, int rd, int im);
