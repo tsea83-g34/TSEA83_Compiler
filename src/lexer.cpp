@@ -328,6 +328,16 @@ token* lexer::get_next_token() {
                 found = true;
                 tag = tag_t::OPEN_PAREN;
                 break;
+            case '[':
+                lexeme_start++;
+                found = true;
+                tag = tag_t::OPEN_BRACKET;
+                break;
+            case ']':
+                lexeme_start++;
+                found = true;
+                tag = tag_t::CLOSED_BRACKET;
+                break;
             case ')':
                 lexeme_start++;
                 found = true;
