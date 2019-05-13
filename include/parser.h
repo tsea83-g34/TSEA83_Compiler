@@ -18,6 +18,14 @@ struct decls_t;
 struct var_decl_t;
 struct func_decl_t;
 
+struct array_decl_t;
+
+struct simple_array_decl_t;
+struct init_list_array_decl_t;
+struct str_array_decl_t;
+
+struct init_list_t;
+
 struct param_decls_t;
 struct param_decl_t;
 struct params_t;
@@ -30,6 +38,7 @@ struct while_stmt_t;
 struct asm_stmt_t;
 struct assignment_stmt_t;
 struct deref_assignment_stmt_t;
+struct indexed_assignment_stmt_t;
 struct return_stmt_t;
 struct expr_stmt_t;
 
@@ -45,10 +54,10 @@ struct call_term_t;
 struct expr_term_t;
 struct deref_term_t;
 struct addr_of_term_t;
+struct indexed_term_t;
 
 struct asm_params_t;
 struct asm_param_t;
-
 // New binary operation system
 
 struct binop_expr_t;
@@ -113,6 +122,7 @@ private:
     decl_t* match_decl();
 
     var_decl_t* match_decl_var();
+    array_decl_t* match_decl_array();
     func_decl_t* match_decl_func();
 
     param_decls_t* match_param_decls();
@@ -135,6 +145,12 @@ private:
     var_decl_t* match_decl_var_1();
     var_decl_t* match_decl_var_2();
 
+    init_list_t* match_init_list();
+
+    simple_array_decl_t* match_decl_array_simple();
+    init_list_array_decl_t* match_decl_array_init_list();
+    str_array_decl_t* match_decl_array_str();
+
     func_decl_t* match_decl_func_1();
     func_decl_t* match_decl_func_2();
 
@@ -145,6 +161,7 @@ private:
     var_decl_t* match_stmt_decl();
     assignment_stmt_t* match_stmt_assign();
     deref_assignment_stmt_t* match_stmt_assign_deref();
+    indexed_assignment_stmt_t* match_stmt_assign_indexed();
     return_stmt_t* match_stmt_return();
     expr_stmt_t* match_stmt_expr();
 
@@ -164,6 +181,7 @@ private:
     expr_term_t* match_term_expr();
     addr_of_term_t* match_term_addr_of();
     deref_term_t* match_term_deref();
+    indexed_term_t* match_term_indexed();
 
 public:
     parser_t(lex::lexer *l);

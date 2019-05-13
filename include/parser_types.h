@@ -21,6 +21,13 @@
                 |   type "*" id ;
                 |   type id "=" expr ;
                 |   type "*" id "=" expr ;
+    
+    array_decl  ->  type id [ expr ] ; 
+                |   type id [ ] = { init_list } ;
+                |   char id [ ] = str_lit ;
+
+    init_list   ->  expr init_list
+                |   e
 
     func_decl   ->  type id ( param_decls ) ;
                 |   type id ( param_decls ) block_stmt
@@ -37,8 +44,10 @@
                 |   while ( expr ) stmt
                 |   asm ( str_lit params )
                 |   var_decl
+                |   array_decl
                 |   id "=" expr ;   // assignment
                 |   "*" id "=" expr ; // deref assignment
+                |   id [ expr ] "=" expr ; // deref assignment
                 |   return expr ;
                 |   expr ;
     
@@ -68,6 +77,7 @@
                 |   id ( params )  // Function call
                 |   ( expr )
                 |   & id
+                |   id [ expr ]
     
     params      ->  expr params
                 |   e
@@ -88,6 +98,14 @@ struct decls_t;
 struct var_decl_t;
 struct func_decl_t;
 
+struct array_decl_t;
+
+struct simple_array_decl_t;
+struct init_list_array_decl_t;
+struct str_array_decl_t;
+
+struct init_list_t;
+
 struct param_decls_t;
 struct param_decl_t;
 struct params_t;
@@ -100,6 +118,7 @@ struct while_stmt_t;
 struct asm_stmt_t;
 struct assignment_stmt_t;
 struct deref_assignment_stmt_t;
+struct indexed_assignment_stmt_t;
 struct return_stmt_t;
 struct expr_stmt_t;
 
@@ -115,6 +134,7 @@ struct call_term_t;
 struct expr_term_t;
 struct deref_term_t;
 struct addr_of_term_t;
+struct indexed_term_t;
 
 struct asm_params_t;
 struct asm_param_t;
@@ -211,6 +231,15 @@ struct params_t : undoable_t, virtual printable_t {
     int translate(translator_t* t, func_info_t* func, int param_index);
 };
 
+struct init_list_t : undoable_t, printable_t {
+
+    expr_t* first;
+    init_list_t* rest;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+};
+
 struct asm_params_t : undoable_t, virtual printable_t, translateable_t {
 
     asm_param_t* first;
@@ -235,6 +264,39 @@ struct var_decl_t : decl_t, stmt_t {
     std::string id;
     bool is_pointer;
     expr_t* value;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+};
+
+struct array_decl_t : decl_t, stmt_t {
+    int type;
+    std::string identifier;
+
+};
+
+struct simple_array_decl_t : array_decl_t {
+
+    expr_t* size;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+};
+
+struct init_list_array_decl_t : array_decl_t {
+    
+    init_list_t* init_list;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+};
+
+struct str_array_decl_t : array_decl_t {
+
+    std::string string_literal;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;
@@ -299,6 +361,17 @@ struct assignment_stmt_t : stmt_t {
 struct deref_assignment_stmt_t : stmt_t {
     
     std::string identifier;
+    expr_t* rvalue;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+};
+
+struct indexed_assignment_stmt_t : stmt_t {
+    
+    std::string identifier;
+    expr_t* index;
     expr_t* rvalue;
 
     void undo(parser_t* p) override;
@@ -407,6 +480,18 @@ struct deref_term_t : term_t {
 
     void undo(parser_t* p) override;
     deref_term_t() { is_literal = false; }
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+    bool evaluate(int* result) override;
+};
+
+struct indexed_term_t : term_t {
+    
+    std::string identifier;
+    expr_t* index;
+
+    void undo(parser_t* p) override;
+    indexed_term_t() { is_literal = false; }
     std::string get_string(parser_t* p) override;
     int translate(translator_t* t) override;
     bool evaluate(int* result) override;

@@ -126,6 +126,9 @@ decl_t* parser_t::match_decl() {
 
     d = match_decl_var();
     if (d != nullptr) return d;
+    
+    d = match_decl_array();
+    if (d != nullptr) return d;
 
     d = match_decl_func();
     if (d != nullptr) return d;
@@ -167,6 +170,20 @@ var_decl_t* parser_t::match_decl_var() {
     }
 
     result->tokens.push_back(semi_colon_token);
+    return result;
+}
+
+array_decl_t* parser_t::match_decl_array() {
+
+    array_decl_t* result = nullptr;
+    
+    result = match_decl_array_simple();
+    if (result != nullptr) return result;
+
+    result = match_decl_array_init_list();
+    if (result != nullptr) return result;
+
+    result = match_decl_array_str();
     return result;
 }
 
@@ -315,7 +332,13 @@ stmt_t* parser_t::match_stmt() {
     stmt = match_stmt_assign_deref();
     if (stmt != nullptr) return stmt;
 
+    stmt = match_stmt_assign_indexed();
+    if (stmt != nullptr) return stmt;
+
     stmt = match_stmt_decl();
+    if (stmt != nullptr) return stmt;
+
+    stmt = match_decl_array();
     if (stmt != nullptr) return stmt;
 
     stmt = match_stmt_block();
@@ -417,9 +440,7 @@ term_t* parser_t::match_term() {
     term = match_term_call();
     if (term != nullptr) return term;
     
-    term = match_term_identifier();
-    if (term != nullptr) return term;
-
+    
     term = match_term_literal();
     if (term != nullptr) return term;
 
@@ -427,6 +448,13 @@ term_t* parser_t::match_term() {
     if (term != nullptr) return term;
 
     term = match_term_deref();
+    if (term != nullptr) return term;
+    
+    // Cannot be below match_term_identifier since that is a substring of this production
+    term = match_term_indexed();
+    if (term != nullptr) return term;
+
+    term = match_term_identifier();
     if (term != nullptr) return term;
 
     term = match_term_expr();
@@ -553,6 +581,237 @@ var_decl_t* parser_t::match_decl_var_2() {
     d->value = value;
 
     return d;
+}
+
+init_list_t* parser_t::match_init_list() {
+
+    expr_t* first;
+
+    try {
+        first = match_expr();
+    } catch (syntax_error e) {
+        return nullptr;
+    }
+    
+    // Change associativity of expression if needed
+    first = binop_expr_t::rewrite(first);
+    
+
+    init_list_t* result = new init_list_t();
+    result->first = first;
+
+    // Try matching more parameters
+    result->rest = match_init_list();
+
+    return result;    
+
+}
+
+// array_decl -> type id [ expr ] ;
+simple_array_decl_t* parser_t::match_decl_array_simple() {
+
+    lex::token* type_token;
+    lex::token* identifier_token;
+    lex::token* open_bracket_token;
+    lex::token* closed_bracket_token;
+    lex::token* semi_colon_token;
+
+    type_token          = get_token();
+    identifier_token    = get_token();
+    open_bracket_token  = get_token();
+
+    if (!is_type(type_token) || identifier_token->tag != lex::tag_t::ID || open_bracket_token->tag != lex::tag_t::OPEN_BRACKET) {
+        put_back_token(open_bracket_token);
+        put_back_token(identifier_token);
+        put_back_token(type_token);
+        return nullptr;
+    }
+
+    expr_t* size = nullptr;
+    try {
+        size = match_expr();
+    } catch (syntax_error e) {
+        put_back_token(open_bracket_token);
+        put_back_token(identifier_token);
+        put_back_token(type_token);
+        return nullptr;
+    }
+
+    closed_bracket_token = get_token();
+    semi_colon_token     = get_token();
+
+    if (closed_bracket_token->tag != lex::tag_t::CLOSED_BRACKET || semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        put_back_token(semi_colon_token);
+        put_back_token(closed_bracket_token);
+
+        size->undo(this);
+        delete size;
+
+        put_back_token(open_bracket_token);
+        put_back_token(identifier_token);
+        put_back_token(type_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+
+    // Change associativity of size expressinon
+    size = binop_expr_t::rewrite(size);
+
+    // Build syntax object
+    simple_array_decl_t* result = new simple_array_decl_t();
+    
+    result->type = get_type(static_cast<lex::id_token*>(type_token));
+    result->identifier = static_cast<lex::id_token*>(identifier_token)->lexeme;
+    result->size = size;
+
+    // Store tokens
+    result->tokens.push_back(type_token);
+    result->tokens.push_back(identifier_token);
+    result->tokens.push_back(open_bracket_token);
+    result->tokens.push_back(closed_bracket_token);
+    result->tokens.push_back(semi_colon_token);
+
+    return result;
+}
+
+// array_decl -> type id [ ] = { init_list } ;
+init_list_array_decl_t* parser_t::match_decl_array_init_list() {
+
+    lex::token* type_token;
+    lex::token* identifier_token;
+    lex::token* open_bracket_token;
+    lex::token* closed_bracket_token;
+    lex::token* assignment_token;
+    lex::token* open_brace_token;
+    lex::token* closed_brace_token;
+    lex::token* semi_colon_token;
+
+    type_token              = get_token();
+    identifier_token        = get_token();   
+    open_bracket_token      = get_token();
+    closed_bracket_token    = get_token();  
+    assignment_token        = get_token();
+    open_brace_token        = get_token();
+
+    if (!is_type(type_token) ||
+        identifier_token->tag != lex::tag_t::ID ||
+        open_bracket_token->tag != lex::tag_t::OPEN_BRACKET ||
+        closed_bracket_token->tag != lex::tag_t::CLOSED_BRACKET ||
+        assignment_token->tag != lex::tag_t::ASSIGNMENT ||
+        open_brace_token->tag != lex::tag_t::OPEN_BRACE) {
+
+            put_back_token(open_brace_token);
+            put_back_token(assignment_token);
+            put_back_token(closed_bracket_token);
+            put_back_token(open_bracket_token);
+            put_back_token(identifier_token);
+            put_back_token(type_token);
+            return nullptr;
+    }
+
+    init_list_t* init_list = match_init_list();
+
+    if (init_list == nullptr) {
+        put_back_token(open_brace_token);
+        put_back_token(assignment_token);
+        put_back_token(closed_bracket_token);
+        put_back_token(open_bracket_token);
+        put_back_token(identifier_token);
+        put_back_token(type_token);
+        return nullptr;
+    }
+
+    closed_brace_token = get_token();
+    semi_colon_token   = get_token();
+
+    if (closed_brace_token->tag != lex::tag_t::CLOSED_BRACE || semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        put_back_token(semi_colon_token);
+        put_back_token(closed_brace_token);
+
+        init_list->undo(this);
+        delete init_list;
+
+        put_back_token(open_brace_token);
+        put_back_token(assignment_token);
+        put_back_token(closed_bracket_token);
+        put_back_token(open_bracket_token);
+        put_back_token(identifier_token);
+        put_back_token(type_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    init_list_array_decl_t* result = new init_list_array_decl_t();
+
+    result->type = get_type(static_cast<lex::id_token*>(type_token));
+    result->identifier = static_cast<lex::id_token*>(identifier_token)->lexeme;
+    result->init_list = init_list;
+
+    // Store tokens
+    result->tokens.push_back(type_token);
+    result->tokens.push_back(identifier_token);
+    result->tokens.push_back(open_bracket_token);
+    result->tokens.push_back(closed_bracket_token);
+    result->tokens.push_back(assignment_token);
+    result->tokens.push_back(open_brace_token);
+    result->tokens.push_back(closed_brace_token);
+    result->tokens.push_back(semi_colon_token);
+
+    return result;
+}
+
+// array_decl -> type id [ ] = str_lit ; 
+str_array_decl_t* parser_t::match_decl_array_str() {
+
+    lex::token* type_token              = get_token();
+    lex::token* identifier_token        = get_token();
+    lex::token* open_bracket_token      = get_token();
+    lex::token* closed_bracket_token    = get_token();
+    lex::token* assignment_token        = get_token();
+    lex::token* string_literal_token    = get_token();
+    lex::token* semi_colon_token        = get_token();
+
+
+    if (!is_type(type_token) ||
+        identifier_token->tag != lex::tag_t::ID ||
+        open_bracket_token->tag != lex::tag_t::OPEN_BRACKET ||
+        closed_bracket_token->tag != lex::tag_t::CLOSED_BRACKET ||
+        assignment_token->tag != lex::tag_t::ASSIGNMENT ||
+        string_literal_token->tag != lex::tag_t::STRING_LITERAL ||
+        semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+
+            put_back_token(semi_colon_token);
+            put_back_token(string_literal_token);
+            put_back_token(assignment_token);
+            put_back_token(closed_bracket_token);
+            put_back_token(open_bracket_token);
+            put_back_token(identifier_token);
+            put_back_token(type_token);
+            return nullptr;
+    }
+
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    str_array_decl_t* result = new str_array_decl_t();
+    
+    result->type = get_type(static_cast<lex::id_token*>(type_token));
+    result->identifier = static_cast<lex::id_token*>(identifier_token)->lexeme;
+    result->string_literal = static_cast<lex::str_literal_token*>(string_literal_token)->value;
+
+    // Store tokens
+    result->tokens.push_back(type_token);
+    result->tokens.push_back(identifier_token);
+    result->tokens.push_back(open_bracket_token);
+    result->tokens.push_back(closed_bracket_token);
+    result->tokens.push_back(assignment_token);
+    result->tokens.push_back(string_literal_token);
+    result->tokens.push_back(semi_colon_token);
+
+    return result;
 }
 
 // func_decl -> type id ( param_decls ) ;
@@ -1240,6 +1499,109 @@ deref_assignment_stmt_t* parser_t::match_stmt_assign_deref() {
     return result;
 }
 
+// stmt -> id [ expr ] "=" expr ;
+indexed_assignment_stmt_t* parser_t::match_stmt_assign_indexed() {
+
+    lex::token* id_token;
+    lex::token* open_bracket_token;
+    lex::token* closed_bracket_token;
+    lex::token* assign_token;
+    lex::token* semi_colon_token;
+
+    id_token = get_token();
+    open_bracket_token = get_token();
+
+
+    if (id_token->tag != lex::tag_t::ID || open_bracket_token->tag != lex::tag_t::OPEN_BRACKET) {
+        put_back_token(open_bracket_token);
+        put_back_token(id_token);
+        return nullptr;
+    }
+
+    // Acquire index expr from token
+    expr_t* index;
+
+    try {
+        index = match_expr();
+    } catch (syntax_error e) {
+        // If could not match expression, revert
+        put_back_token(open_bracket_token);
+        put_back_token(id_token);
+        return nullptr;
+    }
+
+    closed_bracket_token = get_token();
+    assign_token = get_token();
+
+    if (closed_bracket_token->tag != lex::tag_t::CLOSED_BRACKET || assign_token->tag != lex::tag_t::ASSIGNMENT) {
+        
+        put_back_token(assign_token);
+        put_back_token(closed_bracket_token);
+        
+        index->undo(this);
+        delete index;
+        
+        put_back_token(open_bracket_token);
+        put_back_token(id_token);
+        return nullptr;
+    }
+
+    expr_t* rvalue;
+
+    try {
+        rvalue = match_expr();
+    } catch (syntax_error e) {
+        // If could not match expression, revert
+        put_back_token(assign_token);
+        put_back_token(closed_bracket_token);
+        
+        index->undo(this);
+        delete index;
+        
+        put_back_token(open_bracket_token);
+        put_back_token(id_token);
+        return nullptr;
+    }
+
+    semi_colon_token = get_token();
+
+    if (semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        
+        put_back_token(semi_colon_token);
+        rvalue->undo(this);
+        put_back_token(assign_token);
+        put_back_token(closed_bracket_token);
+        index->undo(this);
+        put_back_token(open_bracket_token);
+        put_back_token(id_token);
+        
+        delete index;
+        delete rvalue;
+        return nullptr;
+    }
+    
+    // If gotten this far, match was successful
+
+
+    // Change associativity of expression if needed
+    rvalue = binop_expr_t::rewrite(rvalue);
+    index = binop_expr_t::rewrite(index);
+
+    // Build syntax object
+    indexed_assignment_stmt_t* result = new indexed_assignment_stmt_t();
+    result->identifier = static_cast<lex::id_token*>(id_token)->lexeme;
+    result->rvalue = rvalue;
+    result->index = index;
+
+    // Store tokens
+    result->tokens.push_back(id_token);
+    result->tokens.push_back(open_bracket_token);
+    result->tokens.push_back(closed_bracket_token);
+    result->tokens.push_back(assign_token);
+    result->tokens.push_back(semi_colon_token);
+    return result;
+}
+
 // stmts -> stmt stmts
 stmts_t* parser_t::match_stmts_1() {
 
@@ -1512,6 +1874,60 @@ deref_term_t* parser_t::match_term_deref() {
 
     return result;
 }
+
+// term -> id [ expr ]
+indexed_term_t* parser_t::match_term_indexed() {
+
+    lex::token* identifier_token;
+    lex::token* open_bracket_token;
+    lex::token* closed_bracket_token;
+
+    identifier_token = get_token();
+    open_bracket_token = get_token();
+
+    if (identifier_token->tag != lex::tag_t::ID || open_bracket_token->tag != lex::tag_t::OPEN_BRACKET) {
+        put_back_token(open_bracket_token);
+        put_back_token(identifier_token);
+        return nullptr;
+    }
+
+    expr_t* index = match_expr();
+
+    if (index == nullptr) {
+        put_back_token(open_bracket_token);
+        put_back_token(identifier_token);
+        return nullptr;
+    }
+
+    closed_bracket_token = get_token();
+    
+    if (closed_bracket_token->tag != lex::tag_t::CLOSED_BRACKET) {
+        put_back_token(closed_bracket_token);
+
+        index->undo(this);
+        delete index;
+
+        put_back_token(open_bracket_token);
+        put_back_token(identifier_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    indexed_term_t* result = new indexed_term_t();
+
+    result->identifier = static_cast<lex::id_token*>(identifier_token)->lexeme;
+    result->index = index;
+
+    // Store token
+    result->tokens.push_back(identifier_token);
+    result->tokens.push_back(open_bracket_token);
+    result->tokens.push_back(closed_bracket_token);
+
+    return result;
+}
+
 
 // term -> ( expr )
 expr_term_t* parser_t::match_term_expr() {

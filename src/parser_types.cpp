@@ -72,6 +72,115 @@ void var_decl_t::undo(parser_t* p) {
 
 }
 
+void simple_array_decl_t::undo(parser_t* p) {
+
+    // Put back ; token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back ] token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    size->undo(p);
+    delete size;
+
+    // Put back [ token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back type token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string simple_array_decl_t::get_string(parser_t* p) {
+    return "(array_decl)[ type: " + p->get_type_name(type) + " id: " + identifier + " ]";
+}
+
+
+void init_list_array_decl_t::undo(parser_t* p) {
+
+    // Put back ; token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back } token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    init_list->undo(p);
+    delete init_list;
+
+    // Put back { token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back = token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back ] token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back [ token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back type token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string init_list_array_decl_t::get_string(parser_t* p) {
+    return "(array_decl)[ type: " + p->get_type_name(type) + " id: " + identifier + " ]{ " + init_list->get_string(p) + " }";
+}
+
+
+void str_array_decl_t::undo(parser_t* p) {
+
+    // Put back ; token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back str_lit token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back = token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back ] token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back [ token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back type "char" token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string str_array_decl_t::get_string(parser_t* p) {
+    return "(array_decl)[ type: " + p->get_type_name(type) + " id: " + identifier + "]{ " + string_literal + " }";
+}
+
 std::string var_decl_t::get_string(parser_t* p) {
     std::string ptr_str = (is_pointer) ? "* " : "";
 
@@ -148,6 +257,23 @@ void asm_params_t::undo(parser_t* p) {
 
     first->undo(p);
     delete first;
+}
+
+void init_list_t::undo(parser_t* p) {
+
+    if (rest != nullptr) {
+        rest->undo(p);
+        delete rest;
+    }
+
+    first->undo(p);
+    delete first;
+}
+
+std::string init_list_t::get_string(parser_t* p) {
+    std::string result = first->get_string(p);
+    if (rest != nullptr) result += " " + rest->get_string(p);
+    return result;
 }
 
 std::string asm_params_t::get_string(parser_t* p) {
@@ -368,7 +494,41 @@ void deref_assignment_stmt_t::undo(parser_t* p) {
 }
 
 std::string deref_assignment_stmt_t::get_string(parser_t* p) {
-    return "(assign)[ " + identifier + " value( " + rvalue->get_string(p) + " )]";
+    return "(assign)[ *" + identifier + " value( " + rvalue->get_string(p) + " )]";
+}
+
+void indexed_assignment_stmt_t::undo(parser_t* p) {
+    
+    // Put back ; token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    rvalue->undo(p);
+    delete rvalue;
+
+    // Put back = token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back ] token
+    p->put_back_token(tokens.back());
+    tokens.pop_back(); 
+
+    index->undo(p);
+    delete index;
+
+    // Put back [ token
+    p->put_back_token(tokens.back());
+    tokens.pop_back(); 
+
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back(); 
+
+}
+
+std::string indexed_assignment_stmt_t::get_string(parser_t* p) {
+    return "(assign)[ " + identifier + " [ " + index->get_string(p) + " ] value( " + rvalue->get_string(p) + " )]";
 }
 
 void return_stmt_t::undo(parser_t* p) {
@@ -444,6 +604,28 @@ void deref_term_t::undo(parser_t* p) {
 
 std::string deref_term_t::get_string(parser_t* p) {
     return "*" + identifier;
+}
+
+void indexed_term_t::undo(parser_t* p) {
+
+    // Put back ] token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();    
+    
+    index->undo(p);
+    delete index;
+
+    // Put back [ token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();   
+
+    // Put back id token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string indexed_term_t::get_string(parser_t* p) {
+    return identifier + "[ " + index->get_string(p) + " ]";
 }
 
 void term_expr_t::undo(parser_t* p) {
@@ -696,6 +878,10 @@ bool id_term_t::evaluate(int* result) {
 }
 
 bool addr_of_term_t::evaluate(int* result) {
+    return false;
+}
+
+bool indexed_term_t::evaluate(int* result) {
     return false;
 }
 
@@ -1269,7 +1455,7 @@ int var_decl_t::translate(translator_t* t) {
         std::cout << "Found global variable declaration!" << std::endl;
         
         if (t->symbol_table.get_current_scope()->at(id)) {
-            throw translation_error("Multiple definition of global symbol \"" + id + "\"");
+            throw translation_error("Multiple definition of global symbol \"" + id + "\" At " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number));
         }
 
         type_descriptor_t* type_desc = t->type_table.at(type);
@@ -1414,6 +1600,193 @@ int var_decl_t::translate(translator_t* t) {
                 }
             }
         } 
+    }
+}
+
+int simple_array_decl_t::translate(translator_t* t) {
+    
+    type_descriptor_t* type_desc = t->type_table.at(type);
+    int element_size = type_desc->size;
+    
+    int array_size;
+    size->evaluate(&array_size);
+
+    if (t->symbol_table.is_global_scope()) {
+
+        std::cout << "Found global array declaration!" << std::endl;
+        
+        if (t->symbol_table.get_current_scope()->at(identifier)) {
+            throw translation_error("Multiple definition of global symbol \"" + identifier + "\" At " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number));
+        }
+
+        global_addr_info_t* addr = new global_addr_info_t(identifier);
+
+        // Size is zero since the variable is allocated statically
+        var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
+        var->is_pointer = true;
+
+        t->static_alloc_array(identifier, element_size, array_size);
+
+    } else {
+
+        std::cout << "Found local array declaration!" << std::endl;
+
+        // Local variable
+
+        if (t->symbol_table.get_current_scope()->at(identifier)) {
+            throw translation_error("Multiple definition of local symbol \"" + identifier + "\"");
+        }
+
+        scope_t* current_scope = t->symbol_table.get_current_scope();
+
+        int variable_base_offset = 0;
+        
+        // Align the scope to the size of the array
+        int pre_alignment = current_scope->align(element_size);
+        
+        // Push the size of the array to the stack
+        current_scope->push(element_size * array_size);
+
+        variable_base_offset = - current_scope->get_end_offset();
+
+        // Align the stack to two afterwards
+        int post_alignment = current_scope->align(2);
+
+        local_addr_info_t* addr = new local_addr_info_t(variable_base_offset);
+        var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
+        var->is_pointer = true;
+
+        int total_stack_size = pre_alignment + element_size * array_size + post_alignment;
+        subi_instr(t, STACK_POINTER, STACK_POINTER, total_stack_size);
+    
+    }
+}
+
+int init_list_array_decl_t::translate(translator_t* t) {
+
+    // Acquire values form initializer list
+    std::vector<int> values;
+    init_list_to_vector(init_list, values);
+
+    type_descriptor_t* type_desc = t->type_table.at(type);
+    int element_size = type_desc->size;
+    
+    int array_size = values.size();
+
+    if (t->symbol_table.is_global_scope()) {
+
+        std::cout << "Found global initializer list array declaration!" << std::endl;
+        
+        if (t->symbol_table.get_current_scope()->at(identifier)) {
+            throw translation_error("Multiple definition of global symbol \"" + identifier + "\" At " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number));
+        }
+
+        global_addr_info_t* addr = new global_addr_info_t(identifier);
+
+        // Size is zero since the variable is allocated statically
+        var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
+        var->is_pointer = true;
+
+        t->static_alloc_array_init(identifier, element_size, values);
+    
+    } else {
+
+        scope_t* current_scope = t->symbol_table.get_current_scope();
+
+        int variable_base_offset = 0;
+        
+        // Align the scope to the size of the array
+        int pre_alignment = current_scope->align(element_size);
+
+        if (pre_alignment) subi_instr(t, STACK_POINTER, STACK_POINTER, pre_alignment);
+
+        var_info_t* temp_var;
+        int reg = allocate_temp(t, "__temp__", &temp_var);
+        
+        for (int i = array_size - 1; i >= 0; i--) {
+
+            load_immediate(t, reg, values[i]);
+            push_instr(t, reg, element_size);
+
+        }
+
+        t->reg_alloc.touch(reg, false);
+        t->reg_alloc.free(temp_var, false);
+
+        variable_base_offset = - current_scope->get_end_offset();
+
+        // Align the stack to two afterwards
+        int post_alignment = current_scope->align(2);
+
+        if (post_alignment) subi_instr(t, STACK_POINTER, STACK_POINTER, post_alignment);
+
+        local_addr_info_t* addr = new local_addr_info_t(variable_base_offset);
+        var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
+        var->is_pointer = true;
+
+    }
+}
+
+int str_array_decl_t::translate(translator_t* t) {
+
+    if (t->type_table.at(type)->name != "char") {
+        throw translation_error("Allocating string literal to an array with type other than char " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number)); 
+    }
+    
+    type_descriptor_t* type_desc = t->type_table.at(type);
+    int element_size = type_desc->size;
+    
+    // -2 for quotation marks and +1 for null character
+    int array_size = string_literal.size() - 2 + 1;
+    
+    if (t->symbol_table.is_global_scope()) {
+
+        std::cout << "Found global string array declaration!" << std::endl;
+        
+        if (t->symbol_table.get_current_scope()->at(identifier)) {
+            throw translation_error("Multiple definition of global symbol \"" + identifier + "\" At " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number));
+        }
+
+        global_addr_info_t* addr = new global_addr_info_t(identifier);
+
+        // Size is zero since the variable is allocated statically
+        var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
+        var->is_pointer = true;
+
+        t->static_alloc_array_str(identifier, string_literal);
+
+    } else {
+
+        scope_t* current_scope = t->symbol_table.get_current_scope();
+
+        int variable_base_offset = 0;
+
+        var_info_t* temp_var;
+        int reg = allocate_temp(t, "__temp__", &temp_var);
+        
+        load_immediate(t, reg, 0);
+        push_instr(t, reg, element_size);
+
+        for (int i = string_literal.size() - 2; i >= 1; i--) {
+
+            load_immediate(t, reg, string_literal[i]);
+            push_instr(t, reg, element_size);
+
+        }
+
+        t->reg_alloc.touch(reg, false);
+        t->reg_alloc.free(temp_var, false);
+
+        variable_base_offset = - current_scope->get_end_offset();
+
+        // Align the stack to two afterwards
+        int post_alignment = current_scope->align(2);
+
+        if (post_alignment) subi_instr(t, STACK_POINTER, STACK_POINTER, post_alignment);
+
+        local_addr_info_t* addr = new local_addr_info_t(variable_base_offset);
+        var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
+        var->is_pointer = true;
     }
 }
 
@@ -1665,6 +2038,60 @@ int deref_assignment_stmt_t::translate(translator_t* t) {
     }
 }
 
+int indexed_assignment_stmt_t::translate(translator_t* t) {
+
+    var_info_t* var = t->symbol_table.get_var(identifier);
+    int var_size = t->type_table.at(var->type)->size;
+
+    if (!var->is_pointer) std::cout << "-- Translator warning: Dereferencing non-pointer variable " << var->name << " " << tokens.front()->line_number << ":" << tokens.front()->column_number << std::endl;
+
+    int constant_value = 0;
+    bool value_evaluated = rvalue->evaluate(&constant_value);
+    int ptr_reg = t->reg_alloc.allocate(var, true, false);
+
+    int constant_index = 0;
+    bool index_evaluated = index->evaluate(&constant_index);
+
+    var_info_t* ptr_temp = give_ownership_temp(t, "__temp__", ptr_reg);
+    
+    if (index_evaluated && constant_index < std::numeric_limits<unsigned short>().max()) {
+        
+        addi_instr(t, ptr_reg, ptr_reg, var_size * constant_index);
+
+    } else {
+        var_info_t* size_const_var;
+        
+        int index_register = index->translate(t);
+        int size_const_reg = allocate_temp_imm(t, "__temp__", var_size, &size_const_var);
+
+        mult_instr(t, index_register, index_register, size_const_reg);
+        add_instr(t, ptr_reg, ptr_reg, index_register);
+
+        t->reg_alloc.free(size_const_var, false);
+    }
+
+    if (value_evaluated) {
+
+        var_info_t* temp_var;
+        int const_reg = allocate_temp_imm(t, "__temp__", constant_value, &temp_var);
+        
+        store_instr(t, ptr_reg, const_reg, nullptr, var_size);
+        t->reg_alloc.free(temp_var, false);
+
+    } else {
+        
+        int right_register = rvalue->translate(t);
+
+        if (right_register == ptr_reg) {
+            ptr_reg = t->reg_alloc.allocate(var, true, false);
+        }
+
+        store_instr(t, ptr_reg, right_register, nullptr, var_size);
+    }
+    t->reg_alloc.free(ptr_temp, false);
+}
+
+
 int return_stmt_t::translate(translator_t* t) {
     
     int constant_value = 0;
@@ -1807,6 +2234,45 @@ int deref_term_t::translate(translator_t* t) {
     load_instr(t, reg, reg, nullptr, var_size);
 
     return reg;
+}
+
+int indexed_term_t::translate(translator_t* t) {
+
+    var_info_t* var = t->symbol_table.get_var(identifier);
+    int var_size = t->type_table.at(var->type)->size;
+
+    if (!var->is_pointer) std::cout << "-- Translator warning: Dereferencing non-pointer variable " << var->name << " " << tokens.front()->line_number << ":" << tokens.front()->column_number << std::endl;
+
+    bool is_local = dynamic_cast<local_addr_info_t*>(var->address) != nullptr;
+    bool is_global = dynamic_cast<global_addr_info_t*>(var->address) != nullptr;
+
+    std::string temp_name = t->name_allocator.get_name("__temp__");
+
+    // Add temporary variable to scope to allow register allocation
+    var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
+
+    int reg = t->reg_alloc.allocate(var, true, false);
+
+    int constant_index = 0;
+    bool index_evaluated = index->evaluate(&constant_index);
+
+    if (index_evaluated) {
+
+        int temp_reg = t->reg_alloc.allocate(temp_var, false, false);
+        load_instr(t, temp_reg, reg, constant_index * var_size, var_size);
+        return temp_reg;
+
+    } else {
+
+        int index_reg = index->translate(t);
+
+        index_reg = take_ownership_or_allocate(t, "__temp__", index_reg);
+        
+        add_instr(t, index_reg, reg, index_reg);
+        load_instr(t, index_reg, index_reg, nullptr, var_size);
+
+        return index_reg;
+    }
 }
 
 int call_term_t::translate(translator_t* t) {

@@ -52,7 +52,11 @@ public:
     bool get_data_mode();
 
     void print_instruction_row(const std::string& instr, bool tab, bool ret = false);
-    void static_alloc(std::string name, int size, int value);
+    void static_alloc(const std::string& name, int size, int value);
+    
+    void static_alloc_array(const std::string& name, int size, int length);
+    void static_alloc_array_init(const std::string& name, int size, const std::vector<int>& values);
+    void static_alloc_array_str(const std::string& name, const std::string& literal);
 };
 
 #endif

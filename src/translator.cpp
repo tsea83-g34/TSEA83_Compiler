@@ -54,7 +54,7 @@ void translator_t::print_instruction_row(const std::string& instr, bool tab, boo
     instr_cnt++;
 }
 
-void translator_t::static_alloc(std::string name, int size, int value) {
+void translator_t::static_alloc(const std::string& name, int size, int value) {
 
     set_data_mode(true);
     
@@ -81,6 +81,83 @@ void translator_t::static_alloc(std::string name, int size, int value) {
     print_instruction_row(label, false);
     print_instruction_row(allocation, true);
     
+    set_data_mode(false);
+}
+
+void translator_t::static_alloc_array(const std::string& name, int size, int length) {
+
+    std::string label = ".data " + name;
+
+    std::stringstream allocation;
+
+    set_data_mode(true);
+
+    switch (size) {
+        case 1:
+            allocation << ".db";
+            break;
+        case 2:
+            allocation << ".dh";
+            break;
+        case 4:
+            allocation << ".dw";
+            break;
+        default:
+            break;
+    }
+
+    for (int i = 0; i < length; i++) allocation << " " << std::to_string(0); 
+
+    print_instruction_row(label, false);
+    print_instruction_row(allocation.str(), true);
+
+    set_data_mode(false);
+}
+
+void translator_t::static_alloc_array_init(const std::string& name, int size, const std::vector<int>& values) {
+
+    std::string label = ".data " + name;
+
+    std::stringstream allocation;
+
+    set_data_mode(true);
+
+    switch (size) {
+        case 1:
+            allocation << ".db";
+            break;
+        case 2:
+            allocation << ".dh";
+            break;
+        case 4:
+            allocation << ".dw";
+            break;
+        default:
+            break;
+    }
+
+    for (int val : values) allocation << " " << std::to_string(val);
+
+    print_instruction_row(label, false);
+    print_instruction_row(allocation.str(), true);
+
+    set_data_mode(false); 
+
+}
+
+void translator_t::static_alloc_array_str(const std::string& name, const std::string& literal) {
+
+    std::string label = ".data " + name;
+
+    std::stringstream allocation;
+
+    set_data_mode(true);
+
+    allocation << ".ds " << literal;
+
+    print_instruction_row(label, false);
+    print_instruction_row(allocation.str(), true);
+
     set_data_mode(false);
 }
 
