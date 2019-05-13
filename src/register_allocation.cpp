@@ -243,7 +243,7 @@ void register_allocator_t::free_scope(scope_t* scope_to_free, bool store_globals
 
         bool store = reg->content->scope != scope_to_free;
 
-        // Free the register without storing the variable or sorting the heap
+        // Free the register and store it if it is a global or belongs to an outer scope
         free(reg, store, false);
     }
 
