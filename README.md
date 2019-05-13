@@ -34,8 +34,8 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 - [x] Logical operators `&, |, !`
 - [x] Extended relational operators `<, >, <=, >=`
 - [x] Multiplication operator `*`
-- [ ] Inline Assembly
-- [ ] Pointers, pointer operators `*, &, []`
+- [x] Inline Assembly
+- [x] Pointers, pointer operators `*, &, []`
 - [ ] Shift operators `<< >>`
 - [ ] Headers and file includes
 - [ ] Structs, struct operator `.`
@@ -56,8 +56,17 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
                 |   var_decl
     
     var_decl    ->  type id ;
+                |   type * id ;
                 |   type id = expr ;
+                |   type * id = expr ;
 
+    array_decl  ->  type id [ expr ] ;
+                |   type id [ ] = { init_list } ;
+                |   char id [ ] = str_lit ;
+
+    init_list   ->  expr init_list
+                |   e
+            
     func_decl   ->  type id ( param_decls ) ;
                 |   type id ( param_decls ) block_stmt
 
@@ -72,7 +81,10 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
                 |   while ( expr ) stmt
                 |   asm ( str_lit asm_params ) ;
                 |   var_decl 
+                |   array_decl
                 |   id = expr ;
+                |   * id = expr ;
+                |   id [ expr ] = expr ;
                 |   return expr ;
                 |   expr ;
     
@@ -98,7 +110,11 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
 
     term        ->  id
                 |   literal
-                |   id ( params )  // Function call
+                |   id ( params )
+                |   ( expr )
+                |   * id
+                |   & id
+                |   id [ expr ]
     
     params      ->  expr params
                 |   e
@@ -126,6 +142,3 @@ Usage example:
     - char (signed 8-bit)
     - int  (signed 16-bit)
     - long (signed 32-bit)
-
-#### String types
-    - const char* (string literal type)

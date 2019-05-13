@@ -59,7 +59,6 @@
     expr        ->  term binop expr
                 |   "-" term
                 |   "!" term
-                |   "*" term
                 |   term
 
     binop       ->  "+"
@@ -76,6 +75,7 @@
                 |   literal
                 |   id ( params )  // Function call
                 |   ( expr )
+                |   * id
                 |   & id
                 |   id [ expr ]
     
