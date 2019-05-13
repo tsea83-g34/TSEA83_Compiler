@@ -74,8 +74,6 @@ void str_lit_to_str(const std::string& str, std::string& result) {
     std::smatch match;
     
     while (std::regex_search(buffer, match, escaped)) {
-        std::cout << "Matched escaped character: " << match[0].str() << " Position: " << match.position() << std::endl;
-        
         buffer.replace(match.position(), 2, std::string(1, char_literal_to_ascii(buffer.substr(match.position(), 2))));
         //buffer[match.position() + 1] = char_literal_to_ascii(buffer.substr(match.position(), 2));
         std::remove(buffer.begin(), buffer.begin() + match.position() + 1, '\\');
@@ -626,7 +624,7 @@ void movhi_instr(translator_t* t, int rd, int imm) {
 
     std::stringstream output;
 
-    output << MOVHI_INSTR << " " << rd_str << ", " << imm;
+    output << MOVHI_INSTR << " " << rd_str << ", " << rd_str << ", " << imm;
     t->print_instruction_row(output.str(), true);
 }
 
@@ -636,7 +634,7 @@ void movlo_instr(translator_t* t, int rd, int imm) {
 
     std::stringstream output;
 
-    output << MOVLO_INSTR << " " << rd_str << ", " << imm;
+    output << MOVLO_INSTR << " " << rd_str << ", " << rd_str << ", " << imm;
     t->print_instruction_row(output.str(), true);
 }
 
