@@ -2,6 +2,7 @@
 #define COM_HELPER_H
 
 #include "translator.h"
+#include "parser_types.h"
 
 #define POINTER_SIZE 2
 
@@ -11,9 +12,13 @@ char char_literal_to_ascii(const std::string& char_literal);
 
 void str_lit_to_str(const std::string& str, std::string& result);
 
+void init_list_to_vector(init_list_t* init_list, std::vector<int>& result);
+
 void load_immediate(translator_t* t, int register_index, int value);
 
 int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_info_t** var);
+
+int allocate_temp(translator_t* t, const std::string& name, var_info_t** var);
 
 var_info_t* give_ownership_temp(translator_t* t, const std::string& name, int reg);
 
@@ -74,6 +79,10 @@ void ret_instr(translator_t* t);
 void store_instr(translator_t* t, int rd, int ra, addr_info_t* offset, int size);
 
 void load_instr(translator_t* t, int rd, int ra, addr_info_t* offset, int size);
+
+void store_instr(translator_t* t, int rd, int ra, int offset, int size);
+
+void load_instr(translator_t* t, int rd, int ra, int offset, int size);
 
 void movhi_instr(translator_t* t, int rd, int imm);
 

@@ -79,6 +79,24 @@ void str_lit_to_str(const std::string& str, std::string& result) {
     result = str;
 } 
 
+void init_list_to_vector(init_list_t* init_list, std::vector<int>& result) {
+
+    init_list_t* current = init_list;
+
+    while (current != nullptr) {
+        
+        expr_t* e = current->first;
+        int value;
+        bool evaluated = e->evaluate(&value);
+
+        if (!evaluated) throw translation_error("Non-static value in array initializer list at " + std::to_string(e->tokens.front()->line_number) + ":" + std::to_string(e->tokens.front()->column_number));
+
+        result.push_back(value);
+
+        current = current->rest;
+    }
+} 
+
 void load_immediate(translator_t* t, int reg, int value) {
     
     std::stringstream output;
@@ -108,6 +126,19 @@ int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_i
     load_immediate(t, reg, value);
 
     t->reg_alloc.touch(reg, false);
+    
+    *var = temp_var;
+    return reg;
+}
+
+int allocate_temp(translator_t* t, const std::string& name, var_info_t** var) {
+    
+    std::string temp_name = t->name_allocator.get_name(name);
+
+    // Add temporary variable to scope to allow register allocation
+    var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
+
+    int reg = t->reg_alloc.allocate(temp_var, false, false);
     
     *var = temp_var;
     return reg;
@@ -550,6 +581,17 @@ void store_instr(translator_t* t, int rd, int ra, addr_info_t* offset, int size)
     t->print_instruction_row(output.str(), true);
 }
 
+void store_instr(translator_t* t, int rd, int ra, int offset, int size) {
+    
+    std::string rd_str = get_register_string(t, rd);
+    std::string ra_str = get_register_string(t, ra);
+
+    std::stringstream output;
+
+    output << STORE_INSTR << "[" << size << "] " << rd_str << ", " << ra_str << ", " << offset;
+    t->print_instruction_row(output.str(), true);
+}
+
 void load_instr(translator_t* t, int rd, int ra, addr_info_t* offset, int size) {
     
     std::string rd_str = get_register_string(t, rd);
@@ -559,6 +601,17 @@ void load_instr(translator_t* t, int rd, int ra, addr_info_t* offset, int size) 
     std::stringstream output;
 
     output << LOAD_INSTR << "[" << size << "] " << rd_str << ", " << ra_str << ", " << offset_string;
+    t->print_instruction_row(output.str(), true);
+}
+
+void load_instr(translator_t* t, int rd, int ra, int offset, int size) {
+    
+    std::string rd_str = get_register_string(t, rd);
+    std::string ra_str = get_register_string(t, ra);
+
+    std::stringstream output;
+
+    output << LOAD_INSTR << "[" << size << "] " << rd_str << ", " << ra_str << ", " << offset;
     t->print_instruction_row(output.str(), true);
 }
 
