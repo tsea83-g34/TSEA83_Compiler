@@ -163,5 +163,12 @@ void translator_t::static_alloc_array_str(const std::string& name, const std::st
 
 void translator_t::print_to_file(std::ofstream& file) {
 
+    set_data_mode(true);
+
+    print_instruction_row("subi SP, SP, 2", true, false);
+    print_instruction_row("call main", true, false);
+
+    set_data_mode(false);
+
     file << defines_and_global_output.str() << "\n" << output.str();
 }
