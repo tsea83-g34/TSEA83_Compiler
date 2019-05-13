@@ -251,7 +251,7 @@ token* lexer::get_next_token() {
             std::string literal = cm[0].str();
             lexeme_start += literal.length();
 
-            int value = std::stoi(literal, 0, 16);
+            int value = std::stol(literal, 0, 16);
             token* result_token = new int_literal_token(value);
 
             result_token->line_number = line;
