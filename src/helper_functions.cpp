@@ -4,6 +4,8 @@
 
 #include <sstream>
 #include <algorithm>
+#include <iostream>
+#include <regex>
 
 std::string strip_quotations(const std::string& string_literal) {
     return string_literal.substr(1, string_literal.size() - 2);
@@ -23,6 +25,9 @@ char char_literal_to_ascii(const std::string& char_literal) {
     char result;
 
     switch(str[1]) {
+        case '0':
+            result = '\0';
+            break;
         case 'a':
             result = '\a';
             break;
@@ -63,20 +68,20 @@ char char_literal_to_ascii(const std::string& char_literal) {
 
 void str_lit_to_str(const std::string& str, std::string& result) {
 
-    std::string buffer = strip_quotations(str);
+    std::string buffer = str; //strip_quotations(str);
+    std::regex escaped("\\\\[^\\\\]");
 
-    for (int i = 0; i < buffer.length(); i++) {
-        if (buffer[i] == '\\') {
-            if (buffer[i] == '\\') continue;
-            else if (i > 0 && buffer[i-1] == '\\') continue;
-            else if (i = buffer.length() - 1) continue;
-            
-            buffer[i+1] = char_literal_to_ascii(buffer.substr(i, 2));
-        }
+    std::smatch match;
+    
+    while (std::regex_search(buffer, match, escaped)) {
+        std::cout << "Matched escaped character: " << match[0].str() << " Position: " << match.position() << std::endl;
+        
+        buffer.replace(match.position(), 2, std::string(1, char_literal_to_ascii(buffer.substr(match.position(), 2))));
+        //buffer[match.position() + 1] = char_literal_to_ascii(buffer.substr(match.position(), 2));
+        std::remove(buffer.begin(), buffer.begin() + match.position() + 1, '\\');
     }
 
-    std::remove(buffer.begin(), buffer.end(), '\\');
-    result = str;
+    result = buffer;
 } 
 
 void init_list_to_vector(init_list_t* init_list, std::vector<int>& result) {

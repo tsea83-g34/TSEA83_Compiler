@@ -1735,6 +1735,8 @@ int str_array_decl_t::translate(translator_t* t) {
     
     type_descriptor_t* type_desc = t->type_table.at(type);
     int element_size = type_desc->size;
+
+    str_lit_to_str(string_literal, string_literal);
     
     // -2 for quotation marks and +1 for null character
     int array_size = string_literal.size() - 2 + 1;

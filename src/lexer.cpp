@@ -24,7 +24,7 @@ lexer::lexer(std::string filename) {
     whitespace_regex        = std::regex("[\t\n\ ]+");
     half_str_literal_regex  = std::regex("\"([^\"]*)");
 
-    char_literal_regex      = std::regex("\'[\]?[^\']\'");
+    char_literal_regex      = std::regex("\'([^\'\\\\]|\\\\.)\'");
     hex_literal_regex       = std::regex("0x[0-9a-fA-F]+");
 
     // Open file, allocate buffer memory and read BUFFER_SIZE characters
