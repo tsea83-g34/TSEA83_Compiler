@@ -1393,6 +1393,15 @@ int param_decl_t::translate(translator_t* t, func_info_t* f, int param_index) {
 }
 
 int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
+
+    if (func->param_vector.size() <= param_index) {
+        translation_error::throw_error("Too many arguments in function call", this);
+    }
+
+    if (rest == nullptr && param_index < func->param_vector.size() - 1) {
+        translation_error::throw_error("Too few arguments in function call", this);
+    }
+    
     
     // Push params backwards
     if (rest != nullptr) rest->translate(t, func, param_index + 1);
@@ -2270,13 +2279,18 @@ int call_term_t::translate(translator_t* t) {
     int context_size = current_scope->get_end_offset() + 2;//(func->param_vector.size()) ? 2 : 0;
     
     int alignment = (context_size % 4) ? 4 - (context_size % 4) : 0;
+    int alignment_done = 0;
 
     // Push base pointer to stack
     push_instr(t, BASE_POINTER, POINTER_SIZE);
 
+    std::cout << "Total stack size: " << func->total_stack_size << std::endl;
+
     // Align the stack to 4
-    current_scope->push(alignment);
-    if (alignment) {
+    if (alignment && ((alignment == 2) == (func->total_stack_size != 0))) {
+        std::cout << "bruh" << std::endl;
+        alignment_done += alignment;
+        current_scope->push(alignment);
         subi_instr(t, STACK_POINTER, STACK_POINTER, alignment);
     }
 
@@ -2286,9 +2300,10 @@ int call_term_t::translate(translator_t* t) {
     // Store current context
     t->reg_alloc.store_context();
 
-    // If the parameters are 4 aligned, stack wont be because of return pointer, offset it with 2 unless there are no parameters
-    if (func->param_vector.size() && func->total_stack_size % 4 == 0) {
+    // If the parameters are 4 aligned, stack wont be because of return pointer, offset it with 2
+    if (current_scope->get_end_offset() % 4 == 0) {
         alignment += 2;
+        alignment_done += 2;
         current_scope->push(2);
         subi_instr(t, STACK_POINTER, STACK_POINTER, 2);
     }
@@ -2297,10 +2312,10 @@ int call_term_t::translate(translator_t* t) {
     call_instr(t, function_identifier);
 
     // Pop parameters and alignment
-    current_scope->pop(alignment + func->total_stack_size);
+    current_scope->pop(alignment_done + func->total_stack_size);
 
     // Pop parameters
-    if (alignment + func->total_stack_size) addi_instr(t, STACK_POINTER, STACK_POINTER, func->total_stack_size + alignment);
+    if (alignment_done + func->total_stack_size) addi_instr(t, STACK_POINTER, STACK_POINTER, func->total_stack_size + alignment_done);
 
     // Pop base pointer from stack
     pop_instr(t, BASE_POINTER, POINTER_SIZE);
