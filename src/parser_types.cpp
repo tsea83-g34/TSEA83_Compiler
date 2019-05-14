@@ -2284,11 +2284,8 @@ int call_term_t::translate(translator_t* t) {
     // Push base pointer to stack
     push_instr(t, BASE_POINTER, POINTER_SIZE);
 
-    std::cout << "Total stack size: " << func->total_stack_size << std::endl;
-
     // Align the stack to 4
     if (alignment && ((alignment == 2) == (func->total_stack_size != 0))) {
-        std::cout << "bruh" << std::endl;
         alignment_done += alignment;
         current_scope->push(alignment);
         subi_instr(t, STACK_POINTER, STACK_POINTER, alignment);
