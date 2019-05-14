@@ -1395,11 +1395,11 @@ int param_decl_t::translate(translator_t* t, func_info_t* f, int param_index) {
 int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
 
     if (func->param_vector.size() <= param_index) {
-        translation_error::throw_error("Too many arguments in function call", this);
+        translation_error::throw_error("Too many arguments in function call", first);
     }
 
     if (rest == nullptr && param_index < func->param_vector.size() - 1) {
-        translation_error::throw_error("Too few arguments in function call", this);
+        translation_error::throw_error("Too few arguments in function call", first);
     }
     
     
@@ -2293,6 +2293,9 @@ int call_term_t::translate(translator_t* t) {
 
     // Push parameters to stack
     if (params != nullptr) params->translate(t, func, 0);
+    if (params == nullptr && func->param_vector.size()) {
+        translation_error::throw_error("Too few arguments in function call", this);
+    } 
 
     // Store current context
     t->reg_alloc.store_context();
