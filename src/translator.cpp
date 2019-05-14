@@ -165,8 +165,11 @@ void translator_t::print_to_file(std::ofstream& file) {
 
     set_data_mode(true);
 
-    print_instruction_row("subi SP, SP, 2", true, false);
-    print_instruction_row("call main", true, false);
+    print_instruction_row("subi SP, SP, 2", true);
+    print_instruction_row("call main", true);
+    print_instruction_row("addi SP, SP, 2", true);
+    print_instruction_row("__halt:", false);
+    print_instruction_row("rjmp __halt", true);
 
     set_data_mode(false);
 
