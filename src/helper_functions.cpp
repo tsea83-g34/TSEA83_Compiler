@@ -92,7 +92,7 @@ void init_list_to_vector(init_list_t* init_list, std::vector<int>& result) {
         int value;
         bool evaluated = e->evaluate(&value);
 
-        if (!evaluated) throw translation_error("Non-static value in array initializer list at " + std::to_string(e->tokens.front()->line_number) + ":" + std::to_string(e->tokens.front()->column_number));
+        if (!evaluated) translation_error::throw_error("Non-static value in array initializer list", e);
 
         result.push_back(value);
 
@@ -202,7 +202,7 @@ int pop_temp(translator_t* t, var_info_t* var) {
 int translate_binop_imm(translator_t*t, binop_expr_t* binop, const std::string& instr, const std::string& imm_instr) {
 
     // Assume left associativity
-    if (!binop->left_assoc) throw translation_error("Expression is right associative");
+    if (!binop->left_assoc) translation_error::throw_error("Expression is right-associative", binop);
     
     int left_value = 0;
     bool left_success = binop->rest->evaluate(&left_value);
@@ -233,7 +233,7 @@ int translate_binop_imm(translator_t*t, binop_expr_t* binop, const std::string& 
         // If right value is larger than 16 bits
         if (right_value > std::numeric_limits<int16_t>().max()) {
             // TODO: This is not very good...
-            throw translation_error("Constant cant be larger than 16-bits");
+            translation_error::throw_error("Constant can't be larger than 16-bits", binop);
         }
 
         // Print imm instr
@@ -267,7 +267,7 @@ int translate_binop_imm(translator_t*t, binop_expr_t* binop, const std::string& 
 int translate_binop(translator_t* t, binop_expr_t* binop, const std::string& instr) {
 
     // Assume left associativity
-    if (!binop->left_assoc) throw translation_error("Expression is right associative");
+    if (!binop->left_assoc) translation_error::throw_error("Expression is right-associative", binop);
     
     int left_value = 0;
     bool left_success = binop->rest->evaluate(&left_value);
@@ -328,7 +328,7 @@ int translate_binop(translator_t* t, binop_expr_t* binop, const std::string& ins
 int translate_binop_relational(translator_t* t, binop_expr_t* binop, const std::string& instr) {
     
     // Assume left associativity
-    if (!binop->left_assoc) throw translation_error("Expression is right associative");
+    if (!binop->left_assoc) translation_error::throw_error("Expression is right-associative", binop);
     
     int left_value = 0;
     bool left_success = binop->rest->evaluate(&left_value);
@@ -357,7 +357,7 @@ int translate_binop_relational(translator_t* t, binop_expr_t* binop, const std::
         // If right value is larger than 16 bits
         if (right_value > std::numeric_limits<int16_t>().max()) {
             // TODO: This is not very good...
-            throw translation_error("Constant cant be larger than 16-bits");
+            translation_error::throw_error("Constant can't be larger than 16-bits", binop);
         }
 
         // Print cmp immediate instruction

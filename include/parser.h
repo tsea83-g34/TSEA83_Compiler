@@ -9,6 +9,7 @@
 
 #include "tokens.h"
 #include "lexer.h"
+#include "interfaces.h"
 
 /* Predefine syntax tree structs */
 struct program_t;
@@ -91,6 +92,8 @@ public:
     ~syntax_error() {}
 
     const char* what() const noexcept { return msg.c_str(); }
+
+    static void throw_error(const std::string& message, const lex::token* node);
 };
 
 class parser_t {

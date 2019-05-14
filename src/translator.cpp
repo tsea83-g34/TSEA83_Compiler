@@ -2,6 +2,18 @@
 #include "../include/translator.h"
 
 #include <ostream>
+#include <iostream>
+
+void translation_error::throw_error(const std::string& error, const undoable_t* node) {
+
+    if (node) {
+        auto line = std::to_string(node->tokens.front()->line_number);
+        auto column = std::to_string(node->tokens.front()->column_number);
+        throw translation_error("\033[0;31m--- Translation Error\033[0m " + line + ":" + column + "\033[0;31m:\033[0m  " + error + "\n");
+    } else {
+        throw translation_error("\033[0;31m--- Translation Error:\033[0m " + error + "\n");
+    }
+}
 
 translator_t::translator_t() {
 

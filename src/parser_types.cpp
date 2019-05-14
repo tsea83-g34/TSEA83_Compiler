@@ -6,6 +6,7 @@
 
 #include "../include/instructions.h"
 #include "../include/helper_functions.h"
+#include "../include/error_handling.h"
 
 #include <stack>
 #include <iostream>
@@ -1282,8 +1283,6 @@ int decls_t::translate(translator_t* t) {
 }
 
 int func_decl_t::translate(translator_t* t) {
-    
-    std::cout << "Translating function declaration..." << std::endl;
 
     // If a function with that name already exists
     func_info_t* potential_old_function = t->symbol_table.get_func(id);
@@ -1294,13 +1293,13 @@ int func_decl_t::translate(translator_t* t) {
         // If the existing function with the same name as this have the same signature
         if ((*potential_old_function) != (*current_function)) {
             delete current_function;
-            throw translation_error("Mismatching declarations of function \"" + id + "\"");
+            translation_error::throw_error("Mismatching declarations of function \"" + id + "\"", this);
         }
         
         // If it is defined and this is also a definition we have multiple definitions
         if (potential_old_function->defined && stmt != nullptr) {
             delete current_function;
-            throw translation_error("Multiple definition of function \"" + id + "\"");
+            translation_error::throw_error("Multiple definiton of function \"" + id + "\"", this);
         }
         
         // If it is only declared
@@ -1374,7 +1373,7 @@ int param_decl_t::translate(translator_t* t, func_info_t* f, int param_index) {
 
     // If a parameter with that name already exists
     if (t->symbol_table.get_current_scope()->at(id)) {
-        throw translation_error("A parameter with name \"" + id + "\" already exists!");
+        translation_error::throw_error("Multiple declaration of parameter \"" + id + "\"", this);
     }
     
     var_info_t* param_info = &f->param_vector[param_index];
@@ -1411,13 +1410,11 @@ int params_t::translate(translator_t* t, func_info_t* func, int param_index) {
         int alignment = func->get_alignment(param_index);
 
         if (alignment) {
-            std::cout << "Pushing alignment " << alignment << std::endl;
             subi_instr(t, STACK_POINTER, STACK_POINTER, alignment);
             t->symbol_table.get_current_scope()->push(alignment);
         }
 
         int size = (func->param_vector[param_index].is_pointer) ? POINTER_SIZE : t->type_table.at(func->param_vector[param_index].type)->size;
-        if (func->param_vector[param_index].is_pointer) std::cout << "PUSHING POINTER" << std::endl;
         push_instr(t, reg, size);
 
         t->reg_alloc.free(reg);
@@ -1452,10 +1449,8 @@ int var_decl_t::translate(translator_t* t) {
     
     if (t->symbol_table.is_global_scope()) {
         
-        std::cout << "Found global variable declaration!" << std::endl;
-        
         if (t->symbol_table.get_current_scope()->at(id)) {
-            throw translation_error("Multiple definition of global symbol \"" + id + "\" At " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number));
+            translation_error::throw_error("Multiple declaration of global symbol \"" + id + "\"", this);
         }
 
         type_descriptor_t* type_desc = t->type_table.at(type);
@@ -1508,7 +1503,6 @@ int var_decl_t::translate(translator_t* t) {
             
             // Remove and deallocate the temporary variable
             if (was_temp) {
-                std::cout << "Removing " << temp_info->name << std::endl;
                 t->symbol_table.get_current_scope()->remove(temp_info->name);
                 delete temp_info;
             }
@@ -1516,13 +1510,11 @@ int var_decl_t::translate(translator_t* t) {
 
         t->set_data_mode(false);
     } else {
-        
-        std::cout << "Found local variable!" << std::endl;
 
         // Local variable
 
         if (t->symbol_table.get_current_scope()->at(id)) {
-            throw translation_error("Multiple definition of local symbol \"" + id + "\"");
+            translation_error::throw_error("Multiple definition of local symbol \"" + id + "\"", this);
         }
 
         // Try to evaluate the expression
@@ -1533,8 +1525,6 @@ int var_decl_t::translate(translator_t* t) {
         // Get type descriptor of the type of the variable
         type_descriptor_t* type_desc = t->type_table.at(type);
         int size = (is_pointer) ? POINTER_SIZE : type_desc->size;
- 
-        std::cout << "Type: " << type_desc->name << " size: " << size << std::endl;
 
         // Acquire current scope
         scope_t* current_scope = t->symbol_table.get_current_scope();
@@ -1593,7 +1583,6 @@ int var_decl_t::translate(translator_t* t) {
                     
                     // Remove and deallocate the temporary variable
                     if (was_temp) {
-                        std::cout << "Removing " << temp_info->name << std::endl;
                         t->symbol_table.get_current_scope()->remove(temp_info->name);
                         delete temp_info;
                     }
@@ -1612,11 +1601,9 @@ int simple_array_decl_t::translate(translator_t* t) {
     size->evaluate(&array_size);
 
     if (t->symbol_table.is_global_scope()) {
-
-        std::cout << "Found global array declaration!" << std::endl;
         
         if (t->symbol_table.get_current_scope()->at(identifier)) {
-            throw translation_error("Multiple definition of global symbol \"" + identifier + "\" At " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number));
+            translation_error::throw_error("Multiple definition of global symbol \"" + identifier + "\"", this);
         }
 
         global_addr_info_t* addr = new global_addr_info_t(identifier);
@@ -1628,13 +1615,10 @@ int simple_array_decl_t::translate(translator_t* t) {
         t->static_alloc_array(identifier, element_size, array_size);
 
     } else {
-
-        std::cout << "Found local array declaration!" << std::endl;
-
+        
         // Local variable
-
         if (t->symbol_table.get_current_scope()->at(identifier)) {
-            throw translation_error("Multiple definition of local symbol \"" + identifier + "\"");
+            translation_error::throw_error("Multiple definition of local symbol \"" + identifier + "\"", this);
         }
 
         scope_t* current_scope = t->symbol_table.get_current_scope();
@@ -1674,11 +1658,9 @@ int init_list_array_decl_t::translate(translator_t* t) {
     int array_size = values.size();
 
     if (t->symbol_table.is_global_scope()) {
-
-        std::cout << "Found global initializer list array declaration!" << std::endl;
         
         if (t->symbol_table.get_current_scope()->at(identifier)) {
-            throw translation_error("Multiple definition of global symbol \"" + identifier + "\" At " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number));
+            translation_error::throw_error("Multiple definition of global symbol \"" + identifier + "\"", this);
         }
 
         global_addr_info_t* addr = new global_addr_info_t(identifier);
@@ -1730,7 +1712,7 @@ int init_list_array_decl_t::translate(translator_t* t) {
 int str_array_decl_t::translate(translator_t* t) {
 
     if (t->type_table.at(type)->name != "char") {
-        throw translation_error("Allocating string literal to an array with type other than char " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number)); 
+        translation_error::throw_error("Allocating string literal to an array with type other than char. Symbol: \"" + identifier + "\"", this);
     }
     
     type_descriptor_t* type_desc = t->type_table.at(type);
@@ -1742,11 +1724,9 @@ int str_array_decl_t::translate(translator_t* t) {
     int array_size = string_literal.size() - 2 + 1;
     
     if (t->symbol_table.is_global_scope()) {
-
-        std::cout << "Found global string array declaration!" << std::endl;
         
         if (t->symbol_table.get_current_scope()->at(identifier)) {
-            throw translation_error("Multiple definition of global symbol \"" + identifier + "\" At " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number));
+            translation_error::throw_error("Multiple definition of global symbol \"" + identifier + "\"", this);
         }
 
         global_addr_info_t* addr = new global_addr_info_t(identifier);
@@ -1952,7 +1932,7 @@ int asm_stmt_t::translate(translator_t* t) {
     }
 
     if (result.find("$") != result.npos) {
-        throw translation_error("Mismatched number of \'$\' and parameters");
+        translation_error::throw_error("Mismatched number of \'$\' and parameters", this);
     }
 
     t->reg_alloc.touch(first_reg, true);
@@ -1961,7 +1941,7 @@ int asm_stmt_t::translate(translator_t* t) {
     
     // Free temporary registers
     for (int reg : temp_registers) {
-        if (reg == first_reg) throw translation_error("Inline assembly: First operand should not be a temporary value");
+        if (reg == first_reg) translation_error::throw_error("First operand of inline asm should not be a temporary value", this);
         t->reg_alloc.free(reg);
     }
 }
@@ -2013,7 +1993,7 @@ int deref_assignment_stmt_t::translate(translator_t* t) {
     var_info_t* var = t->symbol_table.get_var(identifier);
     int var_size = t->type_table.at(var->type)->size;
 
-    if (!var->is_pointer) std::cout << "-- Translator warning: Dereferencing non-pointer variable " << var->name << " " << tokens.front()->line_number << ":" << tokens.front()->column_number << std::endl;
+    if (!var->is_pointer) output_warning("Dereferencing non-pointer variable " + var->name, this);
 
     int constant_value = 0;
     bool value_evaluated = rvalue->evaluate(&constant_value);
@@ -2045,7 +2025,7 @@ int indexed_assignment_stmt_t::translate(translator_t* t) {
     var_info_t* var = t->symbol_table.get_var(identifier);
     int var_size = t->type_table.at(var->type)->size;
 
-    if (!var->is_pointer) std::cout << "-- Translator warning: Dereferencing non-pointer variable " << var->name << " " << tokens.front()->line_number << ":" << tokens.front()->column_number << std::endl;
+    if (!var->is_pointer) output_warning("Dereferencing non-pointer variable " + var->name, this);
 
     int constant_value = 0;
     bool value_evaluated = rvalue->evaluate(&constant_value);
@@ -2217,7 +2197,7 @@ int deref_term_t::translate(translator_t* t) {
     var_info_t* var = t->symbol_table.get_var(identifier);
     int var_size = t->type_table.at(var->type)->size;
 
-    if (!var->is_pointer) std::cout << "-- Translator warning: Dereferencing non-pointer variable " << var->name << " " << tokens.front()->line_number << ":" << tokens.front()->column_number << std::endl;
+    if (!var->is_pointer) output_warning("Dereferencing non-pointer variable " + var->name, this);
 
     bool is_local = dynamic_cast<local_addr_info_t*>(var->address) != nullptr;
     bool is_global = dynamic_cast<global_addr_info_t*>(var->address) != nullptr;
@@ -2243,7 +2223,7 @@ int indexed_term_t::translate(translator_t* t) {
     var_info_t* var = t->symbol_table.get_var(identifier);
     int var_size = t->type_table.at(var->type)->size;
 
-    if (!var->is_pointer) std::cout << "-- Translator warning: Dereferencing non-pointer variable " << var->name << " " << tokens.front()->line_number << ":" << tokens.front()->column_number << std::endl;
+    if (!var->is_pointer) output_warning("Dereferencing non-pointer variable " + var->name, this);
 
     bool is_local = dynamic_cast<local_addr_info_t*>(var->address) != nullptr;
     bool is_global = dynamic_cast<global_addr_info_t*>(var->address) != nullptr;
@@ -2283,15 +2263,13 @@ int call_term_t::translate(translator_t* t) {
 
     func_info_t* func = t->symbol_table.get_func(function_identifier);
 
-    if (func == nullptr) throw translation_error("Function " + function_identifier + " is not declared. " + std::to_string(tokens.front()->line_number) + ":" + std::to_string(tokens.front()->column_number));
-
+    if (func == nullptr) translation_error::throw_error("Function " + function_identifier + "is not declared.", this);
+    
     scope_t* current_scope = t->symbol_table.get_current_scope();
     
     int context_size = current_scope->get_end_offset() + 2;//(func->param_vector.size()) ? 2 : 0;
-    std::cout << "Context size: " << context_size << std::endl;
     
     int alignment = (context_size % 4) ? 4 - (context_size % 4) : 0;
-    std::cout << "Alignment: " << alignment << std::endl;
 
     // Push base pointer to stack
     push_instr(t, BASE_POINTER, POINTER_SIZE);

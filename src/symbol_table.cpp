@@ -68,7 +68,6 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
     int param_count = 0;
     while (current != nullptr) {
         if (current->first->is_pointer) {
-            std::cout << "Param is pointer" << std::endl;
             param_types.push_back(0);
         } else {
             param_types.push_back(current->first->type);
@@ -78,7 +77,6 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
     }
     
     // Loop backwards over param_types and calculate stack alignment for passing parameters
-    std::cout << "Calculating parameter alignment" << std::endl;
     int total = 0;
     while (!param_types.empty()) {
         
@@ -93,8 +91,6 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
             alignment_vector.push_back(alignment_info_t(param_types.size() - 1, alignment));
         }
 
-        std::cout << "Allocating variable with size " << current_size << " at offset " << total << " with alignment " << alignment << std::endl;
-
         total += current_size;
         param_types.pop_back();
     }
@@ -108,7 +104,7 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
     // Therefore offset start will be 4, otherwise 2
     int current_base_offset = (total_stack_size % 4 == 0) ? 4 : 2;
     int param_index = 0;
-    std::cout << ">>> Starting offset: " << current_base_offset << std::endl;
+
     while (current != nullptr) {
         
         var_info_t param_info;
@@ -132,7 +128,7 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
         // Create address structure for parameter
         local_addr_info_t* addr = new local_addr_info_t(current_base_offset);
         param_info.address = addr;
-        std::cout << ">>> Allocated parameter at offset " << current_base_offset << " size " << current_size << std::endl;
+
         // Update base offset with the new variable
         current_base_offset += current_size;
 
@@ -140,7 +136,6 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
 
         if (alignment) {
             current_base_offset += alignment;
-            std::cout << ">>> Adding alignment " << alignment << " at param index " << param_index << std::endl;
         }
 
         param_vector.push_back(param_info);        
@@ -185,9 +180,7 @@ scope_t::scope_t(bool _inherit_scope, int _base_offset) : total_size(0), base_of
 
 scope_t::~scope_t() {
     
-    std::cout << "Destroying scope... size: " << data.size() << std::endl;
     for (std::pair<std::string, var_info_t*> kv_pair : data) {
-        std::cout << kv_pair.first << "   " << kv_pair.second << std::endl;
         delete kv_pair.second;
     }
     data.clear();
@@ -280,7 +273,7 @@ var_info_t* symbol_table_t::get_var(const std::string& key) {
     // If symbol not found yet, look at the global scope
     result = scope_stack.front()->at(key);
 
-    if (!result) throw translation_error("Variable " + key + " does not exist in the symbol table");
+    if (!result) translation_error::throw_error("Variable " + key + " does not exist in the symbol table", nullptr);
     return result;
 }
 

@@ -5,6 +5,12 @@
 
 #include <iostream>
 
+void syntax_error::throw_error(const std::string& message, const lex::token* node) {
+    auto line = std::to_string(node->line_number);
+    auto column = std::to_string(node->column_number);
+    throw syntax_error("\033[0;31m--- Syntax Error\033[0m " + line + ":" + column + "\033[0;31m:\033[0m  " + message + "\n");
+}
+
 parser_t::parser_t(lex::lexer *l) : lexical_analyzer(l) {
 
     type_map = std::unordered_map<std::string, int>();
@@ -133,7 +139,7 @@ decl_t* parser_t::match_decl() {
     d = match_decl_func();
     if (d != nullptr) return d;
 
-    throw syntax_error("Could not match declaration. Unexpected " + lex::token_names[(int) token_queue.front()->tag] + " token " + std::to_string(token_queue.front()->line_number) + ":" + std::to_string(token_queue.front()->column_number));
+    syntax_error::throw_error("Could not match declaration. Unexpected " + lex::token_names[(int) peek()->tag] + " token ", peek());
 }
 
 func_decl_t* parser_t::match_decl_func() {
@@ -240,8 +246,6 @@ param_decl_t* parser_t::match_param_decl() {
     result->type        = get_type(static_cast<lex::id_token*>(type_token));
     result->id          = static_cast<lex::id_token*>(id_token)->lexeme;
     result->is_pointer  = star_token != nullptr;
-
-    if (star_token) std::cout << "Found pointer parameter" << std::endl;
 
     // Store token
     result->tokens.push_back(type_token);
@@ -359,7 +363,7 @@ stmt_t* parser_t::match_stmt() {
     stmt = match_stmt_asm();
     if (stmt != nullptr) return stmt;
 
-    throw syntax_error("Could not match statement. Unexpected " + lex::token_names[(int) token_queue.front()->tag] + " token " + std::to_string(token_queue.front()->line_number) + ":" + std::to_string(token_queue.front()->column_number));
+    syntax_error::throw_error("Could not match statement. Unexpected " + lex::token_names[(int) peek()->tag] + " token ", peek());
 }
 
 expr_t* parser_t::match_expr() {
@@ -378,7 +382,7 @@ expr_t* parser_t::match_expr() {
     expr = match_expr_not();
     if (expr != nullptr) return expr;
 
-    throw syntax_error("Could not match expression. Unexpected " + lex::token_names[(int) token_queue.front()->tag] + " token " + std::to_string(token_queue.front()->line_number) + ":" + std::to_string(token_queue.front()->column_number));
+    syntax_error::throw_error("Could not match expression. Unexpected " + lex::token_names[(int) peek()->tag] + " token ", peek());
 }
 
 binop_expr_t* parser_t::match_binop() {
@@ -1068,7 +1072,7 @@ if_stmt_t* parser_t::match_stmt_if() {
         // If could not acquire conditional, revert
         put_back_token(open_paren_token);
         put_back_token(if_token);
-        throw syntax_error("Could not match conditional expression for if statement");
+        syntax_error::throw_error("Could not match condition expression for if statement. Unexpected " + lex::token_names[(int) peek()->tag] + " token ", peek());
     }
 
     closed_paren_token = get_token();
@@ -1158,7 +1162,7 @@ while_stmt_t* parser_t::match_stmt_while() {
         // If could not acquire conditional, revert
         put_back_token(open_paren_token);
         put_back_token(while_token);
-        throw syntax_error("Could not match conditional expression for if statement");
+        syntax_error::throw_error("Could not match condition expression for if statement. Unexpected " + lex::token_names[(int) peek()->tag] + " token ", peek());
     }
 
     closed_paren_token = get_token();
@@ -1288,7 +1292,7 @@ return_stmt_t* parser_t::match_stmt_return() {
         return_value = match_expr();
     } catch (syntax_error e) {
         put_back_token(return_token);
-        throw syntax_error("Could not match expression for return statement");
+        syntax_error::throw_error("Could not match expression for return statement. Unexpected " + lex::token_names[(int) peek()->tag] + " token ", peek());
     }
 
     semi_colon_token = get_token();

@@ -233,8 +233,6 @@ token* lexer::get_next_token() {
             std::string literal = cm[0].str();
             lexeme_start += literal.length();
 
-            std::cout << "Found character literal: " << literal << "length: " << literal.length() << std::endl;
-
             char value = char_literal_to_ascii(literal);
             token* result_token = new int_literal_token(value);
 
@@ -420,7 +418,6 @@ token* lexer::get_next_token() {
                 switch_buffer();
             } else lexeme_start++;
             
-            std::cout << "Not operator found" << std::endl;
             tag_t tag = tag_t::UNKNOWN;
             int size = 1;
             switch(*lexeme_start) {

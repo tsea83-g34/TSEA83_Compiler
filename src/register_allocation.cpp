@@ -25,13 +25,11 @@ reg_t::reg_t() {
 
 struct reg_ptr_cmp {
     bool operator()(const reg_t* left, const reg_t* right) {
-        //if (left == nullptr || right == nullptr) std::cout << "NULL POINTER" << std::endl;
         return left->last_changed > right->last_changed;
     }
 };
 
 register_allocator_t::register_allocator_t() {
-    std::cout << "Creating register allocator" << std::endl;
     //registers = std::vector<reg_t*>(REGISTER_COUNT);
 
     for (int i = 0; i < REGISTER_COUNT; i++) {
@@ -51,7 +49,6 @@ register_allocator_t::register_allocator_t() {
 
 register_allocator_t::~register_allocator_t() {
     
-    std::cout << "Destroying registers" << std::endl;
     for (auto* reg : registers) {
         delete reg;
     }
@@ -75,8 +72,6 @@ void register_allocator_t::free(reg_t* reg, bool store, bool sort) {
 
     // If the register has no content, there is nothing to free
     if (reg->content == nullptr) return;
-
-    std::cout << "Freeing register " << reg->index << " belonging to variable " << reg->content->name << std::endl;
 
     var_info_t* old_data = reg->content;
     int size = (old_data->is_pointer) ? POINTER_SIZE : parent->type_table.at(old_data->type)->size;
@@ -110,17 +105,14 @@ void register_allocator_t::free(reg_t* reg, bool store, bool sort) {
 int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable, bool temp) {
 
 
-    if (var_to_alloc == nullptr) throw translation_error("Allocating non-existent variable");
+    if (var_to_alloc == nullptr) transaction_safe:
 
     for (int i = 0; i < registers.size(); i++) {
         reg_t* reg = registers[i];
 
         if (reg->content == nullptr) continue;
-
-        std::cout << "Reg: " << reg->index << " Content: " << reg->content->name << std::endl;
         
         if (reg->content == var_to_alloc) {
-            std::cout << "variable " << var_to_alloc->name << " already present in register " << reg->index << std::endl;
             // If the allocation is temporary, make it available instantly
             reg->last_changed = (temp) ? 0 : parent->instr_cnt;
             return reg->index;
@@ -140,8 +132,6 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable,
             min = reg->last_changed;
         }
     }
-
-    std::cout << "Allocated register " << front->index << ", last changed: " << front->last_changed << std::endl;
     
     // Free the register, store the variable and dont sort the heap
     // if the variable contained is temporary, don't store
@@ -176,11 +166,6 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable,
     front->last_changed = (temp) ? 0 : parent->instr_cnt;
     front->changed = false;
 
-
-    std::cout << "register count: " << registers.size() << std::endl;
-    // Push the updated register back to the heap
-    //std::make_heap(registers.begin(), registers.end(), std::greater<reg_t*>());
-    
     return front->index;
 }
 
@@ -210,12 +195,8 @@ void register_allocator_t::free(var_info_t* var, bool store) {
 
 void register_allocator_t::store_context() {
 
-    std::cout << "Storing context" << std::endl;
-
     for (reg_t* reg : registers) {
         if (reg->content == nullptr) continue;
-        
-        std::cout << "Register: " << reg->index << " Content: " << reg->content->name << std::endl;
 
         if (!parent->symbol_table.is_scope_reachable(reg->content->scope)) continue;
 
@@ -230,7 +211,6 @@ void register_allocator_t::store_context() {
 }
 
 void register_allocator_t::free_scope(scope_t* scope_to_free, bool store_globals) {
-    std::cout << "Freeing scope" << std::endl;
     
     scope_t* global_scope = parent->symbol_table.get_global_scope();
     

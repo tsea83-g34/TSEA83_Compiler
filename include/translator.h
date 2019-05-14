@@ -7,6 +7,7 @@
 #include "symbol_table.h"
 #include "type_table.h"
 #include "register_allocation.h"
+#include "interfaces.h"
 
 #define STACK_POINTER   15
 #define NULL_REGISTER   14
@@ -21,6 +22,8 @@ public:
     ~translation_error() {}
 
     const char* what() const noexcept { return msg.c_str(); }
+
+    static void throw_error(const std::string& error, const undoable_t* node);
 };
 
 class translator_t {

@@ -14,13 +14,9 @@
 #include "../include/lexer.h"
 #include "../include/parser.h"
 #include "../include/translator.h"
+#include "../include/error_handling.h"
 
 using namespace std;
-
-
-//#define LEX_DEBUG
-#define PARSE_DEBUG
-#define TRANSLATE_DEBUG
 
 int main(int argc, char const *argv[]) {
 
@@ -34,9 +30,6 @@ int main(int argc, char const *argv[]) {
     // Get file path from command line args
     string path = string(current_path);
     string relative_path(argv[1]);
-
-    cerr << "wd: " << path << endl;
-    cerr << "rel. path: " << relative_path << endl;   
     
     // Concatenate paths depending on system separator
     #ifdef WINDOWS
@@ -44,108 +37,41 @@ int main(int argc, char const *argv[]) {
     #else
         string filename = path + '/' + relative_path;
     #endif
-    cout << "total: " << filename << endl;
 
     lex::lexer lex(filename);
 
-    #ifdef PARSE_DEBUG
     parser_t parser(&lex);
     program_t* program = nullptr;
+
+    cout << endl;
 
     try {
         program = parser.parse_token_stream();
     } catch (syntax_error e) {
-        cout << "--- Syntax Error: " << e.what() << std::endl;
+        cout << e.what() << std::endl;
         return 0;
     }
-
-    cout << "Finished parsing" << endl;
+    
     if (program != nullptr) {
+        cout << "\033[0;32mParsing successful. Abstract syntax tree: \033[0m" << endl;
         cout << program->get_string(&parser) << endl;
-        
-        #ifndef TRANSLATE_DEBUG
-        program->undo(&parser);
-        delete program;
-        #endif
     }
 
-    #endif
+    cout << endl;
 
-    #ifdef TRANSLATE_DEBUG
-
-    std::cout << "Creating translator..." << std::endl;
     translator_t translator = translator_t();
-    std::cout << "Translator created!" << std::endl;
 
     try {
         program->translate(&translator);
     } catch (translation_error e) {
-        cout << "--- Translation Error: " << e.what() << std::endl;
+        cout << e.what() << std::endl;
+        return 0;
     }
 
-    std::ofstream output_file("output.a");
+    cout << "\033[0;32mCompiled with " << get_warning_count() << " warning(s) and no errors. \033[0m" << endl << endl;
+
+    ofstream output_file("output.a");
     translator.print_to_file(output_file);
 
-    #endif
-
-    #ifdef LEX_DEBUG
-    int token_count = 1;
-    lex::token* t = lex.get_next_token();
-    while (t->tag != lex::tag_t::eof) {
-        
-        cout << "Token " << token_count++ << ": ";
-        switch(t->tag) {
-            case lex::tag_t::IF:
-                cout << "If found" << endl;
-                break;
-            case lex::tag_t::RETURN:
-                cout << "Return found" << endl;
-                break;
-            case lex::tag_t::ID:
-                cout << "Identifier found: " << dynamic_cast<lex::id_token*>(t)->lexeme << endl;
-                break;
-            case lex::tag_t::INT_LITERAL:
-                cout << "Int literal found: " << dynamic_cast<lex::int_literal_token*>(t)->value << endl;
-                break;
-            case lex::tag_t::STRING_LITERAL:
-                cout << "String literal found: " << dynamic_cast<lex::str_literal_token*>(t)->value << endl;
-                break;
-            case lex::tag_t::PLUS:
-                cout << "Plus operator found" << endl;
-                break;
-            case lex::tag_t::MINUS:
-                cout << "Minus operator found" << endl;
-                break;
-            case lex::tag_t::EQUALS:
-                cout << "Equality relational operator found" << endl;
-                break;
-            case lex::tag_t::NOT_EQUALS:
-                cout << "Non-equality relational operator found" << endl;
-                break;
-            case lex::tag_t::OPEN_PAREN:
-                cout << "Open parenthesis found" << endl;
-                break;
-            case lex::tag_t::CLOSED_PAREN:
-                cout << "Closed parenthesis found" << endl;
-                break;
-            case lex::tag_t::OPEN_BRACE:
-                cout << "Open brace found" << endl;
-                break;
-            case lex::tag_t::CLOSED_BRACE:
-                cout << "Closed brace found" << endl;
-                break;
-            case lex::tag_t::ASSIGNMENT:
-                cout << "Assignment operator found" << endl;
-                break;
-            case lex::tag_t::SEMI_COLON:
-                cout << "Semi-colon found" << endl;
-                break;
-            case lex::tag_t::UNKNOWN:
-                cout << "UNKNOWN token found!" << endl;
-        }
-        delete t;
-        t = lex.get_next_token();
-    }
-    #endif
     return 0;
 }
