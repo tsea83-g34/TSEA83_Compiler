@@ -105,7 +105,9 @@ void register_allocator_t::free(reg_t* reg, bool store, bool sort) {
 int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable, bool temp) {
 
 
-    if (var_to_alloc == nullptr) transaction_safe:
+    if (var_to_alloc == nullptr) {
+        translation_error::throw_error("Allocating register to non-existent variable", nullptr);
+    }
 
     for (int i = 0; i < registers.size(); i++) {
         reg_t* reg = registers[i];
@@ -119,10 +121,6 @@ int register_allocator_t::allocate(var_info_t* var_to_alloc, bool load_variable,
         }
     }
 
-
-    // Pop the least recently changed register from the heap to modify
-    //reg_t* front = registers.front();
-    //std::pop_heap(registers.begin(), registers.end(), reg_ptr_cmp());
     long min = std::numeric_limits<long>().max();
     reg_t* front = nullptr; 
 
