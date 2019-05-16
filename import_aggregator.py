@@ -50,7 +50,7 @@ if __name__ == "__main__":
         text = f.read()
         output = aggregate_imports(text)
 
-    with open("agg.cm", "w+") as f:
+    with open("agg.cmm", "w+") as f:
         f.write(output + "\n")
 
 
