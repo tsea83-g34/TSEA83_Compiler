@@ -274,6 +274,15 @@ bool register_allocator_t::is_temporary(int register_index) {
     return reg->content->is_temp;
 }
 
+bool register_allocator_t::already_allocated(var_info_t* var) {
+
+    for (auto reg : registers) {
+        if (reg->content == var) return true;
+    }
+
+    return false;
+}
+
 std::string register_allocator_t::get_register_string(int index) {
     return "r" + std::to_string(index);
 }

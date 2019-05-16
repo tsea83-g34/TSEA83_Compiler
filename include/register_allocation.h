@@ -40,6 +40,8 @@ public:
 
     int allocate(var_info_t* var_to_alloc, bool load_variable, bool temp);
 
+    bool already_allocated(var_info_t* var);
+
     // Frees the given register and returns the content descriptor
     var_info_t* free(int index);
     
