@@ -2326,7 +2326,7 @@ int call_term_t::translate(translator_t* t) {
 
     func_info_t* func = t->symbol_table.get_func(function_identifier);
 
-    if (func == nullptr) translation_error::throw_error("Function " + function_identifier + "is not declared.", this);
+    if (func == nullptr) translation_error::throw_error("Function " + function_identifier + " is not declared.", this);
     
     scope_t* current_scope = t->symbol_table.get_current_scope();
     
