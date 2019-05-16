@@ -1560,6 +1560,7 @@ int var_decl_t::translate(translator_t* t) {
         
         local_addr_info_t* addr = new local_addr_info_t(variable_base_offset);
         var_info_t* var = t->symbol_table.add_var(id, type, size_to_allocate, addr);
+        var->is_pointer = is_pointer;
 
         // Allocate memory for the variable
         subi_instr(t, STACK_POINTER, STACK_POINTER, alignment + size_to_allocate);
@@ -1620,6 +1621,7 @@ int simple_array_decl_t::translate(translator_t* t) {
         // Size is zero since the variable is allocated statically
         var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
         var->is_pointer = true;
+        var->is_array = true;
 
         t->static_alloc_array(identifier, element_size, array_size);
 
@@ -1648,6 +1650,7 @@ int simple_array_decl_t::translate(translator_t* t) {
         local_addr_info_t* addr = new local_addr_info_t(variable_base_offset);
         var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
         var->is_pointer = true;
+        var->is_array = true;
 
         int total_stack_size = pre_alignment + element_size * array_size + post_alignment;
         subi_instr(t, STACK_POINTER, STACK_POINTER, total_stack_size);
@@ -1677,6 +1680,7 @@ int init_list_array_decl_t::translate(translator_t* t) {
         // Size is zero since the variable is allocated statically
         var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
         var->is_pointer = true;
+        var->is_array = true;
 
         t->static_alloc_array_init(identifier, element_size, values);
     
@@ -1714,6 +1718,7 @@ int init_list_array_decl_t::translate(translator_t* t) {
         local_addr_info_t* addr = new local_addr_info_t(variable_base_offset);
         var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
         var->is_pointer = true;
+        var->is_array = true;
 
     }
 }
@@ -1743,6 +1748,7 @@ int str_array_decl_t::translate(translator_t* t) {
         // Size is zero since the variable is allocated statically
         var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
         var->is_pointer = true;
+        var->is_array = true;
 
         t->static_alloc_array_str(identifier, string_literal);
 
@@ -1778,6 +1784,7 @@ int str_array_decl_t::translate(translator_t* t) {
         local_addr_info_t* addr = new local_addr_info_t(variable_base_offset);
         var_info_t* var = t->symbol_table.add_var(identifier, type, 0, addr);
         var->is_pointer = true;
+        var->is_array = true;
     }
 }
 
@@ -2001,12 +2008,20 @@ int deref_assignment_stmt_t::translate(translator_t* t) {
 
     var_info_t* var = t->symbol_table.get_var(identifier);
     int var_size = t->type_table.at(var->type)->size;
+    bool is_global = dynamic_cast<global_addr_info_t*>(var->address) != nullptr;
 
     if (!var->is_pointer) output_warning("Dereferencing non-pointer variable " + var->name, this);
 
     int constant_value = 0;
     bool value_evaluated = rvalue->evaluate(&constant_value);
-    int ptr_reg = t->reg_alloc.allocate(var, true, false);
+    int ptr_reg = t->reg_alloc.allocate(var, !var->is_array, false);
+
+    // If the variable being dereferenced is an array, load the address of the array instead of the variable
+    // This leads to an addi every time, which is not optimal
+    if (var->is_array) {
+        int base_reg = (is_global) ? NULL_REGISTER : BASE_POINTER;
+        addi_instr(t, ptr_reg, base_reg, var->address->get_address_string());
+    }
 
     if (value_evaluated) {
 
@@ -2033,29 +2048,31 @@ int indexed_assignment_stmt_t::translate(translator_t* t) {
 
     var_info_t* var = t->symbol_table.get_var(identifier);
     int var_size = t->type_table.at(var->type)->size;
+    bool is_global = dynamic_cast<global_addr_info_t*>(var->address) != nullptr;
+    
+    bool array_needs_loading = t->reg_alloc.already_allocated(var);
 
     if (!var->is_pointer) output_warning("Dereferencing non-pointer variable " + var->name, this);
 
     int constant_value = 0;
     bool value_evaluated = rvalue->evaluate(&constant_value);
-    int ptr_reg = t->reg_alloc.allocate(var, false, false);
+    int ptr_reg = t->reg_alloc.allocate(var, !var->is_array, false);
 
-    bool is_global = dynamic_cast<global_addr_info_t*>(var->address) != nullptr;
-
-    if (is_global) {
-        addi_instr(t, ptr_reg, NULL_REGISTER, var->address->get_address_string());
-    } else {
-        addi_instr(t, ptr_reg, BASE_POINTER, var->address->get_address_string());
+    // If the variable being dereferenced is an array, load the address of the array instead of the variable
+    if (var->is_array && !array_needs_loading) {
+        int base_reg = (is_global) ? NULL_REGISTER : BASE_POINTER;
+        addi_instr(t, ptr_reg, base_reg, var->address->get_address_string());
     }
 
     int constant_index = 0;
     bool index_evaluated = index->evaluate(&constant_index);
 
-    var_info_t* ptr_temp = give_ownership_temp(t, "__temp__", ptr_reg);
+    var_info_t* ptr_temp;
+    if (!index_evaluated || constant_index) ptr_temp = give_ownership_temp(t, "__temp__", ptr_reg);
     
     if (index_evaluated && constant_index < std::numeric_limits<unsigned short>().max()) {
         
-        addi_instr(t, ptr_reg, ptr_reg, var_size * constant_index);
+        if (constant_index) addi_instr(t, ptr_reg, ptr_reg, var_size * constant_index);
 
     } else {
         var_info_t* size_const_var;
@@ -2087,7 +2104,7 @@ int indexed_assignment_stmt_t::translate(translator_t* t) {
 
         store_instr(t, ptr_reg, right_register, nullptr, var_size);
     }
-    t->reg_alloc.free(ptr_temp, false);
+    if (!index_evaluated || constant_index)  t->reg_alloc.free(ptr_temp, false);
 }
 
 
@@ -2171,8 +2188,16 @@ int id_term_t::translate(translator_t* t) {
     // Find variable, allocate register, return index
     var_info_t* var = t->symbol_table.get_var(identifier);
 
+    bool is_global = dynamic_cast<global_addr_info_t*>(var->address) != nullptr;
+
     // Load variable into a register, not marked as temporary
-    int register_index = t->reg_alloc.allocate(var, true, false);
+    int register_index = t->reg_alloc.allocate(var, !var->is_array, false);
+
+    // If the variable being dereferenced is an array, load the address of the array instead of the variable
+    if (var->is_array) {
+        int base_reg = (is_global) ? NULL_REGISTER : BASE_POINTER;
+        addi_instr(t, register_index, base_reg, var->address->get_address_string());
+    }
 
     // Return the register index of the allocated register
     return register_index;
@@ -2224,7 +2249,13 @@ int deref_term_t::translate(translator_t* t) {
     // Add temporary variable to scope to allow register allocation
     var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
 
-    int reg = t->reg_alloc.allocate(var, false, false);
+    int reg = t->reg_alloc.allocate(var, !var->is_array, false);
+
+    // If the variable being dereferenced is an array, load the address of the array instead of the variable
+    if (var->is_array) {
+        int base_reg = (is_global) ? NULL_REGISTER : BASE_POINTER;
+        addi_instr(t, reg, base_reg, var->address->get_address_string());
+    }
 
     // Take ownership of register
     t->reg_alloc.give_ownership(reg, temp_var);
@@ -2238,6 +2269,7 @@ int deref_term_t::translate(translator_t* t) {
 int indexed_term_t::translate(translator_t* t) {
 
     var_info_t* var = t->symbol_table.get_var(identifier);
+
     int var_size = t->type_table.at(var->type)->size;
 
     if (!var->is_pointer) output_warning("Dereferencing non-pointer variable " + var->name, this);
@@ -2250,12 +2282,12 @@ int indexed_term_t::translate(translator_t* t) {
     // Add temporary variable to scope to allow register allocation
     var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
 
-    int reg = t->reg_alloc.allocate(var, false, false);
+    int reg = t->reg_alloc.allocate(var, !var->is_array, false);
 
-    if (is_global) {
-        addi_instr(t, reg, NULL_REGISTER, var->address->get_address_string());
-    } else {
-        addi_instr(t, reg, BASE_POINTER, var->address->get_address_string());
+    // If the variable being dereferenced is an array, load the address of the array instead of the variable
+    if (var->is_array) {
+        int base_reg = (is_global) ? NULL_REGISTER : BASE_POINTER;
+        addi_instr(t, reg, base_reg, var->address->get_address_string());
     }
 
     int constant_index = 0;

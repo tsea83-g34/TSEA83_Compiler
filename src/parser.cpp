@@ -117,7 +117,6 @@ decls_t* parser_t::match_decls() {
 
         if (peek()->tag != lex::tag_t::eof) {
             std::string id_str = (peek()->tag == lex::tag_t::ID) ? static_cast<const lex::id_token*>(peek())->lexeme : "";
-            std::cout << "Failed matching declaration. Look-ahead: " << lex::token_names[(int) peek()->tag] << " " << id_str << std::endl;
             throw e;
         }
     }
@@ -532,7 +531,7 @@ var_decl_t* parser_t::match_decl_var_1() {
     
     d->type = get_type(static_cast<lex::id_token*>(type_token));
     d->id = static_cast<lex::id_token*>(id_token)->lexeme;
-    d->is_pointer = star_token != nullptr;
+    d->is_pointer = (star_token != nullptr);
 
     d->tokens.push_back(type_token);
     d->tokens.push_back(id_token);
