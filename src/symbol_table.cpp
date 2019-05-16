@@ -102,7 +102,7 @@ func_info_t::func_info_t(const func_decl_t* decl, translator_t* t) {
 
     // If the parameters on stack are 4 aligned, two bytes will be pushed for alignment
     // Therefore offset start will be 4, otherwise 2
-    int current_base_offset = (total_stack_size % 4 == 0) ? 4 : 2;
+    int current_base_offset = 2 + (6 - total_stack_size % 4) % 4;
     int param_index = 0;
 
     while (current != nullptr) {
