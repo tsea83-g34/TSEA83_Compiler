@@ -359,11 +359,9 @@ int translate_binop_relational(translator_t* t, binop_expr_t* binop, const std::
     }
 
     if (right_success) {
-        std::cout << "Evaluated right value: " << right_value << std::endl;
         // If right value is larger than 16 bits
         if (right_value > std::numeric_limits<int16_t>().max() || right_value < std::numeric_limits<int16_t>().min()) {
-            // TODO: This is not very good...
-            std::cout << "evaluated value is too large"<< std::endl;
+
             var_info_t* temp_var;
             int reg = allocate_temp_imm(t, "__temp__", right_value, &temp_var);
             cmp_instr(t, left_register, reg);
