@@ -2356,10 +2356,12 @@ int call_term_t::translate(translator_t* t) {
 
     // If the parameters are 4 aligned, stack wont be because of return pointer, offset it with 2
     if (current_scope->get_end_offset() % 4 == 0) {
-        alignment += 2;
-        alignment_done += 2;
-        current_scope->push(2);
-        subi_instr(t, STACK_POINTER, STACK_POINTER, 2);
+
+        int diff = (6 - current_scope->get_end_offset() % 4) % 4;
+        alignment += diff;
+        alignment_done += diff;
+        current_scope->push(diff);
+        subi_instr(t, STACK_POINTER, STACK_POINTER, diff);
     }
 
     // Call function
