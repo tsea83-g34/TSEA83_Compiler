@@ -56,6 +56,7 @@ struct var_info_t {
     std::string id;
     int type;
     bool is_pointer;
+    bool is_temp;
     addr_info_t* address; // Relative address to the base pointer ?
     scope_t* scope;
 

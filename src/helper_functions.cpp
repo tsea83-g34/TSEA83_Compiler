@@ -123,6 +123,7 @@ int allocate_temp_imm(translator_t* t, const std::string& name, int value, var_i
 
     // Add temporary variable to scope to allow register allocation
     var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
+    temp_var->is_temp = true;
 
     int reg = t->reg_alloc.allocate(temp_var, false, false);
 
@@ -140,6 +141,7 @@ int allocate_temp(translator_t* t, const std::string& name, var_info_t** var) {
 
     // Add temporary variable to scope to allow register allocation
     var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
+    temp_var->is_temp = true;
 
     int reg = t->reg_alloc.allocate(temp_var, false, false);
     
@@ -152,6 +154,7 @@ var_info_t* give_ownership_temp(translator_t* t, const std::string& name, int re
     // Add temporary variable to scope to allow register allocation
     std::string left_temp_name = t->name_allocator.get_name(name);
     var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
+    temp_var->is_temp = true;
 
     t->reg_alloc.give_ownership(reg, temp_var);
     return temp_var;
@@ -169,6 +172,7 @@ int take_ownership_or_allocate(translator_t* t, const std::string& name, int reg
         // Add temporary variable to scope to allow register allocation
         std::string left_temp_name = t->name_allocator.get_name(name);
         var_info_t* temp_var = t->symbol_table.add_var(left_temp_name, 0, 0, nullptr);
+        temp_var->is_temp = true;
         
         int new_reg = t->reg_alloc.allocate(temp_var, false, false);
 
