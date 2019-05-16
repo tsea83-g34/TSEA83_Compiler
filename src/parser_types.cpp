@@ -2242,7 +2242,13 @@ int indexed_term_t::translate(translator_t* t) {
     // Add temporary variable to scope to allow register allocation
     var_info_t* temp_var = t->symbol_table.add_var(temp_name, 0, 0, nullptr);
 
-    int reg = t->reg_alloc.allocate(var, true, false);
+    int reg = t->reg_alloc.allocate(var, false, false);
+
+    if (is_global) {
+        addi_instr(t, reg, NULL_REGISTER, var->address->get_address_string());
+    } else {
+        addi_instr(t, reg, BASE_POINTER, var->address->get_address_string());
+    }
 
     int constant_index = 0;
     bool index_evaluated = index->evaluate(&constant_index);
