@@ -177,6 +177,7 @@ void translator_t::print_to_file(std::ofstream& file) {
 
     set_data_mode(true);
 
+    print_instruction_row("", false);
     print_instruction_row("subi SP, SP, 1", true);
     print_instruction_row("call main", true);
     print_instruction_row("subi SP, SP, 2", true);
