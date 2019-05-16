@@ -2355,7 +2355,7 @@ int call_term_t::translate(translator_t* t) {
     t->reg_alloc.store_context();
 
     // If the parameters are 4 aligned, stack wont be because of return pointer, offset it with 2
-    if (current_scope->get_end_offset() % 4 == 0) {
+    if (current_scope->get_end_offset() % 4 != 2) {
 
         int diff = (6 - current_scope->get_end_offset() % 4) % 4;
         alignment += diff;
