@@ -348,6 +348,7 @@ int translate_binop_relational(translator_t* t, binop_expr_t* binop, const std::
         // Means left was a constant, allocate a register and load the immediate value into it
         var_info_t* var_info;
         left_register = allocate_temp_imm(t, "__temp__", left_value, &var_info);
+        
 
     } else {
 
@@ -358,14 +359,21 @@ int translate_binop_relational(translator_t* t, binop_expr_t* binop, const std::
     }
 
     if (right_success) {
+        std::cout << "Evaluated right value: " << right_value << std::endl;
         // If right value is larger than 16 bits
-        if (right_value > std::numeric_limits<int16_t>().max()) {
+        if (right_value > std::numeric_limits<int16_t>().max() || right_value < std::numeric_limits<int16_t>().min()) {
             // TODO: This is not very good...
-            translation_error::throw_error("Constant can't be larger than 16-bits", binop);
+            std::cout << "evaluated value is too large"<< std::endl;
+            var_info_t* temp_var;
+            int reg = allocate_temp_imm(t, "__temp__", right_value, &temp_var);
+            cmp_instr(t, left_register, reg);
+            t->reg_alloc.free(temp_var, false);
+
+        } else {
+            // Print cmp immediate instruction
+            cmpi_instr(t, left_register, right_value);
         }
 
-        // Print cmp immediate instruction
-        cmpi_instr(t, left_register, right_value);
 
     } else {
 
