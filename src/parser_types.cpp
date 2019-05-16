@@ -1835,9 +1835,9 @@ int if_stmt_t::translate(translator_t* t) {
         t->reg_alloc.store_context();
         
         // Test if true or false
-        cmpi_instr(t, cond_reg, 1);
+        cmpi_instr(t, cond_reg, 0);
 
-        branch_instr(t, BRNE_INSTR, else_label);
+        branch_instr(t, BREQ_INSTR, else_label);
 
         actions->translate(t);
 
@@ -1890,9 +1890,9 @@ int while_stmt_t::translate(translator_t* t) {
 
         int cond_reg = cond->translate(t);
 
-        cmpi_instr(t, cond_reg, 1);
+        cmpi_instr(t, cond_reg, 0);
 
-        branch_instr(t, BRNE_INSTR, end_label);
+        branch_instr(t, BREQ_INSTR, end_label);
 
         actions->translate(t);
 
@@ -2038,7 +2038,15 @@ int indexed_assignment_stmt_t::translate(translator_t* t) {
 
     int constant_value = 0;
     bool value_evaluated = rvalue->evaluate(&constant_value);
-    int ptr_reg = t->reg_alloc.allocate(var, true, false);
+    int ptr_reg = t->reg_alloc.allocate(var, false, false);
+
+    bool is_global = dynamic_cast<global_addr_info_t*>(var->address) != nullptr;
+
+    if (is_global) {
+        addi_instr(t, ptr_reg, NULL_REGISTER, var->address->get_address_string());
+    } else {
+        addi_instr(t, ptr_reg, BASE_POINTER, var->address->get_address_string());
+    }
 
     int constant_index = 0;
     bool index_evaluated = index->evaluate(&constant_index);
