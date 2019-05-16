@@ -2259,6 +2259,14 @@ int indexed_term_t::translate(translator_t* t) {
 
         index_reg = take_ownership_or_allocate(t, "__temp__", index_reg);
         
+        // If variable size is not one, multiply by it
+        if (var_size != 1) {
+            var_info_t* size_const_var;
+            int size_const_reg = allocate_temp_imm(t, "__temp__", var_size, &size_const_var);
+            mult_instr(t, index_reg, index_reg, size_const_reg);
+            t->reg_alloc.free(size_const_var, false);
+        }
+
         add_instr(t, index_reg, reg, index_reg);
         load_instr(t, index_reg, index_reg, nullptr, var_size);
 
