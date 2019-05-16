@@ -52,6 +52,8 @@ void add_instr(translator_t* t,int rd, int ra, int rb);
 
 void addi_instr(translator_t* t, int rd, int ra, int imm);
 
+void addi_instr(translator_t* t, int rd, int ra, const std::string& imm);
+
 void sub_instr(translator_t* t, int rd, int ra, int rb);
 
 void subi_instr(translator_t* t, int rd, int ra, int imm);

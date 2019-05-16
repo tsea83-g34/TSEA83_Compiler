@@ -485,6 +485,12 @@ void addi_instr(translator_t* t, int rd, int ra, int imm) {
 
 }
 
+void addi_instr(translator_t* t, int rd, int ra, const std::string& imm) {
+    
+    tri_operand_imm_str_instr(t, ADD_IMM_INSTR, rd, ra, imm);
+
+}
+
 void sub_instr(translator_t* t, int rd, int ra, int rb) {
     
     tri_operand_instr(t, SUB_INSTR, rd, ra, rb);
