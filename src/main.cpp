@@ -53,8 +53,8 @@ int main(int argc, char const *argv[]) {
     }
     
     if (program != nullptr) {
-        cout << "\033[0;32mParsing successful. Abstract syntax tree: \033[0m" << endl;
-        cout << program->get_string(&parser) << endl;
+        cout << "\033[0;32mParsing successful. \033[0m" << endl;
+        //cout << program->get_string(&parser) << endl;
     }
 
     cout << endl;
