@@ -1334,15 +1334,15 @@ int func_decl_t::translate(translator_t* t) {
     
     stmt->translate(t);
 
+    // Free the registers containing local variables in the current scope
+    t->reg_alloc.free_scope(t->symbol_table.get_current_scope(), true);
+    
     // Set return register to 0 and print ret instruction
     if (!t->last_was_ret) {
         move_instr(t, RETURN_REGISTER, NULL_REGISTER);
         ret_instr(t);
     }
 
-    // Free the registers containing local variables in the current scope
-    t->reg_alloc.free_scope(t->symbol_table.get_current_scope(), true);
-    
     t->symbol_table.pop_scope();
 
     t->print_instruction_row("", false, false);
@@ -2114,18 +2114,24 @@ int return_stmt_t::translate(translator_t* t) {
     bool value_evaluated = return_value->evaluate(&constant_value);
 
     if (value_evaluated) {
-        
+
+        // Free the registers containing local variables in the current sco
+        t->reg_alloc.free_scope(t->symbol_table.get_current_scope(), true);    
         load_immediate(t, RETURN_REGISTER, constant_value);
 
     } else {
 
         int value_reg = return_value->translate(t);
 
+        // Free the registers containing local variables in the current sco
+        t->reg_alloc.free_scope(t->symbol_table.get_current_scope(), true);
+
         if (value_reg != RETURN_REGISTER) {
             move_instr(t, RETURN_REGISTER, value_reg);
         }
 
     }
+
     int total_scope_size = t->symbol_table.get_current_scope()->get_end_offset();
 
     // Pop whole scope variables
