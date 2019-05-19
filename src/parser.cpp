@@ -1917,6 +1917,9 @@ indexed_term_t* parser_t::match_term_indexed() {
 
     // If gotten this far, match was successful
 
+    // Try rewriting associativity of expr
+    index = binop_expr_t::rewrite(index);
+
     // Build syntax object
     indexed_term_t* result = new indexed_term_t();
 
