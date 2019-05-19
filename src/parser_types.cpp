@@ -1608,7 +1608,11 @@ int simple_array_decl_t::translate(translator_t* t) {
     int element_size = type_desc->size;
     
     int array_size;
-    size->evaluate(&array_size);
+    bool size_evaluated = size->evaluate(&array_size);
+
+    if (!size_evaluated) {
+        translation_error::throw_error("Size of array needs to be an expression of constant literals", this);
+    }
 
     if (t->symbol_table.is_global_scope()) {
         
