@@ -2008,6 +2008,34 @@ int asm_stmt_t::translate(translator_t* t) {
     }
 }
 
+int break_stmt_t::translate(translator_t* t) {
+
+    if (loop_id >= t->loop_info.size()) {
+        translation_error::throw_error("Break loop index " + std::to_string(loop_id) + "has no corresponding loop", this);
+    }
+
+    int index = t->loop_info.size() - 1 - loop_id;
+    std::string end_label = t->loop_info[index].end_label;
+
+    t->reg_alloc.store_context();
+
+    branch_instr(t, JMP_INSTR, end_label);
+}
+
+int continue_stmt_t::translate(translator_t* t) {
+
+    if (loop_id >= t->loop_info.size()) {
+        translation_error::throw_error("Continue loop index " + std::to_string(loop_id) + "has no corresponding loop", this);
+    }
+
+    int index = t->loop_info.size() - 1 - loop_id;
+    std::string start_label = t->loop_info[index].start_label;
+
+    t->reg_alloc.store_context();
+
+    branch_instr(t, JMP_INSTR, start_label);
+}
+
 int assignment_stmt_t::translate(translator_t* t) {
 
     var_info_t* var = t->symbol_table.get_var(identifier);
