@@ -80,6 +80,8 @@ This is a compiler written for custom hardware designed in the course TSEA83 at 
                 |   if ( expr ) stmt else stmt
                 |   while ( expr ) stmt
                 |   asm ( str_lit asm_params ) ;
+                |   continue literal ;
+                |   break literal ; 
                 |   var_decl 
                 |   array_decl
                 |   id = expr ;

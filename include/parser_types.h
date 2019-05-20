@@ -42,7 +42,9 @@
                 |   if ( expr ) stmt
                 |   if ( expr ) stmt else stmt
                 |   while ( expr ) stmt
-                |   asm ( str_lit params )
+                |   asm ( str_lit params ) ;
+                |   continue literal ;
+                |   break literal ;
                 |   var_decl
                 |   array_decl
                 |   id "=" expr ;   // assignment
