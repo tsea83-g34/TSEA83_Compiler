@@ -2011,7 +2011,7 @@ int asm_stmt_t::translate(translator_t* t) {
 int break_stmt_t::translate(translator_t* t) {
 
     if (loop_id >= t->loop_info.size()) {
-        translation_error::throw_error("Break loop index " + std::to_string(loop_id) + "has no corresponding loop", this);
+        translation_error::throw_error("Break loop index " + std::to_string(loop_id) + " has no corresponding loop", this);
     }
 
     int index = t->loop_info.size() - 1 - loop_id;
@@ -2025,7 +2025,7 @@ int break_stmt_t::translate(translator_t* t) {
 int continue_stmt_t::translate(translator_t* t) {
 
     if (loop_id >= t->loop_info.size()) {
-        translation_error::throw_error("Continue loop index " + std::to_string(loop_id) + "has no corresponding loop", this);
+        translation_error::throw_error("Continue loop index " + std::to_string(loop_id) + " has no corresponding loop", this);
     }
 
     int index = t->loop_info.size() - 1 - loop_id;
