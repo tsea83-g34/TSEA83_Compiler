@@ -14,6 +14,8 @@ namespace lex {
         WHILE,
         ELSE,
         ASM,
+        CONTINUE,
+        BREAK,
 
         // Other
         ID,
@@ -54,6 +56,8 @@ namespace lex {
         "while keyowrd",
         "else keyword",
         "asm keyword",
+        "continue keyword",
+        "break keyword",
         "identifier", 
         "integer literal", 
         "string literal",
