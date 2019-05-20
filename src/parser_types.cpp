@@ -1878,6 +1878,8 @@ int while_stmt_t::translate(translator_t* t) {
         std::string start_label = t->label_allocator.get_label_name();
         std::string end_label   = t->label_allocator.get_label_name();
 
+        t->loop_info.push_back((loop_info_t){start_label, end_label});
+
         t->reg_alloc.store_context();
 
         print_label(t, start_label);
@@ -1894,6 +1896,8 @@ int while_stmt_t::translate(translator_t* t) {
 
         std::string start_label = t->label_allocator.get_label_name();
         std::string end_label   = t->label_allocator.get_label_name();
+
+        t->loop_info.push_back((loop_info_t){start_label, end_label});
 
         t->reg_alloc.store_context();
 

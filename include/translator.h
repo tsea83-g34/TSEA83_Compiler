@@ -26,6 +26,11 @@ public:
     static void throw_error(const std::string& error, const undoable_t* node);
 };
 
+struct loop_info_t {
+    std::string start_label;
+    std::string end_label;
+};
+
 class translator_t {
 
     std::stringstream defines_and_global_output;
@@ -37,11 +42,13 @@ public:
 
     std::unordered_map<int, std::string> special_registers;
 
-    symbol_table_t          symbol_table;
-    register_allocator_t    reg_alloc;
-    type_table_t            type_table;
-    scope_name_allocator_t  name_allocator;
-    label_allocator_t       label_allocator;
+    symbol_table_t              symbol_table;
+    register_allocator_t        reg_alloc;
+    type_table_t                type_table;
+    scope_name_allocator_t      name_allocator;
+    label_allocator_t           label_allocator;
+    std::vector<loop_info_t>    loop_info;
+
     long instr_cnt;
     bool last_was_ret;
 
