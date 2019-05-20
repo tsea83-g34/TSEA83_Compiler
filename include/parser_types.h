@@ -118,6 +118,8 @@ struct block_stmt_t;
 struct if_stmt_t;
 struct while_stmt_t;
 struct asm_stmt_t;
+struct break_stmt_t;
+struct continue_stmt_t;
 struct assignment_stmt_t;
 struct deref_assignment_stmt_t;
 struct indexed_assignment_stmt_t;
@@ -345,6 +347,22 @@ struct asm_stmt_t : stmt_t {
     
     std::string literal;
     asm_params_t* params;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+};
+
+struct break_stmt_t : stmt_t {
+    int loop_id;
+
+    void undo(parser_t* p) override;
+    std::string get_string(parser_t* p) override;
+    int translate(translator_t* t) override;
+};
+
+struct continue_stmt_t : stmt_t {
+    int loop_id;
 
     void undo(parser_t* p) override;
     std::string get_string(parser_t* p) override;

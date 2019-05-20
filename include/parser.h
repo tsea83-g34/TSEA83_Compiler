@@ -37,6 +37,8 @@ struct block_stmt_t;
 struct if_stmt_t;
 struct while_stmt_t;
 struct asm_stmt_t;
+struct break_stmt_t;
+struct continue_stmt_t;
 struct assignment_stmt_t;
 struct deref_assignment_stmt_t;
 struct indexed_assignment_stmt_t;
