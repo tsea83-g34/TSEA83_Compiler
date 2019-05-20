@@ -450,6 +450,44 @@ std::string asm_stmt_t::get_string(parser_t* p) {
     return "(asm){ " + literal + " " + params->get_string(p) + " }";
 }
 
+void break_stmt_t::undo(parser_t* p) {
+    
+    // Put back ; token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back int literal token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();    
+
+    // Put back break token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string break_stmt_t::get_string(parser_t* p) {
+    return "break(" + std::to_string(loop_id) + ")";
+}
+
+void continue_stmt_t::undo(parser_t* p) {
+    
+    // Put back ; token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+
+    // Put back int literal token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();    
+
+    // Put back continue token
+    p->put_back_token(tokens.back());
+    tokens.pop_back();
+}
+
+std::string continue_stmt_t::get_string(parser_t* p) {
+    return "continue(" + std::to_string(loop_id) + ")";
+}
+
 void assignment_stmt_t::undo(parser_t* p) {
     
     // Put back ; token
