@@ -361,6 +361,12 @@ stmt_t* parser_t::match_stmt() {
 
     stmt = match_stmt_asm();
     if (stmt != nullptr) return stmt;
+    
+    stmt = match_stmt_break();
+    if (stmt != nullptr) return stmt;
+
+    stmt = match_stmt_continue();
+    if (stmt != nullptr) return stmt;
 
     syntax_error::throw_error("Could not match statement. Unexpected " + lex::token_names[(int) peek()->tag] + " token ", peek());
 }
@@ -1301,7 +1307,7 @@ break_stmt_t* parser_t::match_stmt_break() {
 
 continue_stmt_t* parser_t::match_stmt_continue() {
 
-    lex::token* continue_token         = get_token();
+    lex::token* continue_token      = get_token();
     lex::token* int_literal_token   = get_token();
     lex::token* semi_colon_token    = get_token();
 
