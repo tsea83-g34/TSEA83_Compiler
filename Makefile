@@ -1,5 +1,5 @@
 CCX=g++-7
-CCXFLAGS = -std=c++17 -g -O0 -ggdb3
+CCXFLAGS = -std=c++17 -O3
 
 SRCDIR  = ./src
 OBJSDIR = ./build
