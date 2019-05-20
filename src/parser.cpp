@@ -1270,6 +1270,63 @@ asm_stmt_t* parser_t::match_stmt_asm() {
     return result;
 }
 
+break_stmt_t* parser_t::match_stmt_break() {
+
+    lex::token* break_token         = get_token();
+    lex::token* int_literal_token   = get_token();
+    lex::token* semi_colon_token    = get_token();
+
+
+    if (break_token->tag != lex::tag_t::BREAK || int_literal_token->tag != lex::tag_t::INT_LITERAL || semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        put_back_token(semi_colon_token);
+        put_back_token(int_literal_token);
+        put_back_token(break_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    break_stmt_t* result = new break_stmt_t();
+
+    result->loop_id = static_cast<lex::int_literal_token*>(int_literal_token)->value;
+
+    // Store tokens
+    result->tokens.push_back(break_token);
+    result->tokens.push_back(int_literal_token);
+    result->tokens.push_back(semi_colon_token);
+
+    return result;
+}
+
+continue_stmt_t* parser_t::match_stmt_continue() {
+
+    lex::token* continue_token         = get_token();
+    lex::token* int_literal_token   = get_token();
+    lex::token* semi_colon_token    = get_token();
+
+
+    if (continue_token->tag != lex::tag_t::CONTINUE || int_literal_token->tag != lex::tag_t::INT_LITERAL || semi_colon_token->tag != lex::tag_t::SEMI_COLON) {
+        put_back_token(semi_colon_token);
+        put_back_token(int_literal_token);
+        put_back_token(continue_token);
+        return nullptr;
+    }
+
+    // If gotten this far, match was successful
+
+    // Build syntax object
+    continue_stmt_t* result = new continue_stmt_t();
+
+    result->loop_id = static_cast<lex::int_literal_token*>(int_literal_token)->value;
+
+    // Store tokens
+    result->tokens.push_back(continue_token);
+    result->tokens.push_back(int_literal_token);
+    result->tokens.push_back(semi_colon_token);
+
+    return result;
+}
 
 // stmt -> return expr ;
 return_stmt_t* parser_t::match_stmt_return() {

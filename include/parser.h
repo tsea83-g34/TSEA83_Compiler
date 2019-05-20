@@ -163,6 +163,8 @@ private:
     if_stmt_t* match_stmt_if();
     while_stmt_t* match_stmt_while();
     asm_stmt_t* match_stmt_asm();
+    break_stmt_t* match_stmt_break();
+    continue_stmt_t* match_stmt_continue();
     var_decl_t* match_stmt_decl();
     assignment_stmt_t* match_stmt_assign();
     deref_assignment_stmt_t* match_stmt_assign_deref();
