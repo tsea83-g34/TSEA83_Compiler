@@ -2154,8 +2154,8 @@ int indexed_assignment_stmt_t::translate(translator_t* t) {
         int index_register = index->translate(t);
         int size_const_reg = allocate_temp_imm(t, "__temp__", var_size, &size_const_var);
 
-        mult_instr(t, index_register, index_register, size_const_reg);
-        add_instr(t, ptr_reg, ptr_reg, index_register);
+        mult_instr(t, size_const_reg, index_register, size_const_reg);
+        add_instr(t, ptr_reg, ptr_reg, size_const_reg);
 
         t->reg_alloc.free(size_const_var, false);
     }
