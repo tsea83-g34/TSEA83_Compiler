@@ -2045,7 +2045,7 @@ int assignment_stmt_t::translate(translator_t* t) {
 
     if (value_evaluated) {
 
-        int reg = t->reg_alloc.allocate(var, false, true);
+        int reg = t->reg_alloc.allocate(var, false, false);
         load_immediate(t, reg, constant_value);
         t->reg_alloc.touch(reg, true);
 
